@@ -75,6 +75,7 @@ public class Controller extends Server{
             MyLogger.logError("Controller on port : " + this.port + " unable to connect to new connector.");
         }
     }
+    
 
     /**
      * Sets up a connection between the connector and the controller.
