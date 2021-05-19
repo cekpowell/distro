@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.StringTokenizer;
 
 import Token.TokenType.*;
+import Logger.Protocol;
 
 /**
  * Tokenizes request strings.
@@ -30,107 +31,107 @@ public class RequestTokenizer {
         String firstToken = sTokenizer.nextToken();
 
         // ACK //
-        if(firstToken.equals("ACK")) {
+        if(firstToken.equals(Protocol.ACK_TOKEN)) {
             return new AckToken(request);
         }
 
         // STORE //
-        else if(firstToken.equals("STORE")){
+        else if(firstToken.equals(Protocol.STORE_TOKEN)){
             return getStoreToken(request, sTokenizer);
         }
 
         // STORE_TO //
-        else if(firstToken.equals("STORE_TO")){
+        else if(firstToken.equals(Protocol.STORE_TO_TOKEN)){
             return getStoreToToken(request, sTokenizer);
         }
 
         // STORE_ACK //
-        else if(firstToken.equals("STORE_ACK")){
+        else if(firstToken.equals(Protocol.STORE_ACK_TOKEN)){
             return new StoreAckToken(request);
         }
 
         // STORE_COMPLETE //
-        else if(firstToken.equals("STORE_COMPLETE")){
+        else if(firstToken.equals(Protocol.STORE_COMPLETE_TOKEN)){
             return new StoreCompleteToken(request);
         }
 
         // LOAD //
-        else if(firstToken.equals("LOAD")){
+        else if(firstToken.equals(Protocol.LOAD_TOKEN)){
             return getLoadToken(request, sTokenizer);
         }
 
         // LOAD_FROM //
-        else if (firstToken.equals("LOAD_FROM")){
+        else if (firstToken.equals(Protocol.LOAD_FROM_TOKEN)){
             return getLoadFromToken(request, sTokenizer);
         }
 
         // LOAD_DATA //
-        else if(firstToken.equals("LOAD_DATA")){
+        else if(firstToken.equals(Protocol.LOAD_DATA_TOKEN)){
             return getLoadDataToken(request, sTokenizer);
         }
 
         // RELOAD //
-        else if(firstToken.equals("RELOAD")){
+        else if(firstToken.equals(Protocol.RELOAD_TOKEN)){
             return getReloadToken(request, sTokenizer);
         }
 
         // REMOVE //
-        else if (firstToken.equals("REMOVE")){
+        else if (firstToken.equals(Protocol.REMOVE_TOKEN)){
             return getRemoveToken(request, sTokenizer);
         }
 
         // REMOVE_ACK //
-        else if(firstToken.equals("REMOVE_ACK")){
+        else if(firstToken.equals(Protocol.REMOVE_ACK_TOKEN)){
             return getRemoveAckToken(request, sTokenizer);
         }
 
         // REMOVE_COMPLETE //
-        else if(firstToken.equals("REMOVE_COMPLETE")){
+        else if(firstToken.equals(Protocol.REMOVE_COMPLETE_TOKEN)){
             return new RemoveCompleteToken(request);
         }
 
         // LIST //
-        else if(firstToken.equals("LIST")){
+        else if(firstToken.equals(Protocol.LIST_TOKEN)){
             return getListToken(request, sTokenizer);
         }
 
         // JOIN //
-        else if (firstToken.equals("JOIN")){
+        else if (firstToken.equals(Protocol.JOIN_TOKEN)){
             return getJoinToken(request, sTokenizer);
         }
 
         // REBALANCE //
-        else if (firstToken.equals("REBALANCE")){
+        else if (firstToken.equals(Protocol.REBALANCE_TOKEN)){
             return getRebalanceToken(request, sTokenizer);
         }
 
         // REBALANCE_STORE //
-        else if (firstToken.equals("REBALANCE_STORE")){
+        else if (firstToken.equals(Protocol.REBALANCE_STORE_TOKEN)){
             return getRebalanceStoreToken(request, sTokenizer);
         }
 
         // REBALANCE_COMPLETE //
-        else if(firstToken.equals("REBALANCE_COMPLETE")){
+        else if(firstToken.equals(Protocol.REBALANCE_COMPLETE_TOKEN)){
             return new RebalanceCompleteToken(request);
         }
 
         // ERROR_NOT_ENOUGH_DSTORES //
-        else if(firstToken.equals("ERROR_NOT_ENOUGH_DSTORES")){
+        else if(firstToken.equals(Protocol.ERROR_NOT_ENOUGH_DSTORES_TOKEN)){
             return new ErrorNotEnoughDStoresToken(request);
         }
 
         // ERROR_FILE_ALREADY_EXISTS //
-        else if(firstToken.equals("ERROR_FILE_ALREADY_EXISTS")){
+        else if(firstToken.equals(Protocol.ERROR_FILE_ALREADY_EXISTS_TOKEN)){
             return new ErrorFileAlreadyExistsToken(request);
         }
 
         // ERROR_FILE_DOES_NOT_EXIST //
-        else if(firstToken.equals("ERROR_FILE_DOES_NOT_EXIST")){
+        else if(firstToken.equals(Protocol.ERROR_FILE_DOES_NOT_EXIST_TOKEN)){
             return getErrorFileDoesNotExistToken(request, sTokenizer);
         }
 
         // ERROR_LOAD //
-        else if(firstToken.equals("ERROR_LOAD")){
+        else if(firstToken.equals(Protocol.ERROR_LOAD_TOKEN)){
             return new ErrorLoadToken(request);
         }
 
