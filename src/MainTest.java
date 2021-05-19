@@ -3,7 +3,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 
 import Controller.Controller;
-import DStore.DStore;
+import Dstore.Dstore;
 import Token.RequestTokenizer;
 import Token.Token;
 
@@ -14,8 +14,8 @@ public class MainTest {
         // Testing Tokenizer //
         //testTokenizer();
 
-        // Testing controller //
-        testController();
+        // Testing connections //
+        testConnection();
     }
 
     public static void testTokenizer() throws IOException{
@@ -31,7 +31,7 @@ public class MainTest {
         }
     }
 
-    public static void testController() throws Exception{
+    public static void testConnection() throws Exception{
         // controller
         new Thread(new Runnable(){
             public void run(){
@@ -42,14 +42,14 @@ public class MainTest {
         // dstore 1
         new Thread(new Runnable(){
             public void run(){
-                DStore dStore = new DStore (4009, 4000, 1000, "test");
+                Dstore dStore = new Dstore (4009, 4000, 1000, "test");
             }
         }).start();
 
         // dstore 2
         new Thread(new Runnable(){
             public void run(){
-                DStore dStore2 = new DStore (4007, 4000, 1000, "test");
+                Dstore dStore2 = new Dstore (4007, 4000, 1000, "test");
              }
         }).start();
     }

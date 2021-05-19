@@ -1,3 +1,20 @@
+Todo:
+    - Allow client to connect to controller
+    - Allow client to connect to DStore
+
+Error Handling:
+    - Tokenizing:
+        - Request contains extra stuff after tokens
+        - Request parameters are not of the correct structure 
+            - filenames do not have '.<extension>'
+            - provided folders for DStores are not of the correct
+    - Controller:
+        - Recieved connection is from neither a DStore or Client
+    - DStore:
+        - Main method - command line parameters are not of the correct form
+        - When multiple Dstores join on the same port number
+    
+
 Tokens:
     - Store Operation:
         - STORE filename filesize

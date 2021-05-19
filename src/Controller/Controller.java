@@ -12,18 +12,18 @@ import Token.TokenType.JoinToken;
 import Logger.*;
 
 /**
- * 
+ * Data store controller. Servers requests from Clients and connects Clients to DStores.
  */
 public class Controller {
 
     // member variables
-    private int cPort;
+    private int port;
     private int r;
     private double timeout;
     private double rebalancePeriod;
 
     // indexes
-    private ArrayList<ControllerDStoreConnection> connectedDStores;
+    private ArrayList<ControllerDstoreConnection> connectedDstores;
     private ArrayList<ControllerClientConnection> connectedClients;
 
     /**
@@ -33,20 +33,21 @@ public class Controller {
      * @param timeout The timeout length for communication.
      * @param rebalancePeriod The rebalance period.
      */
-    public Controller(int cPort, int r, double timeout, double rebalancePeriod){
+    public Controller(int port, int r, double timeout, double rebalancePeriod){
         // initializing new member variables
-        this.cPort = cPort;
+        this.port = port;
         this.r = r;
         this.timeout = timeout;
         this.rebalancePeriod = rebalancePeriod;
-        this.connectedDStores = new ArrayList<ControllerDStoreConnection>();
+        this.connectedDstores = new ArrayList<ControllerDstoreConnection>();
         this.connectedClients = new ArrayList<ControllerClientConnection>();
 
+        // creating logger
         try{
             ControllerLogger.init(Logger.LoggingType.ON_TERMINAL_ONLY);
         }
         catch(Exception e){
-            ErrorLogger.logError("Unable to create Controller Logger for Controller on port : " + this.cPort);
+            MyLogger.logError("Unable to create Controller Logger for Controller on port : " + this.port);
         }
 
         // waiting for new connection
@@ -58,7 +59,7 @@ public class Controller {
      */
     public void startListening(){
         try{
-            ServerSocket listener = new ServerSocket(this.cPort);
+            ServerSocket listener = new ServerSocket(this.port);
 
             // listening for connections
             while (true){
@@ -69,7 +70,7 @@ public class Controller {
             }
         }
         catch(Exception e){
-            ErrorLogger.logError("Controller on port : " + this.cPort + " unable to connect to new connector.");
+            MyLogger.logError("Controller on port : " + this.port + " unable to connect to new connector." + e.toString());
         }
     }
 
@@ -81,64 +82,80 @@ public class Controller {
     public void setUpConnection(Socket connection) throws Exception{
 
         BufferedReader connectionIn = new BufferedReader( new InputStreamReader(connection.getInputStream()));
-        connectionIn.mark(0); // marking the reader to be able to reset it later
 
-        // getting token of request
-        String message = connectionIn.readLine();
-        Token request = RequestTokenizer.getToken(message);
+        // getting request
+        Token requestToken = RequestTokenizer.getToken(connectionIn.readLine());
 
         // Connector is a DStore //
 
-        if(request instanceof JoinToken){
-            this.connectToDStore(request, connection);
+        if(requestToken instanceof JoinToken){
+            MyLogger.logEvent("New DStore connected on port : " + connection.getPort()); // MY LOG
+            // setting up connection to dstore
+            this.connectToDStore((JoinToken) requestToken, connection);
         }
 
         // Connector is a Client //
 
         else{
+            MyLogger.logEvent("New Client connected on port : " + connection.getPort()); // MY LOG
             // Setting up connection to Client
-            connectionIn.reset();
-            this.connectToClient(connection);
+            this.connectToClient(requestToken, connection);
         }
     }
 
     /**
      * Sets up a connnection to between a DStore and the Controller.
-     * @param request The request from the DStore.x
+     * @param joinRequest The tokenized request from the DStore.
+     * @param connection The connection to the DStore
      */
-    public void connectToDStore(Token request, Socket connection){
+    public void connectToDStore(JoinToken joinRequest, Socket connection){
         // gathering DStore port
-        JoinToken joinRequest = (JoinToken) request;
         int port = joinRequest.port;
 
         // Setting up connection to DStore
-        ControllerDStoreConnection dStoreConnection = new ControllerDStoreConnection(this, port, connection);
+        ControllerDstoreConnection dstoreConnection = new ControllerDstoreConnection(this, port, connection);
+        dstoreConnection.start();
 
+        // logging the JOIN of the new DStore
         ControllerLogger.getInstance().dstoreJoined(connection, port);
 
         // adding the connection to the index
-        this.connectedDStores.add(dStoreConnection);
+        this.connectedDstores.add(dstoreConnection);
     }
 
     /**
      * Sets up a connnection between a Client and the Controller.
-     * @param connection
+     * @param request The tokenized request from the Client.
+     * @param connection The connection to the Client.
      */
-    public void connectToClient(Socket connection){
+    public void connectToClient(Token request, Socket connection){
 
-        // TODO Setting up connnection to client
-        ControllerClientConnection clientConnection = new ControllerClientConnection();
+        // Setting up connnection to client
+        ControllerClientConnection clientConnection = new ControllerClientConnection(this, connection, request);
+        clientConnection.start();
 
         this.connectedClients.add(clientConnection);
     }
 
     /**
-     * Removes the DStore associated with the given port from the system.
-     * @param dStorePort
+     * Removes a given Dstore from the index.
+     * @param dstoreConnection The Dstore connection to be removed.
      */
-    public void dropDStore(ControllerDStoreConnection dStoreConnection){
-        this.connectedDStores.remove(dStoreConnection);
+    public void dropDstore(ControllerDstoreConnection dstoreConnection){
+        this.connectedDstores.remove(dstoreConnection);
     }
+
+    /**
+     * Removes a given Client from the index.
+     * @param clientConnection The Client connection to be removed.
+     */
+    public void dropClient(ControllerClientConnection clientConnection){
+        this.connectedClients.remove(clientConnection);
+    }
+
+    /////////////////
+    // MAIN METHOD //
+    /////////////////
 
     /**
      * Main method - instantiates a new Controller instance using the command line parammeters.
@@ -156,7 +173,7 @@ public class Controller {
             Controller controller = new Controller(cPort, r, timeout, rebalancePeriod);
         }
         catch(Exception e){
-            ErrorLogger.logError("ERROR : Unable to create Controller.");
+            MyLogger.logError("Unable to create Controller.");
         }
     }
 }

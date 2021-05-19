@@ -26,7 +26,7 @@ public abstract class Connection extends Thread {
         this.self = self;
         this.connection = connection;
         try{
-            this.textOut = new PrintWriter (connection.getOutputStream()); 
+            this.textOut = new PrintWriter (new OutputStreamWriter(connection.getOutputStream())); 
             this.textIn = new BufferedReader (new InputStreamReader(connection.getInputStream()));
             this.dataOut = connection.getOutputStream();
             this.dataIn = connection.getInputStream();

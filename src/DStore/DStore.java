@@ -1,6 +1,6 @@
-package DStore;
+package Dstore;
 
-import java.io.IOException;
+import java.io.File;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -8,45 +8,63 @@ import java.net.Socket;
 import Logger.*;
 
  /**
-  * 
+  * Individual data store unit within the system. Connects to a Controller to join a data store
+  * and servers requests from clients.
   */
-public class DStore {
+public class Dstore {
 
     // member variables
     private int port;
     private int cPort;
     private double timeout;
-    private String fileFolder;
-    private DStoreControllerConnection controllerConnection;
+    private File fileStore;
+    private DstoreControllerConnection controllerConnection;
     private DstoreLogger logger;
 
     /**
      * Class constructor.
-     * @param port
-     * @param cPort
-     * @param timeout
-     * @param fileFolder
+     * @param port The port the DStore will listen on.
+     * @param cPort The port the Controller that the DStore will connect to is on.
+     * @param timeout The timout period for the DStore.
+     * @param fileFolder The folder where the DStore will store files.
      */
-    public DStore(int port, int cPort, double timeout, String fileFolder){
+    public Dstore(int port, int cPort, double timeout, String folderPath){
         // initializing member variables
         this.port = port;
         this.cPort = cPort;
         this.timeout = timeout;
-        this.fileFolder = fileFolder;
 
+        // creating logger
         try{
             DstoreLogger.init(Logger.LoggingType.ON_TERMINAL_ONLY, this.port);
         }
         catch(Exception e){
-            ErrorLogger.logError("Cannot create DStore Logger for DStore on port : " + this.port);
+            MyLogger.logError("Cannot create DStore Logger for DStore on port : " + this.port);
         }
-        
 
+        // setting up file storage folder
+        this.setupFileStore(folderPath);
+        
         // connecting to the controller
         this.connectToController();
 
         // waiting for client connection
         this.startListening();
+    }
+
+    /**
+     * Makes sure the DStores file store is ready to use by creating a directory
+     * if one doesnt already exist.
+     * @param folderPath The file store directory.
+     */
+    public void setupFileStore(String folderPath){
+        // creating file object
+        this.fileStore = new File(folderPath);
+
+        // creating the file if it doesnt exist
+        if(!fileStore.exists()){
+            fileStore.mkdir();
+        }
     }
 
     /** 
@@ -58,12 +76,11 @@ public class DStore {
             Socket socket = new Socket(InetAddress.getLocalHost(), this.cPort);
             
             // creating communication channel
-            this.controllerConnection = new DStoreControllerConnection(this, socket);
+            this.controllerConnection = new DstoreControllerConnection(this, socket);
             this.controllerConnection.start();
         }
         catch(Exception e){
-            // handling error
-            ErrorLogger.logError("DStore on port : " + this.port + " unable to connect to controller on port : " + this.cPort);
+            MyLogger.logError("DStore on port : " + this.port + " unable to connect to controller on port : " + this.cPort);
         }
     }
 
@@ -83,7 +100,7 @@ public class DStore {
             }
         }
         catch(Exception e){
-            ErrorLogger.logError("DStore on port : " + this.port + " unable to connect to new client.");
+            MyLogger.logError("DStore on port : " + this.port + " unable to connect to new client.");
         }
     }
 
@@ -96,6 +113,7 @@ public class DStore {
         // TODO create a new communication channel between the dstore and the client
     }
 
+    
     /**
      * Getters and setters
      */
@@ -104,6 +122,10 @@ public class DStore {
     public int getPort(){
         return this.port;
     }
+
+    /////////////////
+    // MAIN METHOD //
+    /////////////////
 
     /**
      * Main method - instantiates a new DStore instance using the command line parammeters.
@@ -118,10 +140,10 @@ public class DStore {
             String fileFolder = args[3];
 
             // Creating new DStore instance
-            DStore dataStore = new DStore(port, cPort, timeout, fileFolder);
+            Dstore dataStore = new Dstore(port, cPort, timeout, fileFolder);
         }
         catch(Exception e){
-            ErrorLogger.logError("Unable to create DStore.");
+            MyLogger.logError("Unable to create DStore.");
         }
     }
 }

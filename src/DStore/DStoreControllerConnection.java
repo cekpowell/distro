@@ -1,11 +1,5 @@
-package DStore;
+package Dstore;
 
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
 import java.net.Socket;
 
 import Logger.DstoreLogger;
@@ -13,19 +7,19 @@ import Logger.Protocol;
 import Connection.*;
 
 /**
- * 
+ * Represents the connection from DStore to Controller.
  */
-public class DStoreControllerConnection extends Connection{
+public class DstoreControllerConnection extends Connection{
 
     // member variable
-    private DStore dStore;
+    private Dstore dStore;
 
     /**
      * Class constructor
      * @param dStore
      * @param connection
      */
-    public DStoreControllerConnection(DStore dStore, Socket connection){
+    public DstoreControllerConnection(Dstore dStore, Socket connection){
         // initialising member variables
         super(dStore, connection);
         this.dStore = dStore;

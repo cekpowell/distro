@@ -1,10 +1,10 @@
-package DStore;
+package Dstore;
 
 import java.net.Socket;
 
 /**
  * 
  */
-public class DStoreClientConnection {
+public class DstoreClientConnection {
     
 }
