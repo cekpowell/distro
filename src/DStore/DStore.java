@@ -4,14 +4,18 @@ import java.io.File;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 
 import Logger.*;
+import Server.*;
 
  /**
   * Individual data store unit within the system. Connects to a Controller to join a data store
   * and servers requests from clients.
   */
-public class Dstore {
+public class Dstore extends Server{
 
     // member variables
     private int port;
@@ -23,6 +27,7 @@ public class Dstore {
 
     /**
      * Class constructor.
+     * 
      * @param port The port the DStore will listen on.
      * @param cPort The port the Controller that the DStore will connect to is on.
      * @param timeout The timout period for the DStore.
@@ -55,6 +60,7 @@ public class Dstore {
     /**
      * Makes sure the DStores file store is ready to use by creating a directory
      * if one doesnt already exist.
+     * 
      * @param folderPath The file store directory.
      */
     public void setupFileStore(String folderPath){
@@ -75,9 +81,12 @@ public class Dstore {
             // creating socket for communication
             Socket socket = new Socket(InetAddress.getLocalHost(), this.cPort);
             
-            // creating communication channel
-            this.controllerConnection = new DstoreControllerConnection(this, socket);
-            this.controllerConnection.start();
+            // Sending JOIN request to controller
+            PrintWriter out = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()));
+            String message = Protocol.JOIN_TOKEN + " " + this.port;
+            out.println(message);
+            out.flush(); // closing the stream
+            DstoreLogger.getInstance().messageSent(socket, message);
         }
         catch(Exception e){
             MyLogger.logError("DStore on port : " + this.port + " unable to connect to controller on port : " + this.cPort);
@@ -100,17 +109,18 @@ public class Dstore {
             }
         }
         catch(Exception e){
-            MyLogger.logError("DStore on port : " + this.port + " unable to connect to new client.");
+            MyLogger.logError("DStore on port : " + this.port + " unable to connect to new connector.");
         }
     }
 
     /**
-     * Sets up a connection between the DStore and a Client.
-     * @param connector The object connecting the controller
+     * Sets up a connection between the DStore and a connector.
+     * 
+     * @param connector The object connecting the Dstore and the connector.
      * @throws Exception Thrown when connection could not be setup.
      */
-    public void setUpConnection(Socket connector) throws Exception{
-        // TODO create a new communication channel between the dstore and the client
+    public void setUpConnection(Socket connector){
+        // TODO create a new communication channel between the dstore and the connector
     }
 
     
@@ -129,6 +139,7 @@ public class Dstore {
 
     /**
      * Main method - instantiates a new DStore instance using the command line parammeters.
+     * 
      * @param args Parameters for the new DStore.
      */
     public static void main(String[] args){

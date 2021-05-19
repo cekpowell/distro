@@ -1,6 +1,9 @@
-package Connection;
+package Server;
 
 import java.net.Socket;
+
+import Token.Token;
+
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -9,22 +12,33 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 
 /**
+ * Represents a connection between a server and a connecting object.
  * 
+ * Created as a new thread to handle the requests coming from the connecting object.
  */
 public abstract class Connection extends Thread {
     
     // member variables
-    Object self;
+    private Server server;
     private Socket connection;
+    private Token initialRequest;
     
     private PrintWriter textOut;
     private BufferedReader textIn;
     private OutputStream dataOut;
     private InputStream dataIn;
 
-    public Connection(Object self, Socket connection){
-        this.self = self;
+    /**
+     * Class constructor.
+     * 
+     * @param server The Server object involved in the connection.
+     * @param connection The conection between the Server and the connector.
+     * @param initialRequest The initial request sent to the Server.
+     */
+    public Connection(Server server, Socket connection, Token initialRequest){
+        this.server = server;
         this.connection = connection;
+        this.initialRequest = initialRequest;
         try{
             this.textOut = new PrintWriter (new OutputStreamWriter(connection.getOutputStream())); 
             this.textIn = new BufferedReader (new InputStreamReader(connection.getInputStream()));
@@ -32,13 +46,38 @@ public abstract class Connection extends Thread {
             this.dataIn = connection.getInputStream();
         }
         catch(Exception e){
-            System.out.println("ERROR : Unable to create streams.");
+            System.out.println("ERROR : Unable to create streams for a connection.");
         }
     }
 
     /**
+     * Method run when thread started
+     */
+    public void run(){
+        // handling the initial request
+        this.handleRequest(initialRequest);
+
+        // listening for future requests
+        this.startListening();
+    }
+
+    /**
+     * Starts listening for incoming requests.
+     */
+    public abstract void startListening();
+
+    /**
+     * Handles a given request.
+     * 
+     * @param request Tokenized request to be handled.
+     */
+    public abstract void handleRequest(Token request);
+
+    /**
      * Getters and setters
      */
+
+    
     public Socket getConnection(){
         return this.connection;
     }

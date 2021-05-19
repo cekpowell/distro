@@ -2,6 +2,12 @@ Todo:
     - Allow client to connect to controller
     - Allow client to connect to DStore
 
+    - Only ClientController connection needs to be persistent for multiple commands really, the others can have a timeout.
+        - e.g., For DStoreController connection, after serving the initial request from the Controller, no further requests
+        should come in on the same connection, so no need to carry on listening 
+        - can set up a timeout and close if no more requests come in, or just leave startListening empty for those connection
+        types.
+
 Error Handling:
     - Tokenizing:
         - Request contains extra stuff after tokens

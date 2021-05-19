@@ -1,45 +1,36 @@
-package Controller;
+package Server;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.Socket;
 
-import Connection.Connection;
+import Controller.Controller;
 import Logger.*;
 import Token.*;
 
 /**
- * Represents the connection from Controller to Client.
+ * Represents a connection from Controller to Client.
  */
 public class ControllerClientConnection extends Connection{
 
     // member variables
     private Controller controller;
-    private Token initialRequest;
 
     /**
      * Class constructor.
+     * 
      * @param controller The Controller involved in the connection.
      * @param connection The socket connecting the Controller to the Client.
      * @param initialRequest The initial request recieved by the Controller when the Client conected.
      */
     public ControllerClientConnection(Controller controller, Socket connection, Token initialRequest){
-        super(controller, connection);
+        // initialising member variables
+        super(controller, connection, initialRequest);
         this.controller = controller;
-        this.initialRequest = initialRequest;
     }
 
     /**
-     * Method run when thread started.
-     */
-    public void run(){
-        this.handleRequest(initialRequest);
-
-        this.startListening();
-    }
-
-    /**
-     * Listens for incoming requests from the Client.
+     * Starts listening for incoming requests.
      */
     public void startListening(){
         try{
@@ -67,8 +58,9 @@ public class ControllerClientConnection extends Connection{
     }
 
     /**
-     * Deals with the provided request.
-     * @param request The request to be handeled.
+     * Handles a given request.
+     * 
+     * @param request Tokenized request to be handled.
      */
     public void handleRequest(Token request){
         // Logging request
