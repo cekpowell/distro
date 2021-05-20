@@ -46,7 +46,7 @@ public class Dstore extends Server{
     /**
      * Sets up the Dstore server ready for use.
      * 
-     * Performs:
+     * Will:
      *      1 - Connects the Dstore to the controller
      *      2 - Sets up the file store for the Dstore
      */

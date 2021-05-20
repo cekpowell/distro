@@ -42,7 +42,7 @@ public class Client {
         this.timeout = timeout;
         
         // starting the Client
-        this.setupAndRun();
+        this.setupAndStart();
     }
 
     /**
@@ -52,7 +52,7 @@ public class Client {
      * 
      * Waits for user input if successful, closes otherwise.
      */
-    public void setupAndRun(){
+    public void setupAndStart(){
         try{
             // connecting to controller
             this.connectToController();

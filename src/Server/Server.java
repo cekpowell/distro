@@ -62,11 +62,13 @@ public abstract class Server {
     public abstract void setup();
 
     /**
-     * Configures the Server.
+     * Configures the Server and starts it.
      * 
      * Will:
      *      1 - Set the request handler of the server.
      *      2 - Set the logger for the server.
+     *      3 - Runs the 'startListening()' method to starts listening for incoming 
+     *          connections.
      * 
      * @param requestHandler The request handler for the Server.
      */
