@@ -1,7 +1,14 @@
 Todo:
     - Make a DStore keep track of Clients, and log when they disconnect during communication.
     - Design Index.
-    - Divide Client up like DStore and Controller have been - to have RequestHandler and ResponseHandler.
+    - Restructure Client:
+        - Make current Client class ClientTerminal.
+        - Create new parent class called Client that defines:
+            - ???An abstract gather input method???
+            - A full sendRequest method (which is called handleRequest at the momment).
+            - An abstract handleResponse method.
+        - ClientTerminal gathers input on the terminal and passes it to the parent sendRequest method.
+        - The parent sendRequest method carries out request, and passes the response onto the sub-class's handleResponse method.
     - Start developing operations
         - STORE
         - LOAD
