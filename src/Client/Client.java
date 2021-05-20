@@ -90,10 +90,10 @@ public class Client {
             this.handleResponse(response);
         }
         catch(SocketTimeoutException e){
-            MyLogger.logError("Timeout occurred on request : " + request + " to Controller on port : " + this.cPort);
+            MyLogger.logError("Timeout occurred on request : \"" + request + "\" to Controller on port : " + this.cPort);
         }
         catch(Exception e){
-            MyLogger.logError("Unable to handle request : " + request + " to Controller on port : " + this.cPort);
+            MyLogger.logError("Unable to handle request : \"" + request + "\" to Controller on port : " + this.cPort);
         }
     }
 

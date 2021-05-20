@@ -43,6 +43,10 @@ public class DstoreConnection extends Connection{
             // handling request
             this.handleRequest(request);
         }
+        catch(NullPointerException e){
+            // Connnector disconnected - nothing to do.
+            MyLogger.logEvent("Connector disconnected on port : " + this.getConnection().getPort()); // MY LOG
+        }
         catch(Exception e){
             MyLogger.logError("DStore on port : " + this.dstore.getPort() + " unable to connect to new connector.");
         }

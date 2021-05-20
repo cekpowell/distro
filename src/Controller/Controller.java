@@ -21,7 +21,6 @@ public class Controller extends Server{
 
     // indexes
     private ArrayList<Integer> dstores;
-    private ArrayList<ControllerConnection> clients;
 
     /**
      * Class constructor.
@@ -38,7 +37,6 @@ public class Controller extends Server{
         this.timeout = timeout;
         this.rebalancePeriod = rebalancePeriod;
         this.dstores = new ArrayList<Integer>();
-        this.clients = new ArrayList<ControllerConnection>();
 
         // creating logger
         try{
@@ -93,29 +91,12 @@ public class Controller extends Server{
     }
 
     /**
-     * Adds the given client to the index.
-     * @param client The client to be added.
-     */
-    public void addClient(ControllerConnection client){
-        this.clients.add(client);
-    }
-
-    /**
      * Removes a given Dstore from the index.
      * 
      * @param dstorePort The port of the dstore to be removed.
      */
     public void removeDstore(int dstorePort){
         this.dstores.remove(dstorePort);
-    }
-
-    /**
-     * Removes a given Client from the index.
-     * 
-     * @param client The Client connection to be removed.
-     */
-    public void removeClient(ControllerConnection client){
-        this.clients.remove(client);
     }
 
     /////////////////////////

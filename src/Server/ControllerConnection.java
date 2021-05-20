@@ -42,11 +42,8 @@ public class ControllerConnection extends Connection{
             this.handleRequest(request);
         }
         catch(NullPointerException e){
-            // Client disconnected - nothing to do.
+            // Connector disconnected - nothing to do.
             MyLogger.logEvent("Connector disconnected on port : " + this.getConnection().getPort()); // MY LOG
-
-            // removing the client from the index
-            this.controller.removeClient(this);
         }
         catch(Exception e){
             MyLogger.logError("Controller on port : " + this.controller.getPort() + " unable to connect to new connector.");
@@ -70,7 +67,7 @@ public class ControllerConnection extends Connection{
         // Handling request //
         //////////////////////
 
-        // DStore Join request //
+        // DStore JOIN Request //
 
         if(request instanceof JoinToken){
             // gathering JOIN token
@@ -105,7 +102,6 @@ public class ControllerConnection extends Connection{
          * 
          * Need to add the Client to the Controller and listen for further requests.
          */
-        this.controller.addClient(this);
         this.waitForRequest();
     }
 
