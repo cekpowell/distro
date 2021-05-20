@@ -4,9 +4,6 @@ import java.io.File;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
 
 import Logger.*;
 import Server.*;
@@ -24,7 +21,7 @@ public class Dstore extends Server{
     private String folderPath;
     private File fileStore;
     private DstoreLogger logger;
-    private DstoreControllerSender controllerConnection;
+    private Sender controllerSender;
 
     /**
      * Class constructor.
@@ -40,6 +37,7 @@ public class Dstore extends Server{
         this.cPort = cPort;
         this.timeout = timeout;
         this.folderPath = folderPath;
+        this.setRequestHandler(new DstoreRequestHandler(this));
 
         // starting the DStore
         this.setupAndRun();
@@ -56,6 +54,7 @@ public class Dstore extends Server{
         // creating logger
         try{
             DstoreLogger.init(Logger.LoggingType.ON_TERMINAL_ONLY, this.port);
+            this.setLogger(DstoreLogger.getInstance());
         }
         catch(Exception e){
             MyLogger.logError("Cannot create DStore Logger for DStore on port : " + this.port);
@@ -87,7 +86,11 @@ public class Dstore extends Server{
         Socket socket = new Socket(InetAddress.getLocalHost(), this.cPort);
             
         // creating communication channel
-        this.controllerConnection = new DstoreControllerSender(this, socket);
+        this.controllerSender = new Sender(this, socket);
+
+        // Sending JOIN request to controller
+        String message = Protocol.JOIN_TOKEN + " " + this.getPort();
+        this.controllerSender.sendMessage(message);
     }
 
     /**
@@ -134,8 +137,8 @@ public class Dstore extends Server{
      */
     public void setUpConnection(Socket connection){
         // Setting up connnection to connector
-        DstoreServerConnection dstoreConnection = new DstoreServerConnection(this, connection);
-        dstoreConnection.start();
+        ServerConnection serverConnection = new ServerConnection(this, connection);
+        serverConnection.start();
     }
 
     /////////////////////////

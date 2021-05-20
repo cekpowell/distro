@@ -1,20 +1,19 @@
-package Server;
+package Controller;
 
 import java.net.Socket;
 
-import Controller.Controller;
 import Logger.*;
+import Server.Reciever;
 import Token.*;
 
 /**
  * Represents a conection from a Controller to a DStore.
  * 
- * Used for recieving control messages from the Dstore that are not part of a 
- * request sent by the Controller.
+ * Used to recieve control messages from the Dstore.
  * 
  * These control messages are ACK messages for STORE, LOAD and REMOVE.
  */
-public class ControllerDstoreReciever extends RecieverConnection {
+public class ControllerDstoreReciever extends Reciever {
     
     // member variables
     private Controller controller;
@@ -60,7 +59,7 @@ public class ControllerDstoreReciever extends RecieverConnection {
             this.controller.removeDstore(this);
         }
         catch(Exception e){
-            MyLogger.logError("Controller unable to recieve request from Dstore listening on port : " + this.dstoreListenPort);
+            MyLogger.logError("Controller unable to recieve message from Dstore listening on port : " + this.dstoreListenPort);
         }
     }
 

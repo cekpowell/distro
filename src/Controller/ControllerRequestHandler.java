@@ -1,4 +1,4 @@
-package Server;
+package Controller;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -8,57 +8,27 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.util.ArrayList;
 
-import Controller.Controller;
 import Logger.*;
+import Server.*;
 import Token.*;
 import Token.TokenType.*;
 
+
 /**
- * Represents a connection from Controller to Connector.
+ * Handles a request sent to the controller.
  * 
- * Handles the requests coming in from the connector.
- * 
- * The connector could be either a Client (e.g., STORE), or a 
- * Controller (JOIN).
- * 
- * In this connection, the Controller is the Server, and the 
- * connector is the "Client".
+ * This request will be a request from the Client, passed to the request
+ * hadler from a server connection Thread.
  */
-public class ControllerServerConnection extends ServerConnection{
+public class ControllerRequestHandler extends RequestHandler{
 
     // member variables
     private Controller controller;
 
-    /**
-     * Class constructor.
-     * 
-     * @param controller The Controller involved in the connection.
-     * @param connection The socket connecting the Controller to the Client.
-     * @param initialRequest The initial request recieved by the Controller when the Client conected.
-     */
-    public ControllerServerConnection(Controller controller, Socket connection){
+    public ControllerRequestHandler(Controller controller){
         // initialising member variables
-        super(controller, connection);
+        super(controller);
         this.controller = controller;
-    }
-
-    public void waitForRequest(){
-        try{
-            while(this.hasFurtherRequests()){
-                // getting request from connnection
-                Token request = RequestTokenizer.getToken(this.getTextIn().readLine());
-
-                // handling request
-                this.handleRequest(request);
-            }
-        }
-        catch(NullPointerException e){
-            // Connector disconnected - nothing to do.
-            MyLogger.logEvent("Connector disconnected on port : " + this.getConnection().getPort()); // MY LOG
-        }
-        catch(Exception e){
-            MyLogger.logError("Controller on port : " + this.controller.getPort() + " unable to connect to new connector.");
-        }
     }
 
     /**
@@ -66,13 +36,13 @@ public class ControllerServerConnection extends ServerConnection{
      * 
      * @param request Tokenized request to be handled.
      */
-    public void handleRequest(Token request){
+    public void handleRequest(ServerConnection connection, Token request){
 
         /////////////////////
         // Logging request //
         /////////////////////
 
-        ControllerLogger.getInstance().messageReceived(this.getConnection(), request.request);
+        ControllerLogger.getInstance().messageReceived(connection.getConnection(), request.request);
 
         //////////////////////
         // Handling request //
@@ -85,28 +55,42 @@ public class ControllerServerConnection extends ServerConnection{
             JoinToken joinRequest = (JoinToken) request;
             int dstorePort = joinRequest.port;
 
-            // Logging request 
-            ControllerLogger.getInstance().dstoreJoined(this.getConnection(), dstorePort);
-
-            // creating connection between controller and DStore
-            ControllerDstoreReciever dstoreConnection = new ControllerDstoreReciever(this.controller, this.getConnection(), dstorePort);
-            dstoreConnection.start();
-
-            this.noFurtherRequests(); // nothing else to do after a Dstore connection has been created (this object no longer needed)
+            this.handleJoinRequest(connection, dstorePort);
         }
 
         // Client Requests //
 
         else if(request instanceof ListToken){
-            this.handleListRequest();
+            this.handleListRequest(connection);
         }
 
         // Invalid Request //
         else if(request instanceof InvalidRequestToken){
-            this.handleInvalidRequest();
+            this.handleInvalidRequest(connection);
+        }
+
+        // Request controller does not know how to handle //
+        else{
+            this.handleInvalidRequest(connection);
         }
 
         // TODO Handle rest of request types
+    }
+
+    /**
+     * Handles a JOIN request.
+     * @param connection The connection associated with the request.
+     * @param dstorePort The port number of the Dstore joining the system.
+     */
+    public void handleJoinRequest(ServerConnection connection, int dstorePort){
+        // Logging request 
+        ControllerLogger.getInstance().dstoreJoined(connection.getConnection(), dstorePort);
+
+        // creating connection between controller and DStore
+        ControllerDstoreReciever dstoreConnection = new ControllerDstoreReciever(this.controller, connection.getConnection(), dstorePort);
+        dstoreConnection.start();
+
+        connection.noFurtherRequests(); // nothing else to do after a Dstore connection has been created (this object no longer needed)
     }
 
     /**
@@ -117,7 +101,7 @@ public class ControllerServerConnection extends ServerConnection{
      * CURRENTLY DOING WHAT IT DOESNT NEED TO DO - SENDS LIST COMMAND TO ALL INDIVIDUAL DSTORES.
      * NEEDS TO JUST USE THE INDEX IN THE CONTROLLER.
      */
-    public void handleListRequest(){
+    private void handleListRequest(ServerConnection connection){
         try{
             ArrayList<String> messageElements = new ArrayList<String>();
             messageElements.add("LIST");
@@ -156,21 +140,21 @@ public class ControllerServerConnection extends ServerConnection{
     
             // sending response back to client
             String message = String.join(" ", messageElements);
-            this.getTextOut().println(message);
-            this.getTextOut().flush();
+            connection.getTextOut().println(message);
+            connection.getTextOut().flush();
     
             // Logging 
-            ControllerLogger.getInstance().messageSent(this.getConnection(), message);
+            ControllerLogger.getInstance().messageSent(connection.getConnection(), message);
         }
         catch(Exception e){
-            MyLogger.logError("Unable to perform list command for Client on port : " + this.getConnection().getPort());
+            MyLogger.logError("Unable to perform list command for Client on port : " + connection.getConnection().getPort());
         }
     }
 
     /**
      * Handles an invalid request.
      */
-    public void handleInvalidRequest(){
-        MyLogger.logError("Invalid request recieved from connector on port : " + this.getConnection().getPort());
+    public void handleInvalidRequest(ServerConnection connection){
+        MyLogger.logError("Invalid request recieved from connector on port : " + connection.getConnection().getPort());
     }
 }

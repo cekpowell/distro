@@ -37,6 +37,9 @@ public class Controller extends Server{
         this.r = r;
         this.timeout = timeout;
         this.rebalancePeriod = rebalancePeriod;
+        this.setRequestHandler(new ControllerRequestHandler(this));
+
+        // indexes
         this.dstores = new ArrayList<ControllerDstoreReciever>();
         this.files = new ArrayList<String>();
 
@@ -53,6 +56,7 @@ public class Controller extends Server{
         // creating logger
         try{
             ControllerLogger.init(Logger.LoggingType.ON_TERMINAL_ONLY);
+            this.setLogger(ControllerLogger.getInstance());
         }
         catch(Exception e){
             MyLogger.logError("Unable to create Controller Logger for Controller on port : " + this.port);
@@ -90,8 +94,8 @@ public class Controller extends Server{
      */
     public void setUpConnection(Socket connection){
         // Setting up connnection to connector
-        ControllerServerConnection controllerConnection = new ControllerServerConnection(this, connection);
-        controllerConnection.start();
+        ServerConnection serverConnection = new ServerConnection(this, connection);
+        serverConnection.start();
     }
 
     /**

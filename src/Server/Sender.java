@@ -1,6 +1,9 @@
 package Server;
 
 import java.net.Socket;
+
+import Logger.MyLogger;
+
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
@@ -9,7 +12,7 @@ import java.io.PrintWriter;
  * Represents a connection between a Server and a connector, where the Sevrer only sends
  * messages to the connector.
  */
-public abstract class SenderConnection {
+public class Sender {
 
     // member variables
     private Server server;
@@ -24,7 +27,7 @@ public abstract class SenderConnection {
      * @param server The Server object involved in the connection.
      * @param connection The conection between the Server and the connector.
      */
-    public SenderConnection(Server server, Socket connection){
+    public Sender(Server server, Socket connection){
         this.server = server;
         this.connection = connection;
         try{
@@ -41,7 +44,19 @@ public abstract class SenderConnection {
      * 
      * @param message To be sent through the connection.
      */
-    public abstract void sendMessage(String message);
+    public void sendMessage(String message){
+        try{
+            // sending
+            this.getTextOut().println(message);
+            this.getTextOut().flush();
+
+            // Logging
+            this.server.getLogger().messageSent(this.getConnection(), message);
+        }
+        catch(Exception e){
+            MyLogger.logError("Object on port : " + this.connection.getLocalPort() + " unable to send : " + message +  " to object on port : " + this.getConnection().getPort());
+        }
+    }
 
     /////////////////////////
     // GETTERS AND SETTERS //
@@ -51,11 +66,11 @@ public abstract class SenderConnection {
         return this.connection;
     }
 
-    public PrintWriter getTextOut(){
+    protected PrintWriter getTextOut(){
         return this.textOut;
     }
 
-    public OutputStream getDataOut(){
+    protected OutputStream getDataOut(){
         return this.dataOut;
     }
 }

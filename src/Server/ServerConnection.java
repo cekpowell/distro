@@ -2,6 +2,8 @@ package Server;
 
 import java.net.Socket;
 
+import Logger.MyLogger;
+import Token.RequestTokenizer;
 import Token.Token;
 
 import java.io.BufferedReader;
@@ -15,8 +17,11 @@ import java.io.PrintWriter;
  * Represents a connection between a server and a connecting object.
  * 
  * Created as a new thread to handle the requests coming from the connecting object.
+ * 
+ * When the Thread is run, the object waits for a request, and then passes the
+ * request onto the underlying server's request handler.
  */
-public abstract class ServerConnection extends Thread {
+public class ServerConnection extends Thread {
     
     // member variables
     private Server server;
@@ -58,16 +63,26 @@ public abstract class ServerConnection extends Thread {
     }
 
     /**
-     * Starts listening for incoming requests.
+     * Waits for an incoming request.
      */
-    public abstract void waitForRequest();
+    public void waitForRequest(){
+        try{
+            while(this.hasFurtherRequests()){
+                // getting request from connnection
+                Token request = RequestTokenizer.getToken(this.getTextIn().readLine());
 
-    /**
-     * Handles a given request.
-     * 
-     * @param request Tokenized request to be handled.
-     */
-    public abstract void handleRequest(Token request);
+                // handling request
+                this.server.getRequestHandler().handleRequest(this, request);
+            }
+        }
+        catch(NullPointerException e){
+            // Connector disconnected - nothing to do.
+            MyLogger.logEvent("Connector disconnected on port : " + this.getConnection().getPort()); // MY LOG
+        }
+        catch(Exception e){
+            MyLogger.logError("Server on port : " + this.connection.getLocalPort() + " unable to connect to new connector.");
+        }
+    }
 
     /////////////////////////
     // GETTERS AND SETTERS //

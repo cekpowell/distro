@@ -11,7 +11,7 @@ import Token.Token;
  * Represents a connection between a Server and a connector, where the Sevrer only recieves
  * messages from the connector.
  */
-public abstract class RecieverConnection extends Thread{
+public abstract class Reciever extends Thread{
 
     // member variables
     private Server server;
@@ -26,7 +26,7 @@ public abstract class RecieverConnection extends Thread{
      * @param server The Server object involved in the connection.
      * @param connection The conection between the Server and the connector.
      */
-    public RecieverConnection(Server server, Socket connection){
+    public Reciever(Server server, Socket connection){
         this.server = server;
         this.connection = connection;
         try{
