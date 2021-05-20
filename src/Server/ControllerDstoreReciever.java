@@ -38,16 +38,16 @@ public class ControllerDstoreReciever extends RecieverConnection {
     }
 
     /**
-     * Starts listening for incoming requests from the Dstore.
+     * Starts listening for incoming messages from the Dstore.
      */
-    public void waitForRequest(){
+    public void waitForMessage(){
         try{
             while(true){
                 // getting request from connection
                 Token request = RequestTokenizer.getToken(this.getTextIn().readLine());
 
                 // handling request in a new thread
-                new Thread(() -> {this.handleRequest(request);}).start();
+                new Thread(() -> {this.handleMessage(request);}).start();
             }
         }
         catch(NullPointerException e){
@@ -65,11 +65,11 @@ public class ControllerDstoreReciever extends RecieverConnection {
     }
 
     /**
-     * Handles a given request.
+     * Handles a given message.
      * 
      * @param request The request to be handled.
      */
-    public void handleRequest(Token request){
+    public void handleMessage(Token request){
         // TODO Handle incoming messages from Dstore
     }
 

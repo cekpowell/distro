@@ -38,25 +38,25 @@ public abstract class RecieverConnection extends Thread{
         }
     }
 
-        /**
-     * Method run when thread started
+    /**
+     * Method run when thread started.
      */
     public void run(){
         // listening for future requests
-        this.waitForRequest();
+        this.waitForMessage();
     }
 
     /**
-     * Starts listening for incoming requests.
+     * Starts listening for incoming messages.
      */
-    public abstract void waitForRequest();
+    public abstract void waitForMessage();
 
     /**
-     * Handles a given request.
+     * Handles a given message.
      * 
      * @param request Tokenized request to be handled.
      */
-    public abstract void handleRequest(Token request);
+    public abstract void handleMessage(Token request);
 
     /////////////////////////
     // GETTERS AND SETTERS //

@@ -30,6 +30,9 @@ Possible errors:
         - **FIX** : Have made it so if they cant connect, they close. This was done by moving the startListening and waitForInput methods 
         into the try statement, so that if an exception is thrown (cant connect to controller), the objects do not start doing anything,
         and so execution stops
+            - Essentially - added the setup and start stuff to a different method, and then only start listening for connections or user
+            input if the setup is successful because the startListening/waitForInput methods are inside the "try" statements, and so won't 
+            be called if an exception is thrown.
     - Currently, the system assumes the connection with the client will persist until they close it - should it be the case instead
     that a client is started for each request - i.e., should the ControllerClient channel remain open to handle further requests from the
     client, or will these further requests come from a different connection?
