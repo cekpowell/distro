@@ -33,12 +33,10 @@ public abstract class Connection extends Thread {
      * 
      * @param server The Server object involved in the connection.
      * @param connection The conection between the Server and the connector.
-     * @param initialRequest The initial request sent to the Server.
      */
-    public Connection(Server server, Socket connection, Token initialRequest){
+    public Connection(Server server, Socket connection){
         this.server = server;
         this.connection = connection;
-        this.initialRequest = initialRequest;
         try{
             this.textOut = new PrintWriter (new OutputStreamWriter(connection.getOutputStream())); 
             this.textIn = new BufferedReader (new InputStreamReader(connection.getInputStream()));
@@ -54,17 +52,14 @@ public abstract class Connection extends Thread {
      * Method run when thread started
      */
     public void run(){
-        // handling the initial request
-        this.handleRequest(initialRequest);
-
         // listening for future requests
-        this.startListening();
+        this.waitForRequest();
     }
 
     /**
      * Starts listening for incoming requests.
      */
-    public abstract void startListening();
+    public abstract void waitForRequest();
 
     /**
      * Handles a given request.
@@ -73,10 +68,9 @@ public abstract class Connection extends Thread {
      */
     public abstract void handleRequest(Token request);
 
-    /**
-     * Getters and setters
-     */
-
+    /////////////////////////
+    // GETTERS AND SETTERS //
+    /////////////////////////
     
     public Socket getConnection(){
         return this.connection;

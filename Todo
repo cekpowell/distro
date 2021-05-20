@@ -1,12 +1,21 @@
 Todo:
-    - Allow client to connect to controller
-    - Allow client to connect to DStore
+    - STORE operation
+    - LOAD operation
+    - Timeouts on DStore and controller
+        - How to handle timeouts on waiting for client request (dont want to disconect from client too soon)??
 
-    - Only ClientController connection needs to be persistent for multiple commands really, the others can have a timeout.
-        - e.g., For DStoreController connection, after serving the initial request from the Controller, no further requests
-        should come in on the same connection, so no need to carry on listening 
-        - can set up a timeout and close if no more requests come in, or just leave startListening empty for those connection
-        types.
+General Notes:
+    - At Controller initialisation, create a thread that handles rebalancing - have it on a seperate thread basically
+
+Possible errors:
+    - Not using the same port for a Dstore throughout it's life - this means that the messages sent to a Dstore will be on a different
+    port to the one it initially joined on 
+        - this may cause errors with the automated testing
+        - can get around this by making the dstore send the initial request on it's server port or by manually passing in the original
+        port number of the datastore whenever logging messages (would need to store it in a map also).
+            - would also need to create the new socket whenever logging was done.
+    - If a Client or DStore cannot connect to the controller when they are created, they still carry on.
+        - The process should stop if they can't connect to the controller as there is nothing they can do in this case.
 
 Error Handling:
     - Tokenizing:

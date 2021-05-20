@@ -1,15 +1,11 @@
 package Controller; 
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 
 import Logger.ControllerLogger;
 import Server.*;
-import Token.*;
-import Token.TokenType.JoinToken;
 import Logger.*;
 
 /**
@@ -25,7 +21,7 @@ public class Controller extends Server{
 
     // indexes
     private ArrayList<Integer> dstores;
-    private ArrayList<ControllerClientConnection> clients;
+    private ArrayList<ControllerConnection> clients;
 
     /**
      * Class constructor.
@@ -42,7 +38,7 @@ public class Controller extends Server{
         this.timeout = timeout;
         this.rebalancePeriod = rebalancePeriod;
         this.dstores = new ArrayList<Integer>();
-        this.clients = new ArrayList<ControllerClientConnection>();
+        this.clients = new ArrayList<ControllerConnection>();
 
         // creating logger
         try{
@@ -65,17 +61,16 @@ public class Controller extends Server{
 
             // listening for connections
             while (true){
-                Socket connector = listener.accept();
+                Socket connection = listener.accept();
 
                 // setting up the connection
-                this.setUpConnection(connector);
+                this.setUpConnection(connection);
             }
         }
         catch(Exception e){
             MyLogger.logError("Controller on port : " + this.port + " unable to connect to new connector.");
         }
     }
-    
 
     /**
      * Sets up a connection between the connector and the controller.
@@ -84,69 +79,24 @@ public class Controller extends Server{
      * @throws Exception Thrown when connection could not be setup.
      */
     public void setUpConnection(Socket connection){
-        try{
-            // getting request from connnection
-            BufferedReader connectionIn = new BufferedReader( new InputStreamReader(connection.getInputStream()));
-            Token requestToken = RequestTokenizer.getToken(connectionIn.readLine());
-
-            // Connector is a DStore //
-
-            if(requestToken instanceof JoinToken){
-                // logging new dstore connection
-                MyLogger.logEvent("New DStore connected on port : " + connection.getPort()); // MY LOG
-                
-                // Setting up connection to new Dstore
-                    // (doesnt really set up a connection, as it just adds the dstor to the index (dont need an active connection at this point))
-                this.connectToDstore((JoinToken) requestToken); 
-            }
-
-            // Connector is a Client //
-
-            else{
-                // logging new client connection
-                MyLogger.logEvent("New Client connected on port : " + connection.getPort()); // MY LOG
-
-                // Setting up connection to Client
-                this.connectToClient(requestToken, connection);
-            }
-        }
-        catch(Exception e){
-            MyLogger.logError("Controller on port : " + this.port + " unable to connect to new connector.");
-        }
+        // Setting up connnection to connector
+        ControllerConnection controllerConnection = new ControllerConnection(this, connection);
+        controllerConnection.start();
     }
 
     /**
-     * Sets up a connnection to between a DStore and the Controller.
-     * 
-     * Doesnt really set up a connection as it just adds the Dstore's port number 
-     * to the index. 
-     * 
-     * This is because an active connection is not required at this point.
-     * 
-     * @param joinRequest The tokenized request from the DStore.
-     * @param connection The connection to the DStore
+     * Adds the given Dstore to the index.
+     * @param port The port of the Dstore to be added.
      */
-    public void connectToDstore(JoinToken joinRequest){
-        // gathering DStore port
-        int dstorePort = joinRequest.port;
-
-        // adding the dstore to the index
-        this.dstores.add(dstorePort);
+    public void addDstore(int port){
+        this.dstores.add(port);
     }
 
     /**
-     * Sets up a connnection between a Client and the Controller.
-     * 
-     * @param request The tokenized request from the Client.
-     * @param connection The connection to the Client.
+     * Adds the given client to the index.
+     * @param client The client to be added.
      */
-    public void connectToClient(Token request, Socket connection){
-
-        // Setting up connnection to client
-        ControllerClientConnection client = new ControllerClientConnection(this, connection, request);
-        client.start();
-
-        // adding the client to the index
+    public void addClient(ControllerConnection client){
         this.clients.add(client);
     }
 
@@ -155,7 +105,7 @@ public class Controller extends Server{
      * 
      * @param dstorePort The port of the dstore to be removed.
      */
-    public void dropDstore(int dstorePort){
+    public void removeDstore(int dstorePort){
         this.dstores.remove(dstorePort);
     }
 
@@ -164,8 +114,20 @@ public class Controller extends Server{
      * 
      * @param client The Client connection to be removed.
      */
-    public void dropClient(ControllerClientConnection client){
+    public void removeClient(ControllerConnection client){
         this.clients.remove(client);
+    }
+
+    /////////////////////////
+    // GETTERS AND SETTERS //
+    /////////////////////////
+
+    public int getPort(){
+        return this.port;
+    }
+
+    public ArrayList<Integer> getdstores(){
+        return this.dstores;
     }
 
     /////////////////

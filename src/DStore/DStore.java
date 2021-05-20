@@ -22,7 +22,6 @@ public class Dstore extends Server{
     private int cPort;
     private double timeout;
     private File fileStore;
-    private DstoreControllerConnection controllerConnection;
     private DstoreLogger logger;
 
     /**
@@ -94,7 +93,7 @@ public class Dstore extends Server{
     }
 
     /**
-     * Handles incoming communication to the data store from a client.
+     * Handles incoming communication to the data store from a connector.
      */
     public void startListening(){
         try{
@@ -102,10 +101,10 @@ public class Dstore extends Server{
 
             // listening for connections
             while (true){
-                Socket connector = listener.accept();
+                Socket connection = listener.accept();
 
                 // setting up the connection
-                this.setUpConnection(connector);
+                this.setUpConnection(connection);
             }
         }
         catch(Exception e){
@@ -119,18 +118,22 @@ public class Dstore extends Server{
      * @param connector The object connecting the Dstore and the connector.
      * @throws Exception Thrown when connection could not be setup.
      */
-    public void setUpConnection(Socket connector){
-        // TODO create a new communication channel between the dstore and the connector
+    public void setUpConnection(Socket connection){
+        // Setting up connnection to connector
+        DstoreConnection dstoreConnection = new DstoreConnection(this, connection);
+        dstoreConnection.start();
     }
 
-    
-    /**
-     * Getters and setters
-     */
+    /////////////////////////
+    // GETTERS AND SETTERS //
+    /////////////////////////
 
-    
     public int getPort(){
         return this.port;
+    }
+
+    public File getFileStore(){
+        return this.fileStore;
     }
 
     /////////////////
