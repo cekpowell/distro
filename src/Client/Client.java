@@ -33,12 +33,24 @@ public class Client {
         // initialising member variables
         this.cPort = cPort;
         this.timeout = timeout;
+        
+        // starting the Client
+        this.setupAndRun();
+    }
 
-        // connecting the client to the controller
+    /**
+     * Sets up and starts the Client for the system.
+     * 
+     * Trys to connect to the Controller.
+     * 
+     * Waits for user input if successful, closes otherwise.
+     */
+    public void setupAndRun(){
         try{
-            // creating and configuring socket for communication
-            this.controllerConnection = new Socket(InetAddress.getLocalHost(), this.cPort);
-            this.controllerConnection.setSoTimeout(timeout);
+            // connecting to controller
+            this.connectToController();
+
+            // Connection successful ...
 
             // waiting for user input
             this.waitForInput();
@@ -46,6 +58,14 @@ public class Client {
         catch(Exception e){
             MyLogger.logError("Unable to connect Client to controller on port : " + this.cPort);
         }
+    }
+
+    /** 
+     * Sets up a connection between the Client and the Controller.
+     */
+    public void connectToController() throws Exception{
+        this.controllerConnection = new Socket(InetAddress.getLocalHost(), this.cPort);
+        this.controllerConnection.setSoTimeout(timeout);
     }
 
     /**
@@ -160,7 +180,7 @@ public class Client {
             Client client = new Client(cPort, timeout);
         }
         catch(Exception e){
-            MyLogger.logError("Unable to create DStore.");
+            MyLogger.logError("Unable to create Client.");
         }
     }
 }

@@ -40,6 +40,16 @@ public class Controller extends Server{
         this.dstores = new ArrayList<ControllerDstoreReciever>();
         this.files = new ArrayList<String>();
 
+        // starting the Controller
+        this.setupAndRun();
+    }
+
+    /**
+     * Sets up and starts the Controller for the system.
+     * 
+     * Trys to setup a Logger and then starts listening for new connections.
+     */
+    public void setupAndRun(){
         // creating logger
         try{
             ControllerLogger.init(Logger.LoggingType.ON_TERMINAL_ONLY);

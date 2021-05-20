@@ -5,8 +5,8 @@ import java.net.Socket;
 /**
  * Abstract class to represent a Server object. 
  * 
- * Servers listen for new connectors, and create new Request Handler 
- * objects to handle the requests of the connector.
+ * Servers listen for new connectors and create new Connection objects to 
+ * handle the request(s) the connector.
  */
 public abstract class Server {
 
