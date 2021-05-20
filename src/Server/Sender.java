@@ -1,5 +1,6 @@
 package Server;
 
+import java.net.InetAddress;
 import java.net.Socket;
 
 import Logger.MyLogger;
@@ -12,11 +13,10 @@ import java.io.PrintWriter;
  * Represents a connection between a Server and a connector, where the Sevrer only sends
  * messages to the connector.
  */
-public class Sender {
+public class Sender extends Socket{
 
     // member variables
     private Server server;
-    private Socket connection;
     
     private PrintWriter textOut;
     private OutputStream dataOut;
@@ -25,14 +25,14 @@ public class Sender {
      * Class constructor.
      * 
      * @param server The Server object involved in the connection.
-     * @param connection The conection between the Server and the connector.
+     * @param port The port of the object the server is connecting to.
      */
-    public Sender(Server server, Socket connection){
+    public Sender(Server server, int port) throws Exception{
+        super(InetAddress.getLocalHost(), port);
         this.server = server;
-        this.connection = connection;
         try{
-            this.textOut = new PrintWriter (new OutputStreamWriter(connection.getOutputStream())); 
-            this.dataOut = connection.getOutputStream();
+            this.textOut = new PrintWriter (new OutputStreamWriter(this.getOutputStream())); 
+            this.dataOut = this.getOutputStream();
         }
         catch(Exception e){
             System.out.println("ERROR : Unable to create streams for a connection.");
@@ -51,20 +51,16 @@ public class Sender {
             this.getTextOut().flush();
 
             // Logging
-            this.server.getLogger().messageSent(this.getConnection(), message);
+            this.server.getLogger().messageSent(this, message);
         }
         catch(Exception e){
-            MyLogger.logError("Object on port : " + this.connection.getLocalPort() + " unable to send : " + message +  " to object on port : " + this.getConnection().getPort());
+            MyLogger.logError("Object on port : " + this.getLocalPort() + " unable to send : " + message +  " to object on port : " + this.getPort());
         }
     }
 
     /////////////////////////
     // GETTERS AND SETTERS //
     /////////////////////////
-    
-    public Socket getConnection(){
-        return this.connection;
-    }
 
     protected PrintWriter getTextOut(){
         return this.textOut;

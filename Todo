@@ -17,6 +17,8 @@ Todo:
 
 General Notes:
     - At Controller initialisation, create a thread that handles rebalancing - have it on a seperate thread basically
+    - Make sure that when handling requests, at the end of the pattern matching for expectd token types, but an else for if the
+    request was tokenized, but is not an expected token (e.g., LOAD send to Dstore).
 
 Possible errors:
     - Not using the same port for a Dstore throughout it's life - this means that the messages sent to a Dstore will be on a different

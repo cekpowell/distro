@@ -155,6 +155,10 @@ public class Client {
             System.out.println(message);
         }
 
+        else{
+            System.out.println("Invalid response recieved.");
+        }
+
         // TODO Handle all other types of response
 
 

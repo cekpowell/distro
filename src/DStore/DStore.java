@@ -82,11 +82,8 @@ public class Dstore extends Server{
      * Sets up a connection between the DStore and the Controller.
      */
     public void connectToController() throws Exception{
-        // creating socket for communication
-        Socket socket = new Socket(InetAddress.getLocalHost(), this.cPort);
-            
         // creating communication channel
-        this.controllerSender = new Sender(this, socket);
+        this.controllerSender = new Sender(this, this.cPort);
 
         // Sending JOIN request to controller
         String message = Protocol.JOIN_TOKEN + " " + this.getPort();

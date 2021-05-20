@@ -69,7 +69,7 @@ public class ControllerRequestHandler extends RequestHandler{
             this.handleInvalidRequest(connection);
         }
 
-        // Request controller does not know how to handle //
+        // Request tokenized but not expected by controller -(i.e., does not know how to handle) //
         else{
             this.handleInvalidRequest(connection);
         }
