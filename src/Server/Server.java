@@ -3,8 +3,10 @@ package Server;
 import java.net.Socket;
 
 /**
- * Abstract class to represent a Server object. Servers listen for new connecting objects, 
- * and create new Connection objects to handle the connection.
+ * Abstract class to represent a Server object. 
+ * 
+ * Servers listen for new connectors, and create new Request Handler 
+ * objects to handle the requests of the connector.
  */
 public abstract class Server {
 

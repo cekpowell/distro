@@ -12,9 +12,17 @@ import Token.*;
 import Token.TokenType.ListToken;
 
 /**
- * Represents a connection from Dstore to Client.
+ * Represents a connection from a Dstore to a Connector.
+ * 
+ * Handles the requests coming in from the connector.
+ * 
+ * The connector could be either a Client (e.g., STORE), or a 
+ * Controller (e.g., REBALANCE, LIST).
+ * 
+ * In this connection, the Dstore is the Server, and the 
+ * connector is the "Client".
  */
-public class DstoreConnection extends Connection{
+public class DstoreServerConnection extends ServerConnection{
     
     // member variables
     private Dstore dstore;
@@ -25,23 +33,24 @@ public class DstoreConnection extends Connection{
      * @param dstore The Dstore involved in the connection.
      * @param connection The connection between the Dstore and the client
      */
-    public DstoreConnection(Dstore dstore, Socket connection){
+    public DstoreServerConnection(Dstore dstore, Socket connection){
         // initialising member variables
         super(dstore, connection);
         this.dstore = dstore;
     }
 
     /**
-     * Starts listening for incoming requests.
+     * Starts listening for incoming requests from the Client.
      */
     public void waitForRequest(){
         try{
-            // getting request from connection
-            BufferedReader connectionIn = new BufferedReader( new InputStreamReader(this.getConnection().getInputStream()));
-            Token request = RequestTokenizer.getToken(connectionIn.readLine());
+            while(this.hasFurtherRequests()){
+                // getting request from connection
+                Token request = RequestTokenizer.getToken(this.getTextIn().readLine());
 
-            // handling request
-            this.handleRequest(request);
+                // handling request
+                this.handleRequest(request);
+            }
         }
         catch(NullPointerException e){
             // Connnector disconnected - nothing to do.
@@ -74,6 +83,8 @@ public class DstoreConnection extends Connection{
         }
 
         // TODO Handle rest of requests
+
+        this.noFurtherRequests(); // TODO Does it need to handle further requests? (at the moment i cant think of a case where it would)
     }
 
     /**

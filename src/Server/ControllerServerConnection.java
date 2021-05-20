@@ -14,9 +14,17 @@ import Token.*;
 import Token.TokenType.*;
 
 /**
- * Represents a connection from Controller to Client.
+ * Represents a connection from Controller to Connector.
+ * 
+ * Handles the requests coming in from the connector.
+ * 
+ * The connector could be either a Client (e.g., STORE), or a 
+ * Controller (JOIN).
+ * 
+ * In this connection, the Controller is the Server, and the 
+ * connector is the "Client".
  */
-public class ControllerConnection extends Connection{
+public class ControllerServerConnection extends ServerConnection{
 
     // member variables
     private Controller controller;
@@ -28,7 +36,7 @@ public class ControllerConnection extends Connection{
      * @param connection The socket connecting the Controller to the Client.
      * @param initialRequest The initial request recieved by the Controller when the Client conected.
      */
-    public ControllerConnection(Controller controller, Socket connection){
+    public ControllerServerConnection(Controller controller, Socket connection){
         // initialising member variables
         super(controller, connection);
         this.controller = controller;
@@ -36,10 +44,13 @@ public class ControllerConnection extends Connection{
 
     public void waitForRequest(){
         try{
-            // getting request from connnection
-            Token request = RequestTokenizer.getToken(this.getTextIn().readLine());
+            while(this.hasFurtherRequests()){
+                // getting request from connnection
+                Token request = RequestTokenizer.getToken(this.getTextIn().readLine());
 
-            this.handleRequest(request);
+                // handling request
+                this.handleRequest(request);
+            }
         }
         catch(NullPointerException e){
             // Connector disconnected - nothing to do.
@@ -72,14 +83,16 @@ public class ControllerConnection extends Connection{
         if(request instanceof JoinToken){
             // gathering JOIN token
             JoinToken joinRequest = (JoinToken) request;
-            int port = joinRequest.port;
+            int dstorePort = joinRequest.port;
 
             // Logging request 
-            ControllerLogger.getInstance().dstoreJoined(this.getConnection(), port);
+            ControllerLogger.getInstance().dstoreJoined(this.getConnection(), dstorePort);
 
-            // adding Dstore to controller
-            this.controller.addDstore(port);
-            return; // returning as there is nothing else to do after a Dstore has been added (no longer need the connection)
+            // creating connection between controller and DStore
+            ControllerDstoreReciever dstoreConnection = new ControllerDstoreReciever(this.controller, this.getConnection(), dstorePort);
+            dstoreConnection.start();
+
+            this.noFurtherRequests(); // nothing else to do after a Dstore connection has been created (this object no longer needed)
         }
 
         // Client Requests //
@@ -94,15 +107,6 @@ public class ControllerConnection extends Connection{
         }
 
         // TODO Handle rest of request types
-
-        /**
-         * If here, then did not return and so not a JOIN request.
-         * 
-         * The connector must therefore be a Client.
-         * 
-         * Need to add the Client to the Controller and listen for further requests.
-         */
-        this.waitForRequest();
     }
 
     /**
@@ -117,40 +121,44 @@ public class ControllerConnection extends Connection{
         try{
             ArrayList<String> messageElements = new ArrayList<String>();
             messageElements.add("LIST");
-
+    
             // looping through list of Dstores
-            for(int dstore : this.controller.getdstores()){
-                // creating new socket for the Dstore
-                Socket dstoreSocket = new Socket(InetAddress.getLocalHost(), dstore);
+            for(ControllerDstoreReciever dstore : this.controller.getdstores()){
 
+                // setting up socket
+                int dstoreListenPort = dstore.getDstoreListenPort();
+                Socket dstoreConnection = new Socket(InetAddress.getLocalHost(), dstoreListenPort);
+
+                // setting up streams
+                PrintWriter out = new PrintWriter (new OutputStreamWriter(dstoreConnection.getOutputStream()));
+                BufferedReader in = new BufferedReader (new InputStreamReader(dstoreConnection.getInputStream()));
+    
                 // sending request to dstore
                 String request = Protocol.LIST_TOKEN;
-                PrintWriter dStoreOut = new PrintWriter (new OutputStreamWriter(dstoreSocket.getOutputStream()));
-                dStoreOut.println(request);
-                dStoreOut.flush(); // closing the stream
-
+                out.println(request);
+                out.flush(); // closing the stream
+    
                 // Logging
-                ControllerLogger.getInstance().messageSent(dstoreSocket, request);
-
+                ControllerLogger.getInstance().messageSent(dstore.getConnection(), request);
+    
                 // gathering response
-                BufferedReader dStoreIn = new BufferedReader(new InputStreamReader(dstoreSocket.getInputStream()));
-                Token response = RequestTokenizer.getToken(dStoreIn.readLine());
-
+                Token response = RequestTokenizer.getToken(in.readLine());
+    
                 // Logging 
-                ControllerLogger.getInstance().messageReceived(dstoreSocket, response.request);
-
+                ControllerLogger.getInstance().messageReceived(dstore.getConnection(), response.request);
+    
                 if(response instanceof ListFilesToken){
                     // adding response to message elements
                     ListFilesToken listFilesToken = (ListFilesToken) response;
                     messageElements.addAll(listFilesToken.filenames);
                 }
             }
-
+    
             // sending response back to client
             String message = String.join(" ", messageElements);
             this.getTextOut().println(message);
             this.getTextOut().flush();
-
+    
             // Logging 
             ControllerLogger.getInstance().messageSent(this.getConnection(), message);
         }

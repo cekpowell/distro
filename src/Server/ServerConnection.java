@@ -16,12 +16,12 @@ import java.io.PrintWriter;
  * 
  * Created as a new thread to handle the requests coming from the connecting object.
  */
-public abstract class Connection extends Thread {
+public abstract class ServerConnection extends Thread {
     
     // member variables
     private Server server;
     private Socket connection;
-    private Token initialRequest;
+    private boolean furtherRequests;
     
     private PrintWriter textOut;
     private BufferedReader textIn;
@@ -34,9 +34,10 @@ public abstract class Connection extends Thread {
      * @param server The Server object involved in the connection.
      * @param connection The conection between the Server and the connector.
      */
-    public Connection(Server server, Socket connection){
+    public ServerConnection(Server server, Socket connection){
         this.server = server;
         this.connection = connection;
+        this.furtherRequests = true;
         try{
             this.textOut = new PrintWriter (new OutputStreamWriter(connection.getOutputStream())); 
             this.textIn = new BufferedReader (new InputStreamReader(connection.getInputStream()));
@@ -76,6 +77,10 @@ public abstract class Connection extends Thread {
         return this.connection;
     }
 
+    public boolean hasFurtherRequests(){
+        return this.furtherRequests;
+    }
+
     public PrintWriter getTextOut(){
         return this.textOut;
     }
@@ -90,5 +95,9 @@ public abstract class Connection extends Thread {
 
     public InputStream getDataIn(){
         return this.dataIn;
+    }
+
+    public void noFurtherRequests(){
+        this.furtherRequests = false;
     }
 }

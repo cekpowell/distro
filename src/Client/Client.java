@@ -39,13 +39,13 @@ public class Client {
             // creating and configuring socket for communication
             this.controllerConnection = new Socket(InetAddress.getLocalHost(), this.cPort);
             this.controllerConnection.setSoTimeout(timeout);
+
+            // waiting for user input
+            this.waitForInput();
         }
         catch(Exception e){
             MyLogger.logError("Unable to connect Client to controller on port : " + this.cPort);
         }
-
-        // waiting for user input
-        this.waitForInput();
     }
 
     /**
@@ -57,6 +57,9 @@ public class Client {
 
             // Wait for input 
             while(true){
+                // FORMATTING
+                System.out.print(">");
+
                 // reading in request
                 String request = reader.readLine();
 
@@ -82,6 +85,9 @@ public class Client {
             // logging request
             MyLogger.logEvent("Request : \"" + request + "\" sent to Controller on port : " + this.cPort);
 
+            // FORMATTING
+            System.out.println("Waiting for response...");
+
             // gathering response from controller 
             BufferedReader in = new BufferedReader(new InputStreamReader(this.controllerConnection.getInputStream()));
             Token response = RequestTokenizer.getToken(in.readLine());
@@ -91,9 +97,15 @@ public class Client {
         }
         catch(SocketTimeoutException e){
             MyLogger.logError("Timeout occurred on request : \"" + request + "\" to Controller on port : " + this.cPort);
+
+            // FORMATTING
+            System.out.println();
         }
         catch(Exception e){
             MyLogger.logError("Unable to handle request : \"" + request + "\" to Controller on port : " + this.cPort);
+            
+            // FORMATTING
+            System.out.println();
         }
     }
 
@@ -107,19 +119,27 @@ public class Client {
         // Handling Response //
         ///////////////////////
 
+        // FORMATTING
+        MyLogger.logEvent("Response recieved : ");
+        System.out.print("\t");
+
         if(response instanceof ListFilesToken){
             // gathering filenames
             ListFilesToken listFilesToken = (ListFilesToken) response;
             ArrayList<String> filenames = listFilesToken.filenames;
 
             // forming message
-            String message = String.join("\n", filenames);
+            String message = String.join("\n\t", filenames);
 
             // outputting message
             System.out.println(message);
         }
 
         // TODO Handle all other types of response
+
+
+        // FORMATTING
+        System.out.println();
     }
 
     /////////////////

@@ -20,7 +20,8 @@ public class Controller extends Server{
     private double rebalancePeriod;
 
     // indexes
-    private ArrayList<Integer> dstores;
+    private ArrayList<ControllerDstoreReciever> dstores;
+    private ArrayList<String> files;
 
     /**
      * Class constructor.
@@ -36,7 +37,8 @@ public class Controller extends Server{
         this.r = r;
         this.timeout = timeout;
         this.rebalancePeriod = rebalancePeriod;
-        this.dstores = new ArrayList<Integer>();
+        this.dstores = new ArrayList<ControllerDstoreReciever>();
+        this.files = new ArrayList<String>();
 
         // creating logger
         try{
@@ -78,43 +80,51 @@ public class Controller extends Server{
      */
     public void setUpConnection(Socket connection){
         // Setting up connnection to connector
-        ControllerConnection controllerConnection = new ControllerConnection(this, connection);
+        ControllerServerConnection controllerConnection = new ControllerServerConnection(this, connection);
         controllerConnection.start();
     }
 
     /**
      * Adds the given Dstore to the index.
-     * @param port The port of the Dstore to be added.
+     * @param dstore The connection to the Dstore to be added.
      */
-    public void addDstore(int port){
-        this.dstores.add(port);
+    public void addDstore(ControllerDstoreReciever dstore){
+        this.dstores.add(dstore);
     }
 
     /**
      * Removes a given Dstore from the index.
      * 
-     * @param dstorePort The port of the dstore to be removed.
+     * @param dstore The connection to the Dstore to be removed.
      */
-    public void removeDstore(int dstorePort){
-        this.dstores.remove(dstorePort);
+    public void removeDstore(ControllerDstoreReciever dstore){
+        this.dstores.remove(dstore);
     }
+
 
     /////////////////////////
     // GETTERS AND SETTERS //
     /////////////////////////
 
+
     public int getPort(){
         return this.port;
     }
 
-    public ArrayList<Integer> getdstores(){
+    public ArrayList<ControllerDstoreReciever> getdstores(){
         return this.dstores;
     }
+
+    public ArrayList<String> getFiles(){
+        return this.files;
+    }
+
 
     /////////////////
     // MAIN METHOD //
     /////////////////
 
+    
     /**
      * Main method - instantiates a new Controller instance using the command line parammeters.
      * 

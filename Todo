@@ -1,6 +1,17 @@
 Todo:
-    - STORE operation
-    - LOAD operation
+    - Start developing operations
+        - STORE
+        - LOAD
+        - REMOVEE
+    - Make ControllerServerConnection be able to detect the type of connector when it disconnects
+        - Add a method to Controller called getConnectorType that takes in the port number of the connector and 
+        returns the ConnectorType for the connector (make an enumeration class for it).
+        - To work out the connector type, will need to :
+            - Store the ControllerServerConnection in the Controller in an arraylist after a Client request is made 
+            (know the connector is a client).
+            - Search through Controller's list of Clients looking for a matched port number.
+            - If no match found, the connector must an unidentified Client, or a Dstore that has not yet joined, or just
+            unidentified.
     - Timeouts on DStore and controller
         - How to handle timeouts on waiting for client request (dont want to disconect from client too soon)??
 
@@ -14,8 +25,11 @@ Possible errors:
         - can get around this by making the dstore send the initial request on it's server port or by manually passing in the original
         port number of the datastore whenever logging messages (would need to store it in a map also).
             - would also need to create the new socket whenever logging was done.
-    - If a Client or DStore cannot connect to the controller when they are created, they still carry on.
+    - **FIXED** :If a Client or DStore cannot connect to the controller when they are created, they still carry on.
         - The process should stop if they can't connect to the controller as there is nothing they can do in this case.
+        - **FIX** : Have made it so if they cant connect, they close. This was done by moving the startListening and waitForInput methods 
+        into the try statement, so that if an exception is thrown (cant connect to controller), the objects do not start doing anything,
+        and so execution stops
 
 Error Handling:
     - Tokenizing:
@@ -28,6 +42,8 @@ Error Handling:
     - DStore:
         - Main method - command line parameters are not of the correct form
         - When multiple Dstores join on the same port number
+    - General:
+        - Invalid responses for any request (i.e., tokenized to invalid request)
     
 
 Tokens:
