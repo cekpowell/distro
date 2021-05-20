@@ -12,23 +12,28 @@ public class MainTest {
     public static void main(String[] args) throws Exception{
 
         // Testing Tokenizer //
-        //testTokenizer();
+        testTokenizer();
 
         // Testing connections //
-        testConnection();
+        //testConnection();
     }
 
     public static void testTokenizer() throws IOException{
         BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
 
-        while(true){
-            String request = reader.readLine();
+        String string = "LIST ";
+        Token token = RequestTokenizer.getToken(string);
 
-            Token token = RequestTokenizer.getToken(request);
+        System.out.println(token);
 
-            System.out.println(token.toString());
+        // while(true){
+        //     String request = reader.readLine();
+
+        //     Token token = RequestTokenizer.getToken(request);
+
+        //     System.out.println(token.toString());
             
-        }
+        // }
     }
 
     public static void testConnection() throws Exception{

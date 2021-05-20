@@ -15,7 +15,12 @@ import Token.Token;
 import Token.TokenType.ListFilesToken;
 
 /**
+ * Client. Connects to a Data Store by connecting to the stores controller.
  * 
+ * Takes requests from the user on stdin.
+ * 
+ * Sends requests to Controller, processes the response and outputs the result
+ * to stdout.
  */
 public class Client {
 
@@ -155,6 +160,7 @@ public class Client {
             System.out.println(message);
         }
 
+        // Unexpected response //
         else{
             System.out.println("Invalid response recieved.");
         }

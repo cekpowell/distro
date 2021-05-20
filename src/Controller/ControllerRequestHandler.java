@@ -38,6 +38,8 @@ public class ControllerRequestHandler extends RequestHandler{
      */
     public void handleRequest(ServerConnection connection, Token request){
 
+        boolean clientRequest = true;
+
         /////////////////////
         // Logging request //
         /////////////////////
@@ -51,6 +53,7 @@ public class ControllerRequestHandler extends RequestHandler{
         // DStore JOIN Request //
 
         if(request instanceof JoinToken){
+            clientRequest = false;
             // gathering JOIN token
             JoinToken joinRequest = (JoinToken) request;
             int dstorePort = joinRequest.port;
@@ -69,12 +72,21 @@ public class ControllerRequestHandler extends RequestHandler{
             this.handleInvalidRequest(connection);
         }
 
-        // Request tokenized but not expected by controller -(i.e., does not know how to handle) //
+        // Request tokenized but not expected by controller -(i.e., the request is not relevant for the controller) //
         else{
             this.handleInvalidRequest(connection);
         }
 
         // TODO Handle rest of request types
+
+        // Adding the connector to the controller if they are a client
+        if(clientRequest){
+            // testing if the client is new
+            if(!this.controller.getClients().contains(connection)){
+                // adding the client to the ccontroller
+                this.controller.addClient(connection);
+            }
+        }
     }
 
     /**
@@ -86,11 +98,8 @@ public class ControllerRequestHandler extends RequestHandler{
         // Logging request 
         ControllerLogger.getInstance().dstoreJoined(connection.getConnection(), dstorePort);
 
-        // creating connection between controller and DStore
-        ControllerDstoreReciever dstoreConnection = new ControllerDstoreReciever(this.controller, connection.getConnection(), dstorePort);
-        dstoreConnection.start();
-
-        connection.noFurtherRequests(); // nothing else to do after a Dstore connection has been created (this object no longer needed)
+        // addding the Dstore to the controller
+        this.controller.addDstore(connection, dstorePort);
     }
 
     /**
@@ -107,10 +116,10 @@ public class ControllerRequestHandler extends RequestHandler{
             messageElements.add("LIST");
     
             // looping through list of Dstores
-            for(ControllerDstoreReciever dstore : this.controller.getdstores()){
+            for(ServerConnection dstore : this.controller.getdstores().keySet()){
 
                 // setting up socket
-                int dstoreListenPort = dstore.getDstoreListenPort();
+                int dstoreListenPort = this.controller.getdstores().get(dstore);
                 Socket dstoreConnection = new Socket(InetAddress.getLocalHost(), dstoreListenPort);
 
                 // setting up streams
@@ -140,6 +149,7 @@ public class ControllerRequestHandler extends RequestHandler{
     
             // sending response back to client
             String message = String.join(" ", messageElements);
+            if(messageElements.size() == 1) message += " "; // ERROR FIX : for case when there are no files, still need to add the space to make sure it is tokenized correctly on client side
             connection.getTextOut().println(message);
             connection.getTextOut().flush();
     
@@ -147,7 +157,7 @@ public class ControllerRequestHandler extends RequestHandler{
             ControllerLogger.getInstance().messageSent(connection.getConnection(), message);
         }
         catch(Exception e){
-            MyLogger.logError("Unable to perform list command for Client on port : " + connection.getConnection().getPort());
+            MyLogger.logError("Unable to perform LIST command for Client on port : " + connection.getConnection().getPort());
         }
     }
 

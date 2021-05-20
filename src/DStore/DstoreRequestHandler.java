@@ -51,7 +51,7 @@ public class DstoreRequestHandler extends RequestHandler{
 
         // TODO Handle rest of requests
 
-        connection.noFurtherRequests(); // TODO Does it need to handle further requests? (at the moment i cant think of a case where it would)
+        connection.close(); // TODO Does it need to handle further requests? (at the moment i cant think of a case where it would as any request to the Dstore from a client is onlly requerst and response, with nothing after the response)
     }
 
     /**

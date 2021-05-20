@@ -277,6 +277,10 @@ public class RequestTokenizer {
 
             return new ListFilesToken(request, filenames);
         }
+        else if(request.length() == 5){ // ERROR FIX : Case where there are no files but is still a LIST filenames token - just LIST followed by space and therefore has 5 characters
+            ArrayList<String> filenames = new ArrayList<String>();
+            return new ListFilesToken(request, filenames);
+        }
         else{
             return new ListToken(request);
         }

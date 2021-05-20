@@ -3,6 +3,7 @@ package Controller;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import Logger.ControllerLogger;
 import Server.*;
@@ -20,7 +21,9 @@ public class Controller extends Server{
     private double rebalancePeriod;
 
     // indexes
-    private ArrayList<ControllerDstoreReciever> dstores;
+    //private ArrayList<ControllerDstoreReciever> dstores;
+    private HashMap<ServerConnection,Integer> dstores;
+    private ArrayList<ServerConnection> clients;
     private ArrayList<String> files;
 
     /**
@@ -33,77 +36,73 @@ public class Controller extends Server{
      */
     public Controller(int port, int r, double timeout, double rebalancePeriod){
         // initializing new member variables
+        super(ServerType.CONTROLLER, port);
         this.port = port;
         this.r = r;
         this.timeout = timeout;
         this.rebalancePeriod = rebalancePeriod;
-        this.setRequestHandler(new ControllerRequestHandler(this));
 
         // indexes
-        this.dstores = new ArrayList<ControllerDstoreReciever>();
+        this.dstores = new HashMap<ServerConnection,Integer>();
+        this.clients = new ArrayList<ServerConnection>();
         this.files = new ArrayList<String>();
 
         // starting the Controller
-        this.setupAndRun();
+        this.setupAndStart(new ControllerRequestHandler(this));
     }
 
     /**
-     * Sets up and starts the Controller for the system.
+     * Sets up the Controller ready for use.
      * 
-     * Trys to setup a Logger and then starts listening for new connections.
+     * Nothing to set up.
      */
-    public void setupAndRun(){
-        // creating logger
-        try{
-            ControllerLogger.init(Logger.LoggingType.ON_TERMINAL_ONLY);
-            this.setLogger(ControllerLogger.getInstance());
-        }
-        catch(Exception e){
-            MyLogger.logError("Unable to create Controller Logger for Controller on port : " + this.port);
-        }
-
-        // waiting for new connection
-        this.startListening();
+    public void setup(){
+        // nothing to do...
     }
 
     /**
-     * Handles incoming communication between Controller and DStore or Client.
+     * Handles the disconnection of a Connector at the specified port.
+     * @param port The port of the connector.
      */
-    public void startListening(){
-        try{
-            ServerSocket listener = new ServerSocket(this.port);
-
-            // listening for connections
-            while (true){
-                Socket connection = listener.accept();
-
-                // setting up the connection
-                this.setUpConnection(connection);
+    public void handleDisconnect(int port){
+        // Checking for Client disconnect
+        for(ServerConnection clientConnection : this.clients){
+            if(clientConnection.getConnection().getPort() == port){
+                MyLogger.logError("Client on port : " + port + " disconnected.");
+                this.removeClient(clientConnection);
+                return;
             }
         }
-        catch(Exception e){
-            MyLogger.logError("Controller on port : " + this.port + " unable to connect to new connector.");
-        }
-    }
 
-    /**
-     * Sets up a connection between the connector and the controller.
-     * 
-     * @param connection The object connecting the controller
-     * @throws Exception Thrown when connection could not be setup.
-     */
-    public void setUpConnection(Socket connection){
-        // Setting up connnection to connector
-        ServerConnection serverConnection = new ServerConnection(this, connection);
-        serverConnection.start();
+        // checking for Dstore disconnect
+        for(ServerConnection dstoreConnection : this.dstores.keySet()){
+            if(dstoreConnection.getConnection().getPort() == port){
+                MyLogger.logError("Dstore listening on port : " + this.dstores.get(dstoreConnection)+ " disconnected.");
+                this.removeDstore(dstoreConnection);
+                return;
+            }
+        }
+
+        // Unknown connector
+        MyLogger.logError("Unknown connector on port : " + port + " disconnected (most likley a new client).");
     }
 
     /**
      * Adds the given Dstore to the index.
+     * 
      * @param dstore The connection to the Dstore to be added.
      */
-    public void addDstore(ControllerDstoreReciever dstore){
-        this.dstores.add(dstore);
+    public void addDstore(ServerConnection dstoreConnection, int dstorePort){
+        this.dstores.put(dstoreConnection,dstorePort);
+    }
+
+    /**
+     * Adds a given client to the index.
+     * 
+     * @param client The connection to the client.
+     */
+    public void addClient(ServerConnection clientConnection){
+        this.clients.add(clientConnection);
     }
 
     /**
@@ -111,8 +110,17 @@ public class Controller extends Server{
      * 
      * @param dstore The connection to the Dstore to be removed.
      */
-    public void removeDstore(ControllerDstoreReciever dstore){
+    private void removeDstore(ServerConnection dstore){
         this.dstores.remove(dstore);
+    }
+
+    /**
+     * Removes a given client from the index.
+     * 
+     * @param client The connection to the client.
+     */
+    private void removeClient(ServerConnection clientConnection){
+        this.clients.remove(clientConnection);
     }
 
 
@@ -125,12 +133,16 @@ public class Controller extends Server{
         return this.port;
     }
 
-    public ArrayList<ControllerDstoreReciever> getdstores(){
+    public ArrayList<String> getFiles(){
+        return this.files;
+    }
+
+    public HashMap<ServerConnection, Integer> getdstores(){
         return this.dstores;
     }
 
-    public ArrayList<String> getFiles(){
-        return this.files;
+    public ArrayList<ServerConnection> getClients(){
+        return this.clients;
     }
 
 

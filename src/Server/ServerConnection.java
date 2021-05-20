@@ -26,7 +26,7 @@ public class ServerConnection extends Thread {
     // member variables
     private Server server;
     private Socket connection;
-    private boolean furtherRequests;
+    private boolean isActive;
     
     private PrintWriter textOut;
     private BufferedReader textIn;
@@ -42,7 +42,7 @@ public class ServerConnection extends Thread {
     public ServerConnection(Server server, Socket connection){
         this.server = server;
         this.connection = connection;
-        this.furtherRequests = true;
+        this.isActive = true;
         try{
             this.textOut = new PrintWriter (new OutputStreamWriter(connection.getOutputStream())); 
             this.textIn = new BufferedReader (new InputStreamReader(connection.getInputStream()));
@@ -67,7 +67,7 @@ public class ServerConnection extends Thread {
      */
     public void waitForRequest(){
         try{
-            while(this.hasFurtherRequests()){
+            while(this.isActive()){
                 // getting request from connnection
                 Token request = RequestTokenizer.getToken(this.getTextIn().readLine());
 
@@ -76,12 +76,21 @@ public class ServerConnection extends Thread {
             }
         }
         catch(NullPointerException e){
-            // Connector disconnected - nothing to do.
-            MyLogger.logEvent("Connector disconnected on port : " + this.getConnection().getPort()); // MY LOG
+            // Connector disconnected - passing it on to the server to handle
+            this.server.handleDisconnect(this.getConnection().getPort());
         }
         catch(Exception e){
             MyLogger.logError("Server on port : " + this.connection.getLocalPort() + " unable to connect to new connector.");
         }
+    }
+
+    /**
+     * Called to stop the connection for looking for futher requests.
+     * 
+     * i.e., It ends the connection.
+     */
+    public void close(){
+        this.isActive = false;
     }
 
     /////////////////////////
@@ -92,8 +101,8 @@ public class ServerConnection extends Thread {
         return this.connection;
     }
 
-    public boolean hasFurtherRequests(){
-        return this.furtherRequests;
+    public boolean isActive(){
+        return this.isActive;
     }
 
     public PrintWriter getTextOut(){
@@ -110,9 +119,5 @@ public class ServerConnection extends Thread {
 
     public InputStream getDataIn(){
         return this.dataIn;
-    }
-
-    public void noFurtherRequests(){
-        this.furtherRequests = false;
     }
 }
