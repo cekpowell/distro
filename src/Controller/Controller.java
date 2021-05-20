@@ -1,16 +1,15 @@
 package Controller; 
 
-import java.net.ServerSocket;
-import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import Logger.ControllerLogger;
 import Server.*;
 import Logger.*;
 
 /**
- * Data store controller. Servers requests from Clients and connects Clients to DStores.
+ * Data store controller. 
+ * 
+ * Connects to Dstores and servers requests from Clients.
  */
 public class Controller extends Server{
 

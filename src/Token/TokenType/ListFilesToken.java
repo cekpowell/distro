@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import Token.Token;
 
 /**
+ * Token for ...
+ * 
  * Syntax: 
  */
 public class ListFilesToken extends Token{

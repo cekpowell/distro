@@ -1,9 +1,11 @@
 package Server;
 
 /**
- * The type of Server object that can exist within the system.
+ * Enumeration class for the type of Server object that can exist within the 
+ * system.
  */
 public enum ServerType {
+    // types
     CONTROLLER("Controller"), // Controller sever
     DSTORE("Dstore"); // Dstore server
 

@@ -14,12 +14,13 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 
 /**
- * Represents a connection between a server and a connecting object.
+ * Represents a connection between a Server and a connecting object.
  * 
- * Created as a new thread to handle the requests coming from the connecting object.
+ * Is a Thread so that the requests coming to the Server can be handled on a new thread,
+ * which allows for one Server to server multiple connecting objects.
  * 
- * When the Thread is run, the object waits for a request, and then passes the
- * request onto the underlying server's request handler.
+ * When the Thread is run, the connection waits for a request and then passes this
+ * request onto the underlying Server's request handler.
  */
 public class ServerConnection extends Thread {
     

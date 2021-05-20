@@ -2,15 +2,15 @@ package Dstore;
 
 import java.io.File;
 import java.net.InetAddress;
-import java.net.ServerSocket;
 import java.net.Socket;
 
 import Logger.*;
 import Server.*;
 
  /**
-  * Individual data store unit within the system. Connects to a Controller to join a data store
-  * and servers requests from clients.
+  * Individual data store unit within the system. 
+  *
+  * Connects to a Controller to join a data store and servers requests from Clients.
   */
 public class Dstore extends Server{
 

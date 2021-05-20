@@ -15,7 +15,9 @@ import Token.Token;
 import Token.TokenType.ListFilesToken;
 
 /**
- * Client. Connects to a Data Store by connecting to the stores controller.
+ * Client in the distributed system. 
+ * 
+ * Connects to a Data Store by connecting to a Controller.
  * 
  * Takes requests from the user on stdin.
  * 

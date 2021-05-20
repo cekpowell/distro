@@ -1,9 +1,16 @@
 package Server;
 
-import java.net.Socket;
-
 import Token.Token;
 
+/**
+ * Abstract class to represent the component of a Server that handles requests.
+ * 
+ * Server handlers implement the 'handleRequest' method, and recieve requests
+ * from their 'ServerConnection's.
+ * 
+ * Each type of server has it's own type of RequestHandler as they all handle requests
+ * in different ways.
+ */
 public abstract class RequestHandler {
     
     // member variables

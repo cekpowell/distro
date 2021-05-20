@@ -15,10 +15,7 @@ import Token.TokenType.*;
 
 
 /**
- * Handles a request sent to the controller.
- * 
- * This request will be a request from the Client, passed to the request
- * hadler from a server connection Thread.
+ * Handles requests sent to a Controller by a Client.
  */
 public class ControllerRequestHandler extends RequestHandler{
 

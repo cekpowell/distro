@@ -4,6 +4,8 @@ import Token.Token;
 
 /**
  * Token for invalid request.
+ * 
+ * Syntax: 
  */
 public class InvalidRequestToken extends Token{
 

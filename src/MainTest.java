@@ -21,40 +21,35 @@ public class MainTest {
     public static void testTokenizer() throws IOException{
         BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
 
-        String string = "LIST ";
-        Token token = RequestTokenizer.getToken(string);
+        while(true){
+            String request = reader.readLine();
 
-        System.out.println(token);
+            Token token = RequestTokenizer.getToken(request);
 
-        // while(true){
-        //     String request = reader.readLine();
-
-        //     Token token = RequestTokenizer.getToken(request);
-
-        //     System.out.println(token.toString());
+            System.out.println(token.toString());
             
-        // }
+        }
     }
 
     public static void testConnection() throws Exception{
         // controller
         new Thread(new Runnable(){
             public void run(){
-                Controller controller = new Controller(4000, 1, 1000, 1000);
+                new Controller(4000, 1, 1000, 1000);
             }
         }).start();
 
         // dstore 1
         new Thread(new Runnable(){
             public void run(){
-                Dstore dStore = new Dstore (4009, 4000, 1000, "test");
+                new Dstore (4009, 4000, 1000, "test");
             }
         }).start();
 
         // dstore 2
         new Thread(new Runnable(){
             public void run(){
-                Dstore dStore2 = new Dstore (4007, 4000, 1000, "test");
+                new Dstore (4007, 4000, 1000, "test");
              }
         }).start();
     }

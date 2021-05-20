@@ -9,13 +9,7 @@ import Token.*;
 import Token.TokenType.*;
 
 /**
- * Handles the requests coming in from the connector.
- * 
- * The connector could be either a Client (e.g., STORE), or a 
- * Controller (e.g., REBALANCE, LIST).
- * 
- * In this connection, the Dstore is the Server, and the 
- * connector is the "Client".
+ * Handles requests sent to a Dstore by a Client.
  */
 public class DstoreRequestHandler extends RequestHandler{
     

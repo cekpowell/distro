@@ -2,6 +2,11 @@ package Token.TokenType;
 
 import java.util.ArrayList;
 
+/**
+ * Token for ...
+ * 
+ * Syntax: 
+ */
 public class FileToSend{
     public String filename;
     ArrayList<Integer> dStores;
