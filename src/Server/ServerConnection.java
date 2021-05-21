@@ -68,7 +68,7 @@ public class ServerConnection extends Thread {
                 Token request = RequestTokenizer.getToken(this.getTextIn().readLine());
 
                 // handling request
-                this.server.getRequestHandler().handleRequest(this, request);
+                this.server.getRequestHandler().handleRequest(this, request); // TODO Does this need to be ran on a new Thread? Not doing it wont cause concurrency issues, but could be slow.
             }
         }
         catch(NullPointerException e){

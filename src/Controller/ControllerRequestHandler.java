@@ -47,7 +47,7 @@ public class ControllerRequestHandler extends RequestHandler{
         // Handling request //
         //////////////////////
 
-        // DStore JOIN Request //
+        // DStore Requests //
 
         if(request instanceof JoinToken){
             clientRequest = false;
