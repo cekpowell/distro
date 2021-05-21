@@ -40,19 +40,14 @@ public class ServerConnection extends Thread {
      * @param server The Server object involved in the connection.
      * @param connection The conection between the Server and the connector.
      */
-    public ServerConnection(Server server, Socket connection){
+    public ServerConnection(Server server, Socket connection) throws Exception{
         this.server = server;
         this.connection = connection;
         this.isActive = true;
-        try{
-            this.textOut = new PrintWriter (new OutputStreamWriter(connection.getOutputStream())); 
-            this.textIn = new BufferedReader (new InputStreamReader(connection.getInputStream()));
-            this.dataOut = connection.getOutputStream();
-            this.dataIn = connection.getInputStream();
-        }
-        catch(Exception e){
-            System.out.println("ERROR : Unable to create streams for a connection.");
-        }
+        this.textOut = new PrintWriter (new OutputStreamWriter(connection.getOutputStream())); 
+        this.textIn = new BufferedReader (new InputStreamReader(connection.getInputStream()));
+        this.dataOut = connection.getOutputStream();
+        this.dataIn = connection.getInputStream();
     }
 
     /**
@@ -81,7 +76,7 @@ public class ServerConnection extends Thread {
             this.server.handleDisconnect(this.getConnection().getPort());
         }
         catch(Exception e){
-            MyLogger.logError("Server on port : " + this.connection.getLocalPort() + " unable to connect to new connector.");
+            MyLogger.logError(this.server.getType().toString() + " on port : " + this.connection.getLocalPort() + " unable to connect to new connector.");
         }
     }
 

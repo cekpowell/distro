@@ -7,24 +7,23 @@ import java.io.PrintWriter;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
-import java.util.ArrayList;
 
 import Logger.MyLogger;
 import Token.RequestTokenizer;
 import Token.Token;
-import Token.TokenType.ListFilesToken;
 
 /**
- * Client in the distributed system. 
+ * Abstract class to represent a Client within the system.
  * 
- * Connects to a Data Store by connecting to a Controller.
+ * A Client connects to a Data Store by connecting to a Controller.
  * 
- * Takes requests from the user on stdin.
+ * The underlying Client object will take in requests and pass them to the 
+ * defined handleRequest method.
  * 
- * Sends requests to Controller, processes the response and outputs the result
- * to stdout.
+ * The handleRequest method will then return the response of the request to the 
+ * handleResponse method of the underlying object.
  */
-public class Client {
+public abstract class Client {
 
     // member variables
     int cPort;
@@ -33,6 +32,7 @@ public class Client {
 
     /**
      * Class Constructor.
+     * 
      * @param cPort The port of the Controller.
      * @param timeout The message timeout period.
      */
@@ -40,7 +40,7 @@ public class Client {
         // initialising member variables
         this.cPort = cPort;
         this.timeout = timeout;
-        
+
         // starting the Client
         this.setupAndStart();
     }
@@ -59,8 +59,8 @@ public class Client {
 
             // Connection successful ...
 
-            // waiting for user input
-            this.waitForInput();
+            // starting the client
+            this.start();
         }
         catch(Exception e){
             MyLogger.logError("Unable to connect Client to controller on port : " + this.cPort);
@@ -70,39 +70,22 @@ public class Client {
     /** 
      * Sets up a connection between the Client and the Controller.
      */
-    public void connectToController() throws Exception{
+    private void connectToController() throws Exception{
         this.controllerConnection = new Socket(InetAddress.getLocalHost(), this.cPort);
         this.controllerConnection.setSoTimeout(timeout);
     }
 
     /**
-     * Waits for user to input a request into the terminal.
+     * Method started when the Client successfully connects to the Controller.
+     * 
+     * Starts the Client listening for input.
      */
-    public void waitForInput(){
-        try{
-            BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-
-            // Wait for input 
-            while(true){
-                // FORMATTING
-                System.out.print(">");
-
-                // reading in request
-                String request = reader.readLine();
-
-                // handling request
-                this.handleRequest(request);
-            }
-        }
-        catch(Exception e){
-            MyLogger.logError("Unable to gather user input for Client.");
-        }
-    }
+    public abstract void start();
 
     /**
-     * Handles a user's input request.
+     * Send's a user's input request to the Controller the Client is connected to.
      */
-    public void handleRequest(String request){
+    public void sendRequest(String request){
         // Sending request to controller
         try{
             PrintWriter out = new PrintWriter (new OutputStreamWriter(this.controllerConnection.getOutputStream()));
@@ -112,6 +95,26 @@ public class Client {
             // logging request
             MyLogger.logEvent("Request : \"" + request + "\" sent to Controller on port : " + this.cPort);
 
+            // gathering response
+            this.gatherResponse(request);
+        }
+        catch(Exception e){
+            MyLogger.logError("Unable to send request : \"" + request + "\" to Controller on port : " + this.cPort);
+            
+            // FORMATTING
+            System.out.println();
+        }
+    }
+
+    /**
+     * Gathers a response for a request.
+     * 
+     * Reads from the InputReader of the Controller connection for the response.
+     * 
+     * @param request The request the response is being gathered for.
+     */
+    public void gatherResponse(String request){
+        try{
             // FORMATTING
             System.out.println("Waiting for response...");
 
@@ -119,7 +122,9 @@ public class Client {
             BufferedReader in = new BufferedReader(new InputStreamReader(this.controllerConnection.getInputStream()));
             Token response = RequestTokenizer.getToken(in.readLine());
 
-            // handling response within timeout
+            // response gathered within timeout...
+
+            // handling response
             this.handleResponse(response);
         }
         catch(SocketTimeoutException e){
@@ -129,7 +134,7 @@ public class Client {
             System.out.println();
         }
         catch(Exception e){
-            MyLogger.logError("Unable to handle request : \"" + request + "\" to Controller on port : " + this.cPort);
+            MyLogger.logError("Unable to recieve response for request : \"" + request + "\" from Controller on port : " + this.cPort + " (Controller likley disconnected).");
             
             // FORMATTING
             System.out.println();
@@ -137,62 +142,9 @@ public class Client {
     }
 
     /**
-     * Handles a request rsponse.
+     * Handles a request response.
+     * 
      * @param response The tokenized response from a request.
      */
-    public void handleResponse(Token response){
-
-        ///////////////////////
-        // Handling Response //
-        ///////////////////////
-
-        // FORMATTING
-        MyLogger.logEvent("Response recieved : ");
-        System.out.print("\t");
-
-        if(response instanceof ListFilesToken){
-            // gathering filenames
-            ListFilesToken listFilesToken = (ListFilesToken) response;
-            ArrayList<String> filenames = listFilesToken.filenames;
-
-            // forming message
-            String message = String.join("\n\t", filenames);
-
-            // outputting message
-            System.out.println(message);
-        }
-
-        // Unexpected response //
-        else{
-            System.out.println("Invalid response recieved.");
-        }
-
-        // TODO Handle all other types of response
-
-
-        // FORMATTING
-        System.out.println();
-    }
-
-    /////////////////
-    // MAIN METHOD //
-    /////////////////
-
-    /**
-     * Main method - instantiates a new Client instance using the command line parammeters.
-     * @param args Parameters for the new Client.
-     */
-    public static void main(String[] args){
-        try{
-            // gathering parameters
-            int cPort = Integer.parseInt(args[0]);
-            int timeout = Integer.parseInt(args[1]);
-
-            // Creating new DStore instance
-            Client client = new Client(cPort, timeout);
-        }
-        catch(Exception e){
-            MyLogger.logError("Unable to create Client.");
-        }
-    }
+    public abstract void handleResponse(Token response);
 }

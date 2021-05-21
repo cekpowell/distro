@@ -15,4 +15,4 @@ dstore:
 	java -cp ${CLASSPATH} Dstore.Dstore $(port) $(cport) $(timeout) $(path)
 
 client:	
-	java -cp ${CLASSPATH} Client.Client $(cport) $(timeout)
+	java -cp ${CLASSPATH} Client.ClientTerminal $(cport) $(timeout)

@@ -129,8 +129,13 @@ public abstract class Server {
      */
     public void setUpConnection(Socket connection){
         // Setting up connnection to connector
-        ServerConnection serverConnection = new ServerConnection(this, connection);
-        serverConnection.start();
+        try{
+            ServerConnection serverConnection = new ServerConnection(this, connection);
+            serverConnection.start();
+        }
+        catch(Exception e){
+            MyLogger.logError("Unable to create socket streams for connector on port : " + connection.getPort());
+        }
     }
 
     /**

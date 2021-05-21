@@ -1,27 +1,10 @@
 Todo:
     - Make a DStore keep track of Clients, and log when they disconnect during communication.
     - Design Index.
-    - Restructure Client:
-        - Make current Client class ClientTerminal.
-        - Create new parent class called Client that defines:
-            - ???An abstract gather input method???
-            - A full sendRequest method (which is called handleRequest at the momment).
-            - An abstract handleResponse method.
-        - ClientTerminal gathers input on the terminal and passes it to the parent sendRequest method.
-        - The parent sendRequest method carries out request, and passes the response onto the sub-class's handleResponse method.
     - Start developing operations
         - STORE
         - LOAD
         - REMOVEE
-    - Make ControllerServerConnection be able to detect the type of connector when it disconnects
-        - Add a method to Controller called getConnectorType that takes in the port number of the connector and 
-        returns the ConnectorType for the connector (make an enumeration class for it).
-        - To work out the connector type, will need to :
-            - Store the ControllerServerConnection in the Controller in an arraylist after a Client request is made 
-            (know the connector is a client).
-            - Search through Controller's list of Clients looking for a matched port number.
-            - If no match found, the connector must an unidentified Client, or a Dstore that has not yet joined, or just
-            unidentified.
     - Timeouts on DStore and controller
         - How to handle timeouts on waiting for client request (dont want to disconect from client too soon)??
 
@@ -29,6 +12,14 @@ General Notes:
     - At Controller initialisation, create a thread that handles rebalancing - have it on a seperate thread basically
     - Make sure that when handling requests, at the end of the pattern matching for expectd token types, but an else for if the
     request was tokenized, but is not an expected token (e.g., LOAD send to Dstore).
+    - Error handling needs to be cleaned up
+        - Possible ErrorHandler class?
+        - Currently just output details of error, not action being taken - need to also output the action being taken.
+        - Fix?: create different types of exception for different types of error, pass them to error handler. error handler
+        checks for type of exception and outputs the details of the error  and of the action taken as a result.
+    - Currently, Client will stay active after the Controller disconnects - would be good to have the client be informed of when the 
+    controller disconnects and then close.
+        - Maybe implement heartbeat functionality between servers and clients
 
 Errors:
 
@@ -70,7 +61,8 @@ Error Handling:
         - Invalid responses for any request (i.e., tokenized to invalid request)
     
 Extra Stuff:
-    - Tokeniz input on client side so that they cant send in requests they shouldnt be able to (e.g., invalid or like JOIN).
+    - Tokenize input on client side so that they cant send in requests they shouldnt be able to (e.g., invalid or like JOIN).
+    - Heartbeat functionality between servers and clients - curretly just figure out connection is dead when can't read in on the stream.
 
 
 Tokens:
