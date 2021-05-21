@@ -65,6 +65,12 @@ Extra Stuff:
     - Heartbeat functionality between servers and clients - curretly just figure out connection is dead when can't read in on the stream.
 
 
+GUI stuff:
+    - Split DStore and Controller into DStore and DStoreTerminal, and Controller and ControllerTerminal (just like what was done for Client).
+        - This will seperate the functionality of the controller away from it's presentation. 
+        - DStoreTerminal and ControllerTerminal will end up just running the DStore and Controller classes in the terminal. Will then have a GUI
+        one that runs them in a GUI form.
+
 Tokens:
     - Store Operation:
         - STORE filename filesize
