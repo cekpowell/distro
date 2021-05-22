@@ -8,7 +8,7 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.util.ArrayList;
 
-import Logger.*;
+import Logger.Protocol;
 import Server.*;
 import Token.*;
 import Token.TokenType.*;
@@ -41,7 +41,7 @@ public class ControllerRequestHandler extends RequestHandler{
         // Logging request //
         /////////////////////
 
-        ControllerLogger.getInstance().messageReceived(connection.getConnection(), request.request);
+        this.controller.getServerInterface().logMessageReceived(connection.getConnection(), request.message);
 
         //////////////////////
         // Handling request //
@@ -92,9 +92,6 @@ public class ControllerRequestHandler extends RequestHandler{
      * @param dstorePort The port number of the Dstore joining the system.
      */
     public void handleJoinRequest(ServerConnection connection, int dstorePort){
-        // Logging request 
-        ControllerLogger.getInstance().dstoreJoined(connection.getConnection(), dstorePort);
-
         // addding the Dstore to the controller
         this.controller.addDstore(connection, dstorePort);
     }
@@ -106,6 +103,9 @@ public class ControllerRequestHandler extends RequestHandler{
      * 
      * CURRENTLY DOING WHAT IT DOESNT NEED TO DO - SENDS LIST COMMAND TO ALL INDIVIDUAL DSTORES.
      * NEEDS TO JUST USE THE INDEX IN THE CONTROLLER.
+     * 
+     * ALSO - it sends the LIST request to the Dstore's listen port, and does not use the existing 
+     * connection that the Controller has with the Dstore - this may lead to some errors later down the line
      */
     private void handleListRequest(ServerConnection connection){
         try{
@@ -129,13 +129,13 @@ public class ControllerRequestHandler extends RequestHandler{
                 out.flush(); // closing the stream
     
                 // Logging
-                ControllerLogger.getInstance().messageSent(dstore.getConnection(), request);
+                this.controller.getServerInterface().logMessageSent(dstoreConnection, request);
     
                 // gathering response
                 Token response = RequestTokenizer.getToken(in.readLine());
     
                 // Logging 
-                ControllerLogger.getInstance().messageReceived(dstore.getConnection(), response.request);
+                this.controller.getServerInterface().logMessageReceived(dstore.getConnection(), response.message);
     
                 if(response instanceof ListFilesToken){
                     // adding response to message elements
@@ -151,10 +151,10 @@ public class ControllerRequestHandler extends RequestHandler{
             connection.getTextOut().flush();
     
             // Logging 
-            ControllerLogger.getInstance().messageSent(connection.getConnection(), message);
+            this.controller.getServerInterface().logMessageSent(connection.getConnection(), message);
         }
         catch(Exception e){
-            MyLogger.logError("Unable to perform LIST command for Client on port : " + connection.getConnection().getPort());
+            this.controller.getServerInterface().logError("Unable to perform LIST command for Client on port : " + connection.getConnection().getPort());
         }
     }
 
@@ -162,6 +162,6 @@ public class ControllerRequestHandler extends RequestHandler{
      * Handles an invalid request.
      */
     public void handleInvalidRequest(ServerConnection connection){
-        MyLogger.logError("Invalid request recieved from connector on port : " + connection.getConnection().getPort());
+        this.controller.getServerInterface().logError("Invalid request recieved from connector on port : " + connection.getConnection().getPort());
     }
 }

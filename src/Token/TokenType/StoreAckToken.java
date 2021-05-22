@@ -9,7 +9,7 @@ import Token.Token;
  */
 public class StoreAckToken extends Token{
 
-    public StoreAckToken(String request){
-        this.request = request;
+    public StoreAckToken(String message){
+        this.message = message;
     }
 }

@@ -2,8 +2,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
-import Controller.Controller;
-import Dstore.Dstore;
+import Controller.*;
+import Dstore.*;
 import Token.RequestTokenizer;
 import Token.Token;
 
@@ -35,21 +35,21 @@ public class MainTest {
         // controller
         new Thread(new Runnable(){
             public void run(){
-                new Controller(4000, 1, 1000, 1000);
+                new ControllerTerminal(4000, 1, 1000, 1000);
             }
         }).start();
 
         // dstore 1
         new Thread(new Runnable(){
             public void run(){
-                new Dstore (4009, 4000, 1000, "test");
+                new DstoreTerminal (4009, 4000, 1000, "test");
             }
         }).start();
 
         // dstore 2
         new Thread(new Runnable(){
             public void run(){
-                new Dstore (4007, 4000, 1000, "test");
+                new DstoreTerminal (4007, 4000, 1000, "test");
              }
         }).start();
     }

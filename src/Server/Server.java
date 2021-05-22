@@ -3,11 +3,6 @@ package Server;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-import Logger.ControllerLogger;
-import Logger.DstoreLogger;
-import Logger.Logger;
-import Logger.MyLogger;
-
 /**
  * Abstract class to represent a Server object. 
  * 
@@ -22,103 +17,48 @@ public abstract class Server {
     private ServerSocket serverSocket;
     private boolean active;
     private RequestHandler requestHandler;
-    private Logger logger;
+    private ServerInterface serverInterface;
 
     /**
      * Class constructor
      */
-    public Server(ServerType type, int port){
+    public Server(ServerType type, int port, ServerInterface serverInterface){
         this.type = type;
         this.port = port;
+        this.serverInterface = serverInterface;
         this.active = true;
     }
 
     /**
-     * Sets up the Server and starts it.
+     * Ran to set the server up to start recieving connections
      * 
-     * Setup immplemented by sub-class.
-     * 
-     * Start implemented by server.
-     * 
-     * @param requestHandler The request handler for the Server.
+     * Implemented by the Server instance (e.g., Controller)
      */
-    public void setupAndStart(RequestHandler requestHandler){
-        /**
-         * Performming the sub-class 'setup' method
-         */
-        this.setup();
-
-        /**
-         * Running the server.
-         */
-        this.start(requestHandler);
-    }
+    public abstract void start() throws Exception;
 
     /**
-     * Sets up the Server ready for use.
-     * 
-     * Implemented by the sub-class.
+     * Makes the server start listening for incoming communication.
      */
-    public abstract void setup();
-
-    /**
-     * Configures the Server and starts it.
-     * 
-     * Will:
-     *      1 - Set the request handler of the server.
-     *      2 - Set the logger for the server.
-     *      3 - Runs the 'startListening()' method to starts listening for incoming 
-     *          connections.
-     * 
-     * @param requestHandler The request handler for the Server.
-     */
-    private void start(RequestHandler requestHandler){
-        // Setting Request Handler //
-
-        this.setRequestHandler(requestHandler);
-
-        try{
-            // Setting Logger //
-
-            if(this.type == ServerType.CONTROLLER){
-                ControllerLogger.init(Logger.LoggingType.ON_TERMINAL_ONLY);
-
-                // assigning logger
-                this.setLogger(ControllerLogger.getInstance());
-            }
-            else if(this.type == ServerType.DSTORE){
-                DstoreLogger.init(Logger.LoggingType.ON_TERMINAL_ONLY, this.port);
-
-                // assigning logger
-                this.setLogger(DstoreLogger.getInstance());
-            }
-
-            // Starting Listening //
-
-            this.startListening();
-        }
-        catch(Exception e){
-            MyLogger.logError("Unable to create" + this.type.toString() + " Logger for " + this.type.toString() + " on port : " + this.port);
-        }
-    }
-
-    /**
-     * Starts listening for incoming communication to the Server from a connector.
-     */
-    private void startListening(){
+    public void waitForConnection(){
+        // Starting Listening //
         try{
             this.serverSocket = new ServerSocket(this.port);
 
             // listening for connections
             while (this.isActive()){
-                Socket connection = this.serverSocket.accept();
+                try{
+                    Socket connection = this.serverSocket.accept();
 
-                // setting up the connection
-                this.setUpConnection(connection);
+                    // setting up the connection
+                    this.setUpConnection(connection);
+                }
+                catch(Exception e){
+                    this.serverInterface.logError(this.type.toString() + " on port : " + this.port + " unable to connect to new connector.");
+                }
             }
         }
         catch(Exception e){
-            MyLogger.logError(this.type.toString() + " on port : " + this.port + " unable to connect to new connector.");
+            this.serverInterface.logError(this.type.toString() + " on port : " + this.port + " down.");
         }
     }
 
@@ -134,7 +74,7 @@ public abstract class Server {
             serverConnection.start();
         }
         catch(Exception e){
-            MyLogger.logError("Unable to create socket streams for connector on port : " + connection.getPort());
+            this.serverInterface.logError("Unable to create socket streams for connector on port : " + connection.getPort());
         }
     }
 
@@ -168,15 +108,11 @@ public abstract class Server {
         return this.requestHandler;
     }
 
-    public Logger getLogger(){
-        return this.logger;
+    public ServerInterface getServerInterface(){
+        return this.serverInterface;
     }
 
     public void setRequestHandler(RequestHandler requestHandler){
         this.requestHandler = requestHandler;
-    }
-
-    public void setLogger(Logger logger){
-        this.logger = logger;
     }
 }

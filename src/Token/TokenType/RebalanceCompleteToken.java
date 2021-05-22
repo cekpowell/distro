@@ -9,7 +9,7 @@ import Token.Token;
  */
 public class RebalanceCompleteToken extends Token{
 
-    public RebalanceCompleteToken(String request){
-        this.request = request;
+    public RebalanceCompleteToken(String message){
+        this.message = message;
     }
 }

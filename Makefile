@@ -9,10 +9,10 @@ build:
 	javac ${SOURCES} --source-path src --class-path ${CLASSPATH} -d ${ODIR} ${COMP_OPTIONS}
 
 controller: 
-	java -cp ${CLASSPATH} Controller.Controller $(cport) $(r) $(timeout) $(rperiod)
+	java -cp ${CLASSPATH} Controller.ControllerTerminal $(cport) $(r) $(timeout) $(rperiod)
 
 dstore:	
-	java -cp ${CLASSPATH} Dstore.Dstore $(port) $(cport) $(timeout) $(path)
+	java -cp ${CLASSPATH} Dstore.DstoreTerminal $(port) $(cport) $(timeout) $(path)
 
 client:	
 	java -cp ${CLASSPATH} Client.ClientTerminal $(cport) $(timeout)

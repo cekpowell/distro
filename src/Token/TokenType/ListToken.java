@@ -9,7 +9,7 @@ import Token.Token;
  */
 public class ListToken extends Token{
 
-    public ListToken(String request){
-        this.request = request;
+    public ListToken(String message){
+        this.message = message;
     }
 }

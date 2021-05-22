@@ -9,7 +9,7 @@ import Token.Token;
  */
 public class InvalidRequestToken extends Token{
 
-    public InvalidRequestToken(String request){
-        this.request = request;
+    public InvalidRequestToken(String message){
+        this.message = message;
     }
 }

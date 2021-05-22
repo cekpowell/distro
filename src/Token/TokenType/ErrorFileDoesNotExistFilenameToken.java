@@ -11,8 +11,8 @@ public class ErrorFileDoesNotExistFilenameToken extends Token{
 
     public String filename;
 
-    public ErrorFileDoesNotExistFilenameToken(String request, String filename){
-        this.request = request;
+    public ErrorFileDoesNotExistFilenameToken(String message, String filename){
+        this.message = message;
         this.filename = filename;
     }
 }

@@ -12,8 +12,8 @@ import Token.Token;
 public class StoreToToken extends Token{
     public ArrayList<Integer> ports;
 
-    public StoreToToken(String request, ArrayList<Integer> ports){
-        this.request = request;
+    public StoreToToken(String message, ArrayList<Integer> ports){
+        this.message = message;
         this.ports = ports;
     }
 }

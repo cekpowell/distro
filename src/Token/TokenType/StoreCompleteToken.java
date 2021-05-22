@@ -9,7 +9,7 @@ import Token.Token;
  */
 public class StoreCompleteToken extends Token{
 
-    public StoreCompleteToken(String request){
-        this.request = request;
+    public StoreCompleteToken(String message){
+        this.message = message;
     }
 }

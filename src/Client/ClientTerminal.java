@@ -2,11 +2,7 @@ package Client;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-
-import Logger.MyLogger;
-import Token.Token;
-import Token.TokenType.ListFilesToken;
+import java.net.Socket;
 
 /**
  * Implementation of a Client that gathers user requests from the terminal.
@@ -18,7 +14,10 @@ import Token.TokenType.ListFilesToken;
  * Sends requests to Controller, processes the response and outputs the result
  * to stdout.
  */
-public class ClientTerminal extends Client{
+public class ClientTerminal extends ClientInterface{
+
+    // member variables
+    private Client client;
 
     /**
      * Class Constructor.
@@ -28,13 +27,12 @@ public class ClientTerminal extends Client{
      */
     public ClientTerminal(int cPort, int timeout) {
         // initialising member variables
-        super(cPort, timeout);
-    }
+        this.client = new Client(cPort, timeout, this);
 
-    /**
-     * Method run to start the Client when is has been set up.
-     */
-    public void start(){
+        // connecting to network
+        this.startClient(this.client);
+
+        // waiting for user input
         this.waitForInput();
     }
 
@@ -53,51 +51,75 @@ public class ClientTerminal extends Client{
                 // reading in request
                 String request = reader.readLine();
 
-                // sending request to controller
-                this.sendRequest(request);
+                // making sure client request is non-null
+                if(request.equals("")){
+                    this.logError("Request cannot be null.");
+                }
+                else{
+                    // sending request to controller
+                    this.client.sendRequest(request);
+                }
             }
         }
         catch(Exception e){
-            MyLogger.logError("Unable to gather user input for Client.");
+            this.logError("Unable to gather user input for Client.");
         }
     }
 
     /**
-     * Handles a request rsponse.
+     * Handles a request response.
+     * 
      * @param response The tokenized response from a request.
      */
-    public void handleResponse(Token response){
+    public void handleResponse(Socket connection, String response){
+        // logging response
+        this.logMessageReceived(connection, response);
+    }
 
-        ///////////////////////
-        // Handling Response //
-        ///////////////////////
+    /////////////
+    // LOGGING //
+    /////////////
 
-        // FORMATTING
-        MyLogger.logEvent("Response recieved : ");
-        System.out.print("\t");
+    /**
+     * Handles the logging of a message being sent.
+     * 
+     * @param connection The socket between the sender and reciever.
+     * @param message The message to be logged.
+     */
+    public void logMessageSent(Socket connection, String message){
+        System.out.println("[" + connection.getLocalPort() + " -> " + connection.getPort() + "] " + message);
+    }
 
-        if(response instanceof ListFilesToken){
-            // gathering filenames
-            ListFilesToken listFilesToken = (ListFilesToken) response;
-            ArrayList<String> filenames = listFilesToken.filenames;
+    /**
+     * Handles the logging of a message being recieved.
+     * 
+     * @param connection The socket between the sender and reciever.
+     * @param message The message to be logged.
+     */
+    public void logMessageReceived(Socket connection, String message){
+        System.out.println("[" + connection.getLocalPort() + " <- " + connection.getPort() + "] " + message);
 
-            // forming message
-            String message = String.join("\n\t", filenames);
-
-            // outputting message
-            System.out.println(message);
-        }
-
-        // Unexpected response //
-        else{
-            System.out.println("Invalid response recieved.");
-        }
-
-        // TODO Handle all other types of response
-
-
-        // FORMATTING
+        // Formatting
         System.out.println();
+    }
+
+    /**
+     * Handles the logging of an event.
+     * 
+     * 
+     * @param event The event to be logged.
+     */
+    public void logEvent(String event){
+        System.out.println("#EVENT# " + event);
+    }
+
+    /**
+     * Handles the logging of an error.
+     * 
+     * @param error The error to be logged.
+     */
+    public void logError(String error){
+        System.out.println("*ERROR* " + error);
     }
 
     /////////////////
@@ -118,7 +140,7 @@ public class ClientTerminal extends Client{
             ClientTerminal client = new ClientTerminal(cPort, timeout);
         }
         catch(Exception e){
-            MyLogger.logError("Unable to create Client.");
+            System.out.println("Unable to create Client.");
         }
     }
 }

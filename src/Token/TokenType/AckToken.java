@@ -8,7 +8,7 @@ import Token.Token;
  * Syntax: 
  */
 public class AckToken extends Token{
-    public AckToken(String request){
-        this.request = request;
+    public AckToken(String message){
+        this.message = message;
     }
 }

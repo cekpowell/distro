@@ -13,8 +13,8 @@ public class RebalanceToken extends Token{
     public ArrayList<FileToSend> filesToSend;
     public ArrayList<String> filesToRemove;
 
-    public RebalanceToken(String request, ArrayList<FileToSend> filesToSend, ArrayList<String> filesToRemove){
-        this.request = request;
+    public RebalanceToken(String message, ArrayList<FileToSend> filesToSend, ArrayList<String> filesToRemove){
+        this.message = message;
         this.filesToSend = filesToSend;
         this.filesToRemove = filesToRemove;
     }

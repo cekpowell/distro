@@ -9,7 +9,7 @@ import Token.Token;
  */
 public class ErrorNotEnoughDStoresToken extends Token{
 
-    public ErrorNotEnoughDStoresToken(String request){
-        this.request = request;
+    public ErrorNotEnoughDStoresToken(String message){
+        this.message = message;
     }
 }

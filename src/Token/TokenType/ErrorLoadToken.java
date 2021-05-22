@@ -9,7 +9,7 @@ import Token.Token;
  */
 public class ErrorLoadToken extends Token{
 
-    public ErrorLoadToken(String request){
-        this.request = request;
+    public ErrorLoadToken(String message){
+        this.message = message;
     }
 }

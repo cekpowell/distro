@@ -8,9 +8,8 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 
-import Logger.MyLogger;
-import Token.RequestTokenizer;
-import Token.Token;
+import Server.Connection;
+import Server.HeartbeatConnection;
 
 /**
  * Abstract class to represent a Client within the system.
@@ -23,12 +22,14 @@ import Token.Token;
  * The handleRequest method will then return the response of the request to the 
  * handleResponse method of the underlying object.
  */
-public abstract class Client {
+public class Client {
 
     // member variables
-    int cPort;
-    int timeout;
-    Socket controllerConnection;
+    private int cPort;
+    private int timeout;
+    private Connection controllerConnection;
+    private HeartbeatConnection controllerHeartbeat;
+    private ClientInterface clientInterface;
 
     /**
      * Class Constructor.
@@ -36,13 +37,11 @@ public abstract class Client {
      * @param cPort The port of the Controller.
      * @param timeout The message timeout period.
      */
-    public Client(int cPort, int timeout) {
+    public Client(int cPort, int timeout, ClientInterface clientInterface) {
         // initialising member variables
         this.cPort = cPort;
         this.timeout = timeout;
-
-        // starting the Client
-        this.setupAndStart();
+        this.clientInterface = clientInterface;
     }
 
     /**
@@ -52,18 +51,13 @@ public abstract class Client {
      * 
      * Waits for user input if successful, closes otherwise.
      */
-    public void setupAndStart(){
+    public void start() throws Exception{
         try{
             // connecting to controller
             this.connectToController();
-
-            // Connection successful ...
-
-            // starting the client
-            this.start();
         }
         catch(Exception e){
-            MyLogger.logError("Unable to connect Client to controller on port : " + this.cPort);
+            throw new Exception("Unable to connect Client to controller on port : " + this.cPort);
         }
     }
 
@@ -71,38 +65,33 @@ public abstract class Client {
      * Sets up a connection between the Client and the Controller.
      */
     private void connectToController() throws Exception{
-        this.controllerConnection = new Socket(InetAddress.getLocalHost(), this.cPort);
+        // setting up main connection
+        this.controllerConnection = new Connection(InetAddress.getLocalHost(), this.cPort);
         this.controllerConnection.setSoTimeout(timeout);
-    }
 
-    /**
-     * Method started when the Client successfully connects to the Controller.
-     * 
-     * Starts the Client listening for input.
-     */
-    public abstract void start();
+        // setting up heartbeat connection
+        Connection heartbeatConnection = new Connection(InetAddress.getLocalHost(), this.cPort);
+        this.controllerHeartbeat = new HeartbeatConnection(this, heartbeatConnection);
+        this.controllerHeartbeat.start();
+    }
 
     /**
      * Send's a user's input request to the Controller the Client is connected to.
      */
     public void sendRequest(String request){
-        // Sending request to controller
         try{
-            PrintWriter out = new PrintWriter (new OutputStreamWriter(this.controllerConnection.getOutputStream()));
-            out.println(request);
-            out.flush(); // closing the stream
+            // Sending request
+            this.controllerConnection.getTextOut().println(request);
+            this.controllerConnection.getTextOut().flush(); 
 
             // logging request
-            MyLogger.logEvent("Request : \"" + request + "\" sent to Controller on port : " + this.cPort);
+            this.clientInterface.logMessageSent(this.controllerConnection, request);
 
             // gathering response
             this.gatherResponse(request);
         }
         catch(Exception e){
-            MyLogger.logError("Unable to send request : \"" + request + "\" to Controller on port : " + this.cPort);
-            
-            // FORMATTING
-            System.out.println();
+            this.clientInterface.logError("Unable to send request : \"" + request + "\" to Controller on port : " + this.cPort);
         }
     }
 
@@ -119,32 +108,39 @@ public abstract class Client {
             System.out.println("Waiting for response...");
 
             // gathering response from controller 
-            BufferedReader in = new BufferedReader(new InputStreamReader(this.controllerConnection.getInputStream()));
-            Token response = RequestTokenizer.getToken(in.readLine());
+            String response = this.controllerConnection.getTextIn().readLine();
 
             // response gathered within timeout...
 
             // handling response
-            this.handleResponse(response);
+            this.clientInterface.handleResponse(this.controllerConnection, response);
         }
         catch(SocketTimeoutException e){
-            MyLogger.logError("Timeout occurred on request : \"" + request + "\" to Controller on port : " + this.cPort);
-
-            // FORMATTING
-            System.out.println();
+            this.clientInterface.logError("Timeout occurred on request : \"" + request + "\" to Controller on port : " + this.cPort);
         }
         catch(Exception e){
-            MyLogger.logError("Unable to recieve response for request : \"" + request + "\" from Controller on port : " + this.cPort + " (Controller likley disconnected).");
-            
-            // FORMATTING
-            System.out.println();
+            this.clientInterface.logError("Unable to recieve response for request : \"" + request + "\" from Controller on port : " + this.cPort + " (Controller likley disconnected).");
         }
     }
 
     /**
-     * Handles a request response.
-     * 
-     * @param response The tokenized response from a request.
+     * Handles the termination of the connection between the Client and the Controller
      */
-    public abstract void handleResponse(Token response);
+    public void handleControllerDisconnect(){
+        this.clientInterface.logError("Lost connection to Controller on port : " + this.cPort);
+
+        // TODO The log error method in client terminal should handle the disconnect and allow the user to reconnect at some point
+        // at the moment, it just closes the program.
+
+        // closing the program (for now ...)
+        System.exit(0);
+    }
+
+    /////////////////////////
+    // GETTERS AND SETTERS //
+    /////////////////////////
+
+    public ClientInterface getClientInterface(){
+        return this.clientInterface;
+    }
 }

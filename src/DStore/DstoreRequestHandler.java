@@ -3,7 +3,6 @@ package Dstore;
 import java.util.ArrayList;
 import java.io.File;
 
-import Logger.*;
 import Server.*;
 import Token.*;
 import Token.TokenType.*;
@@ -33,7 +32,7 @@ public class DstoreRequestHandler extends RequestHandler{
         // Logging request //
         /////////////////////
 
-        DstoreLogger.getInstance().messageReceived(connection.getConnection(), request.request);
+        this.dstore.getServerInterface().logMessageReceived(connection.getConnection(), request.message);
 
         //////////////////////
         // Handling Request //
@@ -71,6 +70,6 @@ public class DstoreRequestHandler extends RequestHandler{
         connection.getTextOut().flush();
 
         // Logging
-        DstoreLogger.getInstance().messageSent(connection.getConnection(), message);
+        this.dstore.getServerInterface().logMessageSent(connection.getConnection(), message);
     }
 }

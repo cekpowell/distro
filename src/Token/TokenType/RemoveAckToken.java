@@ -11,8 +11,8 @@ public class RemoveAckToken extends Token{
     
     public String filename;
 
-    public RemoveAckToken(String request, String filename){
-        this.request = request;
+    public RemoveAckToken(String message, String filename){
+        this.message = message;
         this.filename = filename;
     }
 }

@@ -9,7 +9,7 @@ import Token.Token;
  */
 public class ErrorFileAlreadyExistsToken extends Token{
 
-    public ErrorFileAlreadyExistsToken(String request){
-        this.request = request;
+    public ErrorFileAlreadyExistsToken(String message){
+        this.message = message;
     }
 }

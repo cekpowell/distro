@@ -12,8 +12,8 @@ import Token.Token;
 public class ListFilesToken extends Token{
     public ArrayList<String> filenames;
 
-    public ListFilesToken(String request, ArrayList<String> filenames){
-        this.request = request;
+    public ListFilesToken(String message, ArrayList<String> filenames){
+        this.message = message;
         this.filenames = filenames;
     }
 }

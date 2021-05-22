@@ -50,5 +50,4 @@ public abstract class Logger {
 	public void messageReceived(Socket socket, String message) {
 		log("[" + socket.getLocalPort() + "<-" + socket.getPort() + "] " + message);
 	}
-	
 }

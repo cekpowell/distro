@@ -1,4 +1,18 @@
+Structure:
+    - make NetworkInterface class, which ClientTerminal,ControllerTerminal and DstoreTerminal extend.
+    - In the network interfaces constructor, it initialises a network component object, passing in its self as the objects interface.
+    - The network interface object calls .start() on its network component.
+    - start() throws an exception if the network object can't be started, which is then handled by the interface accordingly (i.e., try to relaunch, ask user what thy want to do, or just close).
+
+    create ClientConnection objecct that has a sendMessage and getResponse method - used by the client to send messages
+
+    create heartbeat from client to controller
+
 Todo:
+    - Create abstract handleError method for Client, Dstore and Controller that handles an error from the associated objects.
+        - Will make it easier to seperate the logic from the presentation (e.g., Terminal, GUI)...
+        - Then, each of ClientTerminal, ClientGUI, DstoreTerminal, DstoreGUI, etc, provide implementation for the method that handles
+        the error based on their implementation (e.g., output to terminal, show error alert).
     - Make a DStore keep track of Clients, and log when they disconnect during communication.
     - Design Index.
     - Start developing operations
@@ -12,16 +26,15 @@ General Notes:
     - At Controller initialisation, create a thread that handles rebalancing - have it on a seperate thread basically
     - Make sure that when handling requests, at the end of the pattern matching for expectd token types, but an else for if the
     request was tokenized, but is not an expected token (e.g., LOAD send to Dstore).
+        - This is as well as pattern matchinng for an InvalidToken
     - Error handling needs to be cleaned up
         - Possible ErrorHandler class?
         - Currently just output details of error, not action being taken - need to also output the action being taken.
         - Fix?: create different types of exception for different types of error, pass them to error handler. error handler
         checks for type of exception and outputs the details of the error  and of the action taken as a result.
-    - Currently, Client will stay active after the Controller disconnects - would be good to have the client be informed of when the 
-    controller disconnects and then close.
-        - Maybe implement heartbeat functionality between servers and clients
 
-Errors:
+Known Errors:
+    - ?
 
 Possible errors:
     - Not using the same port for a Dstore throughout it's life - this means that the messages sent to a Dstore will be on a different
@@ -43,8 +56,10 @@ Possible errors:
     client, or will these further requests come from a different connection?
     - in ServerConnection, when calling the handleRequest method on the server, might need to run that on a new thread (enclose it in
     new Thread(() -> {}).start()) so that the server can be ready to serve another request as soon as possible. 
-    - especially immportant for Dstore - Controller communication, as a single Dstore could be serving multiple rquests from the controller 
+        - especially immportant for Dstore - Controller communication, as a single Dstore could be serving multiple rquests from the controller 
         at any one time.
+    - Need to handle case where dstore disconnects from client when sending requests - Dstore had a server connection so can tell when client 
+    disconnects, but client has nothing - as it is only 1 request followed by 1 response, can just detect error when gathering response i guess.
 
 Error Handling:
     - Tokenizing:
@@ -52,24 +67,73 @@ Error Handling:
         - Request parameters are not of the correct structure 
             - filenames do not have '.<extension>'
             - provided folders for DStores are not of the correct
-    - Controller:
-        - Recieved connection is from neither a DStore or Client
     - DStore:
-        - Main method - command line parameters are not of the correct form
         - When multiple Dstores join on the same port number
     - General:
         - Invalid responses for any request (i.e., tokenized to invalid request)
+
+Index:
+    - Have an index for each of the operations to track the state of the operations
+        - STORE index: mapping of file -> [dstore and store state]
+        - REMOVE index : mapping of file -> [dstore and remove state]
+        - REBALANCE : mapping of dstore -> rebalance state
+
+Rebalance operation:
+    - At Controller initialisation, create a thread that handles rebalancing - have it on a seperate thread basically
+    - When rebalance starts, Update index to REBALANCE LIST IN PROGRESS
+    - Send LIST reequest to all Dstores
+    - When the Controller's Dstore ServerConnection receives LIST file names it updates the file list, and changes the index to reflect that this 
+    dstore has sent its file list.
+    - Have a while loop in the rebalance thread that waits till all dstore have sent their file list, and then goes ahead with the rebalance 
+        - finds out what files need to be moved (calculates what needs to happen)
+        - sends rebalancee requests to all dstores and updates index to REBALANCE MOVE IN PROGRESS
+    - When the ServerConnection recieves a REBALANCE ACK, update the index to reflect this dstore has completed its rebalance
+    - Have a while loop on the thread that waits till all dstores have  completed their rebalance.
+    - Thread then updates index to REBALANCE COMPLETE.
     
 Extra Stuff:
     - Tokenize input on client side so that they cant send in requests they shouldnt be able to (e.g., invalid or like JOIN).
-    - Heartbeat functionality between servers and clients - curretly just figure out connection is dead when can't read in on the stream.
+    - Heartbeat functionality from client to server so that client knows when connection to server (controller) is lost, and can try to reconnect.
+        - How it is setup:
+            - Client connects to controller normally (the controllerConnection object in the class)
+            - Client creates a Heartbeat object (which is a thread like ServerConnection) that connects to the controller on a new socket (different to client controller connection socket)
+            - Client starts Heartbeat thread
+                - Heartbeat thread sends HEARTBEAT messages to controller periodically.
+                - Controller's server connection recives HEARTBEAT messages and responds with a HEARTBEAT message back.
+                - Client knows connection is online as long as the HEARTBEAT messages are acknowledged within the timeout.
+        - Alternativley:
+            - Client connects to controller normally (the controllerConnection object in the class)
+            - Client creates a Heartbeat object (which is a thread like ServerConnection) that connects to the controller on a new socket (different to client controller connection socket)
+            - Client starts Heartbeat thread  
+                - Heartbeat thread sends initial HEARTBEAT message to Controller
+                - Controller recieves HEARTBEAT message and keeps the connection open
+                - Heartbeat thread has a while true loop with a readLine in it (always trying to read from the server)
+                - the read will throw a NullException when the server has disconnected
+                - Saves having to constantly send heartbeat messages, but may be unnecesarry processing.
+        - why does only the client need a heartbeat, and not the server?
+            - The server is constantly listening to serve client requests, and so will know when the client is offline (as the read will throw an error).
+            - the client only listens for server connection when it expects a reply from the server, and so will only know its offline when it tries to get a response.
+            - a constant connection between the two (heartbeat) will ensure the client knows when the server is offline.
+    - Make dstore able to join with files:
+        - the dstore joins
+        - the controller sends an INITIAL LIST request to the dstore 
+        - when the controller receives the response to this request, it just updates its file list based on the provided files
+        - the structure of the files within the system will be organised during the next rebalance operation
+    - Client reconnection:
+        - When client is disconnected from the controller, allow for them to enter a command/select a button that tries to reconnect to the controller
+        - can be done by simmply re-running the setupAndStart method on the parent Client object.
+        - Also allow for the same Client instance to reconnect to a different Controller by using setPort() and then setupAndStart. The client can pass in
+        the new controller port when they enter the reconnect command.
+    - Re-arrange the starting of Controller and Dstore - should become a lot clearner when DstoreLogger and ControllerLogger are no longer
+    required.
+    - When Controller and Dstore are started by their interfaces, they may need to listen on different threads so that the main thread can still
+    continue. The same can be said for Client and listening for input on command line.
+    - Dont pass errors round as strings.
+        - create custom exception objects and pass the exception object into the logError method instead.
+        - the thing that recieves the exception can then log the error and handle it appropriatley (e.g., if ClientDisconnect error for controller, handle the client disconnect)
+        - the passing as strings works fine for now because the only output is to terminal, but will need to change later.
 
 
-GUI stuff:
-    - Split DStore and Controller into DStore and DStoreTerminal, and Controller and ControllerTerminal (just like what was done for Client).
-        - This will seperate the functionality of the controller away from it's presentation. 
-        - DStoreTerminal and ControllerTerminal will end up just running the DStore and Controller classes in the terminal. Will then have a GUI
-        one that runs them in a GUI form.
 
 Tokens:
     - Store Operation:

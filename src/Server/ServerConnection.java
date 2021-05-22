@@ -1,17 +1,15 @@
 package Server;
 
 import java.net.Socket;
-
-import Logger.MyLogger;
-import Token.RequestTokenizer;
-import Token.Token;
-
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+
+import Token.RequestTokenizer;
+import Token.Token;
 
 /**
  * Represents a connection between a Server and a connecting object.
@@ -51,7 +49,7 @@ public class ServerConnection extends Thread {
     }
 
     /**
-     * Method run when thread started
+     * Method run when thread started.
      */
     public void run(){
         // listening for future requests
@@ -76,7 +74,7 @@ public class ServerConnection extends Thread {
             this.server.handleDisconnect(this.getConnection().getPort());
         }
         catch(Exception e){
-            MyLogger.logError(this.server.getType().toString() + " on port : " + this.connection.getLocalPort() + " unable to connect to new connector.");
+            this.server.getServerInterface().logError(this.server.getType().toString() + " on port : " + this.connection.getLocalPort() + " unable to handle request from port : " + this.connection.getPort());
         }
     }
 

@@ -1,5 +1,6 @@
-package Controller; 
+package Controller;
 
+import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -16,11 +17,11 @@ public class Controller extends Server{
     // member variables
     private int port;
     private int r;
-    private double timeout;
-    private double rebalancePeriod;
+    private int timeout;
+    private int rebalancePeriod;
+    private ControllerInterface controllerInterface; // TODO This is only required because Controller must log a JOIN request from a server seperatley - when this request is not needed, this property can be removed.
 
     // indexes
-    //private ArrayList<ControllerDstoreReciever> dstores;
     private HashMap<ServerConnection,Integer> dstores;
     private ArrayList<ServerConnection> clients;
     private ArrayList<String> files;
@@ -33,30 +34,36 @@ public class Controller extends Server{
      * @param timeout The timeout length for communication.
      * @param rebalancePeriod The rebalance period.
      */
-    public Controller(int port, int r, double timeout, double rebalancePeriod){
+    public Controller(int port, int r, int timeout, int rebalancePeriod, ControllerInterface controllerInterface){
         // initializing new member variables
-        super(ServerType.CONTROLLER, port);
+        super(ServerType.CONTROLLER, port, controllerInterface);
         this.port = port;
         this.r = r;
         this.timeout = timeout;
         this.rebalancePeriod = rebalancePeriod;
+        this.controllerInterface = controllerInterface;
+        this.setRequestHandler(new ControllerRequestHandler(this));
 
         // indexes
         this.dstores = new HashMap<ServerConnection,Integer>();
         this.clients = new ArrayList<ServerConnection>();
         this.files = new ArrayList<String>();
-
-        // starting the Controller
-        this.setupAndStart(new ControllerRequestHandler(this));
     }
 
     /**
-     * Sets up the Controller ready for use.
+     * Ran to set the Controller up to start recieving connections
      * 
-     * Nothing to set up.
+     * Set's up the logger and waits for connections.
      */
-    public void setup(){
-        // nothing to do...
+    public void start() throws Exception{
+        try{
+            this.getServerInterface().createLogger();
+
+            this.waitForConnection();
+        }
+        catch(Exception e){
+            throw new Exception("Unable to create Controller Logger for Controller on port : " + this.port);
+        }
     }
 
     /**
@@ -67,7 +74,7 @@ public class Controller extends Server{
         // Checking for Client disconnect
         for(ServerConnection clientConnection : this.clients){
             if(clientConnection.getConnection().getPort() == port){
-                MyLogger.logError("Client on port : " + port + " disconnected.");
+                this.controllerInterface.logError("Client on port : " + port + " disconnected.");
                 this.removeClient(clientConnection);
                 return;
             }
@@ -76,14 +83,14 @@ public class Controller extends Server{
         // checking for Dstore disconnect
         for(ServerConnection dstoreConnection : this.dstores.keySet()){
             if(dstoreConnection.getConnection().getPort() == port){
-                MyLogger.logError("Dstore listening on port : " + this.dstores.get(dstoreConnection)+ " disconnected.");
+                this.controllerInterface.logError("Dstore listening on port : " + this.dstores.get(dstoreConnection)+ " disconnected.");
                 this.removeDstore(dstoreConnection);
                 return;
             }
         }
 
         // Unknown connector
-        MyLogger.logError("Unknown connector on port : " + port + " disconnected (most likley a new client).");
+        this.controllerInterface.logError("Unknown connector on port : " + port + " disconnected (most likley a new client).");
     }
 
     /**
@@ -93,6 +100,9 @@ public class Controller extends Server{
      */
     public void addDstore(ServerConnection dstoreConnection, int dstorePort){
         this.dstores.put(dstoreConnection,dstorePort);
+
+        // logging
+        this.controllerInterface.logDstoreJoined(dstoreConnection.getConnection(), dstorePort);
     }
 
     /**
@@ -122,7 +132,6 @@ public class Controller extends Server{
         this.clients.remove(clientConnection);
     }
 
-
     /////////////////////////
     // GETTERS AND SETTERS //
     /////////////////////////
@@ -142,32 +151,5 @@ public class Controller extends Server{
 
     public ArrayList<ServerConnection> getClients(){
         return this.clients;
-    }
-
-
-    /////////////////
-    // MAIN METHOD //
-    /////////////////
-
-    
-    /**
-     * Main method - instantiates a new Controller instance using the command line parammeters.
-     * 
-     * @param args Parameters for the new Controller.
-     */
-    public static void main(String[] args){
-        try{
-            // gathering parameters
-            int cPort = Integer.parseInt(args[0]);
-            int r = Integer.parseInt(args[1]);
-            double timeout = Double.parseDouble(args[2]);
-            double rebalancePeriod = Double.parseDouble(args[3]);
-
-            // Creating new DStore instance
-            Controller controller = new Controller(cPort, r, timeout, rebalancePeriod);
-        }
-        catch(Exception e){
-            MyLogger.logError("Unable to create Controller.");
-        }
     }
 }

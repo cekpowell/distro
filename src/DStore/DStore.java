@@ -20,8 +20,8 @@ public class Dstore extends Server{
     private int timeout;
     private String folderPath;
     private File fileStore;
-    private DstoreLogger logger;
     private ServerConnection controllerConnection;
+    private ServerInterface serverInterface;
 
     /**
      * Class constructor.
@@ -31,39 +31,45 @@ public class Dstore extends Server{
      * @param timeout The timout period for the DStore.
      * @param fileFolder The folder where the DStore will store files.
      */
-    public Dstore(int port, int cPort, int timeout, String folderPath){
+    public Dstore(int port, int cPort, int timeout, String folderPath, ServerInterface serverInterface){
         // initializing member variables
-        super(ServerType.DSTORE,port);
+        super(ServerType.DSTORE, port, serverInterface);
         this.port = port;
         this.cPort = cPort;
         this.timeout = timeout;
         this.folderPath = folderPath;
-
-        // setting up and starting the server
-        this.setupAndStart(new DstoreRequestHandler(this));
+        this.setRequestHandler(new DstoreRequestHandler(this));
     }
-
+    
     /**
-     * Sets up the Dstore server ready for use.
+     * Sets up the Dstore ready for use.
      * 
-     * Will:
-     *      1 - Connects the Dstore to the controller
-     *      2 - Sets up the file store for the Dstore
+     * Creates the logger, connects to controller, creates file store and waits for 
+     * connections.
      */
-    public void setup(){
-        // Trying to connect the DStore to the Controller //
+    public void start() throws Exception{
+        try{
+            // creating the terminal logger
+            this.getServerInterface().createLogger();
+        }
+        catch(Exception e){
+            throw new Exception("Unable to create Dstore Logger on port : " + this.getPort());
+        }
+
+        // connecting to controller
         try{
             // connecting to controller
             this.connectToController();
 
-            // Connection successful ...
+            // setting up file storage folder
+            this.setupFileStore(this.folderPath);
+
+            // Starting the server listening for connections.
+            this.waitForConnection();
         }
         catch(Exception e){
-            MyLogger.logError("Unable to connect DStore on port : " + this.port + " to controller on port : " + this.cPort);
+            throw new Exception("Unable to connect DStore on port : " + this.port + " to controller on port : " + this.cPort);
         }
-
-        // setting up file storage folder
-        this.setupFileStore(this.folderPath);
     }
 
     /** 
@@ -105,7 +111,7 @@ public class Dstore extends Server{
         // Controller disconnected //
 
         if(this.cPort == port){
-            MyLogger.logError("Controller on port : " + cPort + " has disconnected.");
+            this.getServerInterface().logError("Controller on port : " + cPort + " has disconnected.");
             
             // closing active connections
             this.close();
@@ -116,8 +122,9 @@ public class Dstore extends Server{
         }
         
         // Unknown connector
-        MyLogger.logError("An unknown connector on port : " + port + " has disconnected.");
+        this.getServerInterface().logError("An unknown connector on port : " + port + " has disconnected.");
     }
+
 
     /////////////////////////
     // GETTERS AND SETTERS //
@@ -129,30 +136,5 @@ public class Dstore extends Server{
 
     public File getFileStore(){
         return this.fileStore;
-    }
-
-    /////////////////
-    // MAIN METHOD //
-    /////////////////
-
-    /**
-     * Main method - instantiates a new DStore instance using the command line parammeters.
-     * 
-     * @param args Parameters for the new DStore.
-     */
-    public static void main(String[] args){
-        try{
-            // gathering parameters
-            int port = Integer.parseInt(args[0]);
-            int cPort = Integer.parseInt(args[1]);
-            int timeout = Integer.parseInt(args[2]);
-            String fileFolder = args[3];
-
-            // Creating new DStore instance
-            Dstore dataStore = new Dstore(port, cPort, timeout, fileFolder);
-        }
-        catch(Exception e){
-            MyLogger.logError("Unable to create DStore.");
-        }
     }
 }

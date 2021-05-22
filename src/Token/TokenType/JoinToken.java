@@ -10,8 +10,8 @@ import Token.Token;
 public class JoinToken extends Token {
     public int port;
 
-    public JoinToken(String req, int port) {
-        this.request = req;
+    public JoinToken(String message, int port) {
+        this.message = message;
         this.port = port;
     }
 }

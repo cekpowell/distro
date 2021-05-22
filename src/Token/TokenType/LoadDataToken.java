@@ -10,8 +10,8 @@ import Token.Token;
 public class LoadDataToken extends Token{
     public String filename;
 
-    public LoadDataToken(String request, String filename){
-        this.request = request;
+    public LoadDataToken(String message, String filename){
+        this.message = message;
         this.filename = filename;
     }
 }

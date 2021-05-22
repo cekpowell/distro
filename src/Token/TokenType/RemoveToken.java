@@ -10,8 +10,8 @@ import Token.Token;
 public class RemoveToken extends Token{
     public String filename;
 
-    public RemoveToken(String request, String filename){
-        this.request = request;
+    public RemoveToken(String message, String filename){
+        this.message = message;
         this.filename = filename;
     }
 }

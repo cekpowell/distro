@@ -10,8 +10,8 @@ import Token.Token;
 public class ReloadToken extends Token{
     public String filename;
 
-    public ReloadToken(String request, String filename){
-        this.request = request;
+    public ReloadToken(String message, String filename){
+        this.message = message;
         this.filename = filename;
     }
 }

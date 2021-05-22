@@ -7,7 +7,7 @@ import Token.TokenType.*;
 import Logger.Protocol;
 
 /**
- * Tokenizes request strings.
+ * Tokenizes message strings.
  */
 public class RequestTokenizer {
     
@@ -17,12 +17,12 @@ public class RequestTokenizer {
     private RequestTokenizer(){}
 
     /**
-     * Gathers a token from a request string.
-     * @param request The request string.
+     * Gathers a token from a message string.
+     * @param message The message string.
      * @return The gathered token.
      */
-    public static Token getToken(String request){
-        StringTokenizer sTokenizer = new StringTokenizer(request); // tokenizer splits string up based on spaces
+    public static Token getToken(String message){
+        StringTokenizer sTokenizer = new StringTokenizer(message); // tokenizer splits string up based on spaces
 
         if(!(sTokenizer.hasMoreTokens())){
             return null;
@@ -32,140 +32,140 @@ public class RequestTokenizer {
 
         // ACK //
         if(firstToken.equals(Protocol.ACK_TOKEN)) {
-            return new AckToken(request);
+            return new AckToken(message);
         }
 
         // STORE //
         else if(firstToken.equals(Protocol.STORE_TOKEN)){
-            return getStoreToken(request, sTokenizer);
+            return getStoreToken(message, sTokenizer);
         }
 
         // STORE_TO //
         else if(firstToken.equals(Protocol.STORE_TO_TOKEN)){
-            return getStoreToToken(request, sTokenizer);
+            return getStoreToToken(message, sTokenizer);
         }
 
         // STORE_ACK //
         else if(firstToken.equals(Protocol.STORE_ACK_TOKEN)){
-            return new StoreAckToken(request);
+            return new StoreAckToken(message);
         }
 
         // STORE_COMPLETE //
         else if(firstToken.equals(Protocol.STORE_COMPLETE_TOKEN)){
-            return new StoreCompleteToken(request);
+            return new StoreCompleteToken(message);
         }
 
         // LOAD //
         else if(firstToken.equals(Protocol.LOAD_TOKEN)){
-            return getLoadToken(request, sTokenizer);
+            return getLoadToken(message, sTokenizer);
         }
 
         // LOAD_FROM //
         else if (firstToken.equals(Protocol.LOAD_FROM_TOKEN)){
-            return getLoadFromToken(request, sTokenizer);
+            return getLoadFromToken(message, sTokenizer);
         }
 
         // LOAD_DATA //
         else if(firstToken.equals(Protocol.LOAD_DATA_TOKEN)){
-            return getLoadDataToken(request, sTokenizer);
+            return getLoadDataToken(message, sTokenizer);
         }
 
         // RELOAD //
         else if(firstToken.equals(Protocol.RELOAD_TOKEN)){
-            return getReloadToken(request, sTokenizer);
+            return getReloadToken(message, sTokenizer);
         }
 
         // REMOVE //
         else if (firstToken.equals(Protocol.REMOVE_TOKEN)){
-            return getRemoveToken(request, sTokenizer);
+            return getRemoveToken(message, sTokenizer);
         }
 
         // REMOVE_ACK //
         else if(firstToken.equals(Protocol.REMOVE_ACK_TOKEN)){
-            return getRemoveAckToken(request, sTokenizer);
+            return getRemoveAckToken(message, sTokenizer);
         }
 
         // REMOVE_COMPLETE //
         else if(firstToken.equals(Protocol.REMOVE_COMPLETE_TOKEN)){
-            return new RemoveCompleteToken(request);
+            return new RemoveCompleteToken(message);
         }
 
         // LIST //
         else if(firstToken.equals(Protocol.LIST_TOKEN)){
-            return getListToken(request, sTokenizer);
+            return getListToken(message, sTokenizer);
         }
 
         // JOIN //
         else if (firstToken.equals(Protocol.JOIN_TOKEN)){
-            return getJoinToken(request, sTokenizer);
+            return getJoinToken(message, sTokenizer);
         }
 
         // REBALANCE //
         else if (firstToken.equals(Protocol.REBALANCE_TOKEN)){
-            return getRebalanceToken(request, sTokenizer);
+            return getRebalanceToken(message, sTokenizer);
         }
 
         // REBALANCE_STORE //
         else if (firstToken.equals(Protocol.REBALANCE_STORE_TOKEN)){
-            return getRebalanceStoreToken(request, sTokenizer);
+            return getRebalanceStoreToken(message, sTokenizer);
         }
 
         // REBALANCE_COMPLETE //
         else if(firstToken.equals(Protocol.REBALANCE_COMPLETE_TOKEN)){
-            return new RebalanceCompleteToken(request);
+            return new RebalanceCompleteToken(message);
         }
 
         // ERROR_NOT_ENOUGH_DSTORES //
         else if(firstToken.equals(Protocol.ERROR_NOT_ENOUGH_DSTORES_TOKEN)){
-            return new ErrorNotEnoughDStoresToken(request);
+            return new ErrorNotEnoughDStoresToken(message);
         }
 
         // ERROR_FILE_ALREADY_EXISTS //
         else if(firstToken.equals(Protocol.ERROR_FILE_ALREADY_EXISTS_TOKEN)){
-            return new ErrorFileAlreadyExistsToken(request);
+            return new ErrorFileAlreadyExistsToken(message);
         }
 
         // ERROR_FILE_DOES_NOT_EXIST //
         else if(firstToken.equals(Protocol.ERROR_FILE_DOES_NOT_EXIST_TOKEN)){
-            return getErrorFileDoesNotExistToken(request, sTokenizer);
+            return getErrorFileDoesNotExistToken(message, sTokenizer);
         }
 
         // ERROR_LOAD //
         else if(firstToken.equals(Protocol.ERROR_LOAD_TOKEN)){
-            return new ErrorLoadToken(request);
+            return new ErrorLoadToken(message);
         }
 
         // Unrecognized //
         else{
-            return new InvalidRequestToken(request);
+            return new InvalidRequestToken(message);
         }
     }
 
     /**
-     * Gathers a STORE token from a request string.
-     * @param request
+     * Gathers a STORE token from a message string.
+     * @param message
      * @param sTokenizer
      * @return
      */
-    private static Token getStoreToken(String request, StringTokenizer sTokenizer) {
+    private static Token getStoreToken(String message, StringTokenizer sTokenizer) {
         String filename = sTokenizer.nextToken();
 
         try{
             Double filesize = Double.parseDouble(sTokenizer.nextToken());
-            return new StoreToken(request, filename, filesize);
+            return new StoreToken(message, filename, filesize);
         }
         catch(Exception e){
-            return new InvalidRequestToken(request);
+            return new InvalidRequestToken(message);
         }
     }
 
     /**
-     * Gathers a STORE_TO token from a request string.
-     * @param request
+     * Gathers a STORE_TO token from a message string.
+     * @param message
      * @param sTokenizer
      * @return
      */
-    private static Token getStoreToToken(String request, StringTokenizer sTokenizer) {
+    private static Token getStoreToToken(String message, StringTokenizer sTokenizer) {
         ArrayList<Integer> ports = new ArrayList<Integer>();
         
         try{
@@ -174,99 +174,99 @@ public class RequestTokenizer {
                 ports.add(port);
             }
 
-            return new StoreToToken(request, ports);
+            return new StoreToToken(message, ports);
         }
         catch(Exception e){
-            return new InvalidRequestToken(request);
+            return new InvalidRequestToken(message);
         }
     }
 
     /**
-     * Gathers a LOAD token from a request string.
-     * @param request
+     * Gathers a LOAD token from a message string.
+     * @param message
      * @param sTokenizer
      * @return
      */
-    private static Token getLoadToken(String request, StringTokenizer sTokenizer) {
+    private static Token getLoadToken(String message, StringTokenizer sTokenizer) {
         String filename = sTokenizer.nextToken();
 
-        return new LoadToken(request, filename);
+        return new LoadToken(message, filename);
     }
 
     /**
-     * Gathers a LOAD_FROM token from a request string.
-     * @param request
+     * Gathers a LOAD_FROM token from a message string.
+     * @param message
      * @param sTokenizer
      * @return
      */
-    private static Token getLoadFromToken(String request, StringTokenizer sTokenizer) {
+    private static Token getLoadFromToken(String message, StringTokenizer sTokenizer) {
         try{
             int port = Integer.parseInt(sTokenizer.nextToken());
 
             Double filesize = Double.parseDouble(sTokenizer.nextToken());
 
-            return new LoadFromToken(request, port, filesize);
+            return new LoadFromToken(message, port, filesize);
         }
         catch(Exception e){
-            return new InvalidRequestToken(request);
+            return new InvalidRequestToken(message);
         }
     }
 
     /**
-     * Gathers a LOAD_DATA token from a request string.
-     * @param request
+     * Gathers a LOAD_DATA token from a message string.
+     * @param message
      * @param sTokenizer
      * @return
      */
-    private static Token getLoadDataToken(String request, StringTokenizer sTokenizer) {
+    private static Token getLoadDataToken(String message, StringTokenizer sTokenizer) {
         String filename = sTokenizer.nextToken();
 
-        return new LoadDataToken(request, filename);
+        return new LoadDataToken(message, filename);
     }
 
     /**
-     * Gathers a RELOAD token from a request string.
-     * @param request
+     * Gathers a RELOAD token from a message string.
+     * @param message
      * @param sTokenizer
      * @return
      */
-    private static Token getReloadToken(String request, StringTokenizer sTokenizer) {
+    private static Token getReloadToken(String message, StringTokenizer sTokenizer) {
         String filename = sTokenizer.nextToken();
 
-        return new ReloadToken(request, filename);
+        return new ReloadToken(message, filename);
     }
 
     /**
-     * Gathers a REMOVE token from a request string.
-     * @param request
+     * Gathers a REMOVE token from a message string.
+     * @param message
      * @param sTokenizer
      * @return
      */
-    private static Token getRemoveToken(String request, StringTokenizer sTokenizer) {
+    private static Token getRemoveToken(String message, StringTokenizer sTokenizer) {
         String filename = sTokenizer.nextToken();
 
-        return new RemoveToken(request, filename);
+        return new RemoveToken(message, filename);
     }
 
     /**
-     * Gathers a REMOVE_ACK token from a request string.
-     * @param request
+     * Gathers a REMOVE_ACK token from a message string.
+     * @param message
      * @param sTokenizer
      * @return
      */
-    private static Token getRemoveAckToken(String request, StringTokenizer sTokenizer) {
+    private static Token getRemoveAckToken(String message, StringTokenizer sTokenizer) {
         String filename = sTokenizer.nextToken();
 
-        return new RemoveAckToken(request, filename);
+        return new RemoveAckToken(message, filename);
     }
 
     /**
-     * Gathers a LIST token from a request string.
-     * @param request
+     * Gathers a LIST token from a message string.
+     * @param message
      * @param sTokenizer
      * @return
      */
-    private static Token getListToken(String request, StringTokenizer sTokenizer) {
+    private static Token getListToken(String message, StringTokenizer sTokenizer) {
         if(sTokenizer.hasMoreTokens()){
             ArrayList<String> filenames = new ArrayList<String>();
             while(sTokenizer.hasMoreTokens()){
@@ -275,41 +275,41 @@ public class RequestTokenizer {
                 filenames.add(filename);
             }
 
-            return new ListFilesToken(request, filenames);
+            return new ListFilesToken(message, filenames);
         }
-        else if(request.length() == 5){ // ERROR FIX : Case where there are no files but is still a LIST filenames token - just LIST followed by space and therefore has 5 characters
+        else if(message.length() == 5){ // ERROR FIX : Case where there are no files but is still a LIST filenames token - just LIST followed by space and therefore has 5 characters
             ArrayList<String> filenames = new ArrayList<String>();
-            return new ListFilesToken(request, filenames);
+            return new ListFilesToken(message, filenames);
         }
         else{
-            return new ListToken(request);
+            return new ListToken(message);
         }
     }
 
     /**
-     * Gathers a JOIN token from a request string.
-     * @param request
+     * Gathers a JOIN token from a message string.
+     * @param message
      * @param sTokenizer
      * @return
      */
-    private static Token getJoinToken(String request, StringTokenizer sTokenizer) {
+    private static Token getJoinToken(String message, StringTokenizer sTokenizer) {
         try{
             int port = Integer.parseInt(sTokenizer.nextToken());
 
-            return new JoinToken(request, port);
+            return new JoinToken(message, port);
         }
         catch(Exception e){
-            return new InvalidRequestToken(request);
+            return new InvalidRequestToken(message);
         }
     }
 
     /**
-     * Gathers a REBALANC token from a request string.
-     * @param request
+     * Gathers a REBALANC token from a message string.
+     * @param message
      * @param sTokenizer
      * @return
      */
-    private static Token getRebalanceToken(String request, StringTokenizer sTokenizer) {
+    private static Token getRebalanceToken(String message, StringTokenizer sTokenizer) {
         try{
             
             // Files to send //
@@ -347,46 +347,46 @@ public class RequestTokenizer {
                 filesToRemove.add(filename);
             }
 
-            return new RebalanceToken(request, filesToSend, filesToRemove);
+            return new RebalanceToken(message, filesToSend, filesToRemove);
         }
         catch(Exception e){
-            return new InvalidRequestToken(request);
+            return new InvalidRequestToken(message);
         }
     }
 
     /**
-     * Gathers a REBALANCE_STORE token from a request string.
-     * @param request
+     * Gathers a REBALANCE_STORE token from a message string.
+     * @param message
      * @param sTokenizer
      * @return
      */
-    private static Token getRebalanceStoreToken(String request, StringTokenizer sTokenizer) {
+    private static Token getRebalanceStoreToken(String message, StringTokenizer sTokenizer) {
         String filename = sTokenizer.nextToken();
 
         try{
             Double filesize = Double.parseDouble(sTokenizer.nextToken());
-            return new RebalanceStoreToken(request, filename, filesize);
+            return new RebalanceStoreToken(message, filename, filesize);
         }
         catch(Exception e){
-            return new InvalidRequestToken(request);
+            return new InvalidRequestToken(message);
         }
     }
 
     /**
-     * Gathers an ERROR_FILE_DOES_NOT_EXIST token from a request string.
-     * @param request
+     * Gathers an ERROR_FILE_DOES_NOT_EXIST token from a message string.
+     * @param message
      * @param sTokenizer
      * @return
      */
-    private static Token getErrorFileDoesNotExistToken(String request, StringTokenizer sTokenizer) {
+    private static Token getErrorFileDoesNotExistToken(String message, StringTokenizer sTokenizer) {
 
         if(sTokenizer.hasMoreTokens()){
             String filename = sTokenizer.nextToken();
 
-            return new ErrorFileDoesNotExistFilenameToken(request, filename);
+            return new ErrorFileDoesNotExistFilenameToken(message, filename);
         }
         else{
-            return new ErrorFileDoesNotExistToken(request);
+            return new ErrorFileDoesNotExistToken(message);
         }
     }
 }
