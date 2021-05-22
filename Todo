@@ -124,6 +124,7 @@ Extra Stuff:
         - can be done by simmply re-running the setupAndStart method on the parent Client object.
         - Also allow for the same Client instance to reconnect to a different Controller by using setPort() and then setupAndStart. The client can pass in
         the new controller port when they enter the reconnect command.
+    - Remove ControllerLogger and Dstore logger and restructure how Controller and Dstore are started.
     - Re-arrange the starting of Controller and Dstore - should become a lot clearner when DstoreLogger and ControllerLogger are no longer
     required.
     - When Controller and Dstore are started by their interfaces, they may need to listen on different threads so that the main thread can still
@@ -132,6 +133,7 @@ Extra Stuff:
         - create custom exception objects and pass the exception object into the logError method instead.
         - the thing that recieves the exception can then log the error and handle it appropriatley (e.g., if ClientDisconnect error for controller, handle the client disconnect)
         - the passing as strings works fine for now because the only output is to terminal, but will need to change later.
+    - Remove the extra logging for the JOINing of a Dstore - this should mean that ControllerInterface is no longer required (and so DstoreInterface can bee removed as well)
 
 
 

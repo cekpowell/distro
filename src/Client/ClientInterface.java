@@ -23,5 +23,10 @@ public abstract class ClientInterface implements NetworkInterface{
         }
     }
 
+    /**
+     * 
+     * @param connection
+     * @param response
+     */
     public abstract void handleResponse(Socket connection, String response);
 }

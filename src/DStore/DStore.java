@@ -21,7 +21,7 @@ public class Dstore extends Server{
     private String folderPath;
     private File fileStore;
     private ServerConnection controllerConnection;
-    private ServerInterface serverInterface;
+    private DstoreInterface dstoreInterface;
 
     /**
      * Class constructor.
@@ -31,13 +31,14 @@ public class Dstore extends Server{
      * @param timeout The timout period for the DStore.
      * @param fileFolder The folder where the DStore will store files.
      */
-    public Dstore(int port, int cPort, int timeout, String folderPath, ServerInterface serverInterface){
+    public Dstore(int port, int cPort, int timeout, String folderPath, DstoreInterface dstoreInterface){
         // initializing member variables
-        super(ServerType.DSTORE, port, serverInterface);
+        super(ServerType.DSTORE, port, dstoreInterface);
         this.port = port;
         this.cPort = cPort;
         this.timeout = timeout;
         this.folderPath = folderPath;
+        this.dstoreInterface = dstoreInterface;
         this.setRequestHandler(new DstoreRequestHandler(this));
     }
     

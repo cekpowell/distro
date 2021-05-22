@@ -30,7 +30,7 @@ public class DstoreTerminal extends DstoreInterface{
         this.dstore = new Dstore(port, cPort, timeout, folderPath, this);
 
         // starting the Dstore
-        this.startDstore(this.dstore);
+        this.startServer(this.dstore);
     }
 
     /**

@@ -34,6 +34,11 @@ public class HeartbeatConnection extends Thread{
 
     /**
      * Waits for an incoming request.
+     * 
+     * If the socket being listened on disconnects, the readLine method will return null,
+     * and the getToken method on the null object will throw a null pointer exception.
+     * 
+     * It is behaviour that comes not by design.
      */
     public void listenForHeartbeat(){
         try{
