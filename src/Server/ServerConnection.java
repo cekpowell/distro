@@ -74,7 +74,7 @@ public class ServerConnection extends Thread {
             this.server.handleDisconnect(this.getConnection().getPort());
         }
         catch(Exception e){
-            this.server.getServerInterface().logError(this.server.getType().toString() + " on port : " + this.connection.getLocalPort() + " unable to handle request from port : " + this.connection.getPort());
+            this.server.getServerInterface().handleError(this.server.getType().toString() + " on port : " + this.connection.getLocalPort() + " unable to handle request from port : " + this.connection.getPort());
         }
     }
 

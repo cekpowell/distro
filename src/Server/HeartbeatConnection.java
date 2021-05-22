@@ -1,6 +1,5 @@
 package Server;
 
-import Client.Client;
 import Token.*;
 
 /**
@@ -49,10 +48,10 @@ public class HeartbeatConnection extends Thread{
         }
         catch(NullPointerException e){
             // Connector disconnected - passing it on to the server to handle
-            this.client.handleControllerDisconnect();
+            this.client.handleServerDisconnect();
         }
         catch(Exception e){
-            this.client.getClientInterface().logError("Error listening for heartbeat on port : " + this.connection.getLocalPort() + " for Controller on port " + this.connection.getPort());
+            this.client.getClientInterface().handleError("Error listening for heartbeat on port : " + this.connection.getLocalPort() + " for Controller on port " + this.connection.getPort());
         }
     }
 

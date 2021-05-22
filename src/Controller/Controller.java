@@ -1,12 +1,9 @@
 package Controller;
 
-import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
 
 import Server.*;
-import Logger.*;
-
 /**
  * Data store controller. 
  * 
@@ -74,7 +71,7 @@ public class Controller extends Server{
         // Checking for Client disconnect
         for(ServerConnection clientConnection : this.clients){
             if(clientConnection.getConnection().getPort() == port){
-                this.controllerInterface.logError("Client on port : " + port + " disconnected.");
+                this.controllerInterface.handleError("Client on port : " + port + " disconnected.");
                 this.removeClient(clientConnection);
                 return;
             }
@@ -83,14 +80,14 @@ public class Controller extends Server{
         // checking for Dstore disconnect
         for(ServerConnection dstoreConnection : this.dstores.keySet()){
             if(dstoreConnection.getConnection().getPort() == port){
-                this.controllerInterface.logError("Dstore listening on port : " + this.dstores.get(dstoreConnection)+ " disconnected.");
+                this.controllerInterface.handleError("Dstore listening on port : " + this.dstores.get(dstoreConnection)+ " disconnected.");
                 this.removeDstore(dstoreConnection);
                 return;
             }
         }
 
         // Unknown connector
-        this.controllerInterface.logError("Unknown connector on port : " + port + " disconnected (most likley a new client).");
+        this.controllerInterface.handleError("Unknown connector on port : " + port + " disconnected (most likley a new client).");
     }
 
     /**

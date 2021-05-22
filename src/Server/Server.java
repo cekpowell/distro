@@ -3,6 +3,8 @@ package Server;
 import java.net.ServerSocket;
 import java.net.Socket;
 
+import Interface.ServerInterface;
+
 /**
  * Abstract class to represent a Server object. 
  * 
@@ -53,12 +55,12 @@ public abstract class Server {
                     this.setUpConnection(connection);
                 }
                 catch(Exception e){
-                    this.serverInterface.logError(this.type.toString() + " on port : " + this.port + " unable to connect to new connector.");
+                    this.serverInterface.handleError(this.type.toString() + " on port : " + this.port + " unable to connect to new connector.");
                 }
             }
         }
         catch(Exception e){
-            this.serverInterface.logError(this.type.toString() + " on port : " + this.port + " down.");
+            this.serverInterface.handleError(this.type.toString() + " on port : " + this.port + " no longer running.");
         }
     }
 
@@ -74,7 +76,7 @@ public abstract class Server {
             serverConnection.start();
         }
         catch(Exception e){
-            this.serverInterface.logError("Unable to create socket streams for connector on port : " + connection.getPort());
+            this.serverInterface.handleError("Unable to create socket streams for connector on port : " + connection.getPort());
         }
     }
 

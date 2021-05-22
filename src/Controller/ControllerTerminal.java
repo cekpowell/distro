@@ -89,7 +89,7 @@ public class ControllerTerminal extends ControllerInterface{
      * 
      * @param error The error to be logged.
      */
-    public void logError(String error){
+    public void handleError(String error){
         System.out.println("*ERROR* " + error);
     }
 

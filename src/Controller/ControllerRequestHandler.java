@@ -154,7 +154,7 @@ public class ControllerRequestHandler extends RequestHandler{
             this.controller.getServerInterface().logMessageSent(connection.getConnection(), message);
         }
         catch(Exception e){
-            this.controller.getServerInterface().logError("Unable to perform LIST command for Client on port : " + connection.getConnection().getPort());
+            this.controller.getServerInterface().handleError("Unable to perform LIST command for Client on port : " + connection.getConnection().getPort());
         }
     }
 
@@ -162,6 +162,6 @@ public class ControllerRequestHandler extends RequestHandler{
      * Handles an invalid request.
      */
     public void handleInvalidRequest(ServerConnection connection){
-        this.controller.getServerInterface().logError("Invalid request recieved from connector on port : " + connection.getConnection().getPort());
+        this.controller.getServerInterface().handleError("Invalid request recieved from connector on port : " + connection.getConnection().getPort());
     }
 }

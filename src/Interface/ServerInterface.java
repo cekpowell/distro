@@ -1,4 +1,6 @@
-package Server;
+package Interface;
+
+import Server.Server;
 
 /**
  * 
@@ -6,7 +8,9 @@ package Server;
 public abstract class ServerInterface implements NetworkInterface{
 
     /**
-     * Starts the Server.
+     * Tries to start the underlying Server.
+     * 
+     * Passes an error to the interface's error logger if the start was unsuccessful.
      */
     public void startServer(Server server){
         try{
@@ -17,7 +21,7 @@ public abstract class ServerInterface implements NetworkInterface{
         }
         catch(Exception e){
             // handling error if server could not be started
-            this.logError(e.getMessage());
+            this.handleError(e.getMessage());
         }
     }
 

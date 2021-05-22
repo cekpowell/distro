@@ -1,5 +1,6 @@
 package Dstore;
 
+import Interface.ServerInterface;
 import Server.*;
 
 /**

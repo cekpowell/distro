@@ -106,24 +106,14 @@ public class Dstore extends Server{
 
     /**
      * Handles the disconnection of a Connector at the specified port.
+     * 
+     * Only thing to do is pass the error onto the underlying interface to handle.
+     * 
      * @param port The port of the connector.
      */
     public void handleDisconnect(int port){
-        // Controller disconnected //
-
-        if(this.cPort == port){
-            this.getServerInterface().logError("Controller on port : " + cPort + " has disconnected.");
-            
-            // closing active connections
-            this.close();
-            this.controllerConnection.close();
-
-            // Stopping the program
-            System.exit(0);
-        }
-        
-        // Unknown connector
-        this.getServerInterface().logError("An unknown connector on port : " + port + " has disconnected.");
+        // logging disconnect
+        this.getServerInterface().handleError("A connector on port : " + port + " has disconnected.");
     }
 
 
@@ -133,6 +123,10 @@ public class Dstore extends Server{
 
     public int getPort(){
         return this.port;
+    }
+
+    public int getCPort(){
+        return this.cPort;
     }
 
     public File getFileStore(){

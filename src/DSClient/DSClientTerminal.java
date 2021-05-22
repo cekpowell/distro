@@ -4,6 +4,9 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.Socket;
 
+import Interface.ClientInterface;
+import Server.*;
+
 /**
  * Implementation of a Client that gathers user requests from the terminal.
  * 
@@ -14,10 +17,10 @@ import java.net.Socket;
  * Sends requests to Controller, processes the response and outputs the result
  * to stdout.
  */
-public class ClientTerminal extends ClientInterface{
+public class DSClientTerminal extends ClientInterface{
 
     // member variables
-    private Client client;
+    private DSClient client;
 
     /**
      * Class Constructor.
@@ -25,9 +28,9 @@ public class ClientTerminal extends ClientInterface{
      * @param cPort The port of the Controller.
      * @param timeout The message timeout period.
      */
-    public ClientTerminal(int cPort, int timeout) {
+    public DSClientTerminal(int cPort, int timeout) {
         // initialising member variables
-        this.client = new Client(cPort, timeout, this);
+        this.client = new DSClient(cPort, timeout, this);
 
         // connecting to network
         this.startClient(this.client);
@@ -53,7 +56,7 @@ public class ClientTerminal extends ClientInterface{
 
                 // making sure client request is non-null
                 if(request.equals("")){
-                    this.logError("Request cannot be null.");
+                    this.handleError("Request cannot be null.");
                 }
                 else{
                     // sending request to controller
@@ -62,18 +65,8 @@ public class ClientTerminal extends ClientInterface{
             }
         }
         catch(Exception e){
-            this.logError("Unable to gather user input for Client.");
+            this.handleError("Unable to gather user input for Client.");
         }
-    }
-
-    /**
-     * Handles a request response.
-     * 
-     * @param response The tokenized response from a request.
-     */
-    public void handleResponse(Socket connection, String response){
-        // logging response
-        this.logMessageReceived(connection, response);
     }
 
     /////////////
@@ -118,8 +111,13 @@ public class ClientTerminal extends ClientInterface{
      * 
      * @param error The error to be logged.
      */
-    public void logError(String error){
+    public void handleError(String error){
         System.out.println("*ERROR* " + error);
+
+        // checking if error was controller disconnected
+        if(error.equals("Lost connection to Controller on port : " + this.client.getCPort())){
+            System.exit(0);
+        }
     }
 
     /////////////////
@@ -137,7 +135,7 @@ public class ClientTerminal extends ClientInterface{
             int timeout = Integer.parseInt(args[1]);
 
             // Creating new DStore instance
-            ClientTerminal client = new ClientTerminal(cPort, timeout);
+            DSClientTerminal client = new DSClientTerminal(cPort, timeout);
         }
         catch(Exception e){
             System.out.println("Unable to create Client.");

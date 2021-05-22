@@ -84,8 +84,18 @@ public class DstoreTerminal extends DstoreInterface{
      * 
      * @param error The error to be logged.
      */
-    public void logError(String error){
-        System.out.println("*ERROR* " + error);
+    public void handleError(String error){
+        // checking if the error was the controller disconnecting
+        if(error.equals("A connector on port : " + this.dstore.getCPort() + " has disconnected.")){
+            // logging error
+            System.out.println("*ERROR* Controller on port : " + this.dstore.getCPort() + " has disconnected.");
+
+            // closing system
+            System.exit(0);
+        }
+        else{
+            System.out.println("*ERROR* " + error);
+        }
     }
 
     /////////////////

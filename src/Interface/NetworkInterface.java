@@ -1,4 +1,4 @@
-package Server;
+package Interface;
 
 import java.net.Socket;
 
@@ -39,11 +39,11 @@ public interface NetworkInterface {
     public abstract void logEvent(String event);
 
     /**
-     * Handles the logging of an error.
+     * Handles an error.
      * 
      * // TODO Instead of the error being passed as a string, create Exception objects for all of the types of exception.
      * 
      * @param error The error to be logged.
      */
-    public abstract void logError(String error);
+    public abstract void handleError(String error);
 }
