@@ -1,21 +1,20 @@
-package Client;
+package DSClient;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.Socket;
 
 import Interface.ClientInterface;
-import Server.*;
 
 /**
- * Implementation of a Client that gathers user requests from the terminal.
+ * Implementation of a ClientInterface that gathers user requests from the terminal.
  * 
- * Connects to a Data Store by connecting to a Controller.
+ * Creates a DSClient object, that connects to the Controller when started.
  * 
- * Takes requests from the user on stdin.
+ * The interface takes requests from the user on stdin and passes them to the DSClient
+ * object to be sent to the Controller.
  * 
- * Sends requests to Controller, processes the response and outputs the result
- * to stdout.
+ * The interface logs the response to requests on stdout.
  */
 public class DSClientTerminal extends ClientInterface{
 

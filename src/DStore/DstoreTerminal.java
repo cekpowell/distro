@@ -1,18 +1,17 @@
 package Dstore;
 
-import java.io.File;
-import java.net.InetAddress;
 import java.net.Socket;
 
+import Interface.ServerInterface;
 import Logger.*;
-import Server.*;
 
- /**
-  * Individual data store unit within the system. 
-  *
-  * Connects to a Controller to join a data store and servers requests from Clients.
-  */
-public class DstoreTerminal extends DstoreInterface{
+/**
+ * Implementation of ServerInterface that provides an interface for a 
+ * data store Dstore through the terminal.
+ * 
+ * Messages are logged onto the terminal through stdout.
+ */
+public class DstoreTerminal extends ServerInterface{
 
     int port; // TODO only needed to create the logger - can remove when logger is removed.
     Dstore dstore;

@@ -8,7 +8,7 @@ import Token.*;
 import Token.TokenType.*;
 
 /**
- * Handles requests sent to a Dstore by a Client.
+ * Handles requests sent to a Dstore by a DSClient and Controller.
  */
 public class DstoreRequestHandler extends RequestHandler{
     

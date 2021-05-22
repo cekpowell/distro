@@ -4,13 +4,15 @@ import java.io.File;
 import java.net.InetAddress;
 import java.net.Socket;
 
+import Interface.ServerInterface;
 import Logger.*;
 import Server.*;
 
  /**
   * Individual data store unit within the system. 
   *
-  * Connects to a Controller to join a data store and servers requests from Clients.
+  * Connects to a Controller to join a data store and servers requests from DSClients
+  * and the Controller.
   */
 public class Dstore extends Server{
 
@@ -21,7 +23,7 @@ public class Dstore extends Server{
     private String folderPath;
     private File fileStore;
     private ServerConnection controllerConnection;
-    private DstoreInterface dstoreInterface;
+    private ServerInterface dstoreInterface;
 
     /**
      * Class constructor.
@@ -31,7 +33,7 @@ public class Dstore extends Server{
      * @param timeout The timout period for the DStore.
      * @param fileFolder The folder where the DStore will store files.
      */
-    public Dstore(int port, int cPort, int timeout, String folderPath, DstoreInterface dstoreInterface){
+    public Dstore(int port, int cPort, int timeout, String folderPath, ServerInterface dstoreInterface){
         // initializing member variables
         super(ServerType.DSTORE, port, dstoreInterface);
         this.port = port;

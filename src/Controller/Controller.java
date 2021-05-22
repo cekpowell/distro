@@ -4,10 +4,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import Server.*;
+
 /**
  * Data store controller. 
  * 
- * Connects to Dstores and servers requests from Clients.
+ * Connects to Dstores and servers requests from DSClients.
  */
 public class Controller extends Server{
 

@@ -3,7 +3,17 @@ package Server;
 import Token.*;
 
 /**
+ * Represents a Heartbeat connection from Client to Server.
  * 
+ * A Client can create a new Heartbeat connection to a Server,
+ * and the 'handleServerDisconnect' method on the Client will be called
+ * when the connection drops.
+ * 
+ * The Heartbeat is detected by trying to tokenize the input stream on the connection.
+ * 
+ * If the connection drops, the input stream returns the null string, and the tokenizer 
+ * throws a NullPointerException. Catching this exception allows for the detection of the 
+ * Server disconnecting from the client.
  */
 public class HeartbeatConnection extends Thread{
 
@@ -32,12 +42,8 @@ public class HeartbeatConnection extends Thread{
     }
 
     /**
-     * Waits for an incoming request.
+     * Maintains heartbeat from Client to Server.
      * 
-     * If the socket being listened on disconnects, the readLine method will return null,
-     * and the getToken method on the null object will throw a null pointer exception.
-     * 
-     * It is behaviour that comes not by design.
      */
     public void listenForHeartbeat(){
         try{

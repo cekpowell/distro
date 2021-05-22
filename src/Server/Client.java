@@ -6,15 +6,14 @@ import java.net.SocketTimeoutException;
 import Interface.ClientInterface;
 
 /**
- * Abstract class to represent a Client within the system.
+ * Abstract class to represent a Client within a Client-Server system.
  * 
- * A Client connects to a Data Store by connecting to a Controller.
+ * When started, a Client will try to connect to the server, throwing an exception
+ * if this was not possible.
  * 
- * The underlying Client object will take in requests and pass them to the 
- * defined handleRequest method.
- * 
- * The handleRequest method will then return the response of the request to the 
- * handleResponse method of the underlying object.
+ * If the Client was successfully started, requests can be sent to the Server using the  
+ * 'sendRequest' method, and the underlying Client implementation will recieve the responses
+ * to these requests through the 'handleResponse' method.
  */
 public abstract class Client {
 
@@ -71,6 +70,9 @@ public abstract class Client {
 
     /**
      * Send's a user's input request to the Controller the Client is connected to.
+     * 
+     * All clients will send requests in the same way, so this method is implemented in the
+     * abstract class.
      */
     public void sendRequest(String request){
         try{
@@ -92,7 +94,7 @@ public abstract class Client {
     /**
      * Gathers a response for a request.
      * 
-     * Reads from the InputReader of the Controller connection for the response.
+     * Reads from the InputReader of the Server connection for the response.
      * 
      * @param request The request the response is being gathered for.
      */
@@ -125,6 +127,9 @@ public abstract class Client {
      * 
      * This could involve simply outputting the response to the screen, or sending a further request 
      * based on the recieved response.
+     * 
+     * Different types of client will handle responses in different ways, and so the specific type
+     * of client must provide implementation for this method.
      * 
      * @param connection The socket the response was recieved from.
      * @param response The response message.

@@ -10,9 +10,14 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 
 /**
+ * Convenience class for Socket.
  * 
+ * Creates new socket but also creates the input and output streams at instantiation.
+ * 
+ * Has getters thta allow for quick access to these output streams.
  */
 public class Connection extends Socket{
+    
     // member variables
     private PrintWriter textOut;
     private BufferedReader textIn;

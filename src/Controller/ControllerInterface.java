@@ -3,10 +3,12 @@ package Controller;
 import java.net.Socket;
 
 import Interface.ServerInterface;
-import Server.*;
 
 /**
+ * Class needed for the reason that a controller must also log the joining of a 
+ * Dstore.
  * 
+ * This class will be removed when such logging is no longer required.
  */
 public abstract class ControllerInterface extends ServerInterface{
 

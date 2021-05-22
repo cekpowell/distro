@@ -3,15 +3,16 @@ package Controller;
 import java.net.Socket;
 
 import Logger.*;
-import Server.*;
 
 /**
- * Data store controller. 
+ * Implementation of ServerInterface that provides an interface for a 
+ * data store Controller through the terminal.
  * 
- * Connects to Dstores and servers requests from Clients.
+ * Messages are logged onto the terminal through stdout.
  */
 public class ControllerTerminal extends ControllerInterface{
 
+    // member variables
     Controller controller;
 
     /**

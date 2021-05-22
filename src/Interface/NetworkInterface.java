@@ -3,13 +3,13 @@ package Interface;
 import java.net.Socket;
 
 /**
- * Represents the type of object that sends and recieves messages, and needs to log 
- * these messages.
+ * Represents the type of object that acts as an interface between the user
+ * and a component of the network.
  * 
  * Such an object must implement the methods of logMessageSend, logMessageRecieved,
- * LogEvent and LogError.
+ * LogEvent and handleError.
  * 
- * How these events are logged is up to the class that implements them.
+ * How these events are logged is up the specific interface that implements this.
  */
 public interface NetworkInterface {
 

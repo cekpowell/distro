@@ -15,13 +15,18 @@ import Token.TokenType.*;
 
 
 /**
- * Handles requests sent to a Controller by a Client.
+ * Handles requests sent to a Controller by a DSClient.
  */
 public class ControllerRequestHandler extends RequestHandler{
 
     // member variables
     private Controller controller;
 
+    /**
+     * Class constructor.
+     * 
+     * @param controller The Controller associated with the request handler.
+     */
     public ControllerRequestHandler(Controller controller){
         // initialising member variables
         super(controller);

@@ -4,15 +4,12 @@ import Interface.ClientInterface;
 import Server.*;
 
 /**
- * Abstract class to represent a Client within the system.
+ * Abstract class to represent a DSClient within the system.
  * 
- * A Client connects to a Data Store by connecting to a Controller.
+ * A DSClient connects to a Data Store by connecting to a Controller.
  * 
- * The underlying Client object will take in requests and pass them to the 
- * defined handleRequest method.
- * 
- * The handleRequest method will then return the response of the request to the 
- * handleResponse method of the underlying object.
+ * The class will send requests using the underlying Client object, and 
+ * handles the responses to these requests with the handleResponse method.
  */
 public class DSClient extends Client{
 
@@ -28,7 +25,10 @@ public class DSClient extends Client{
     }
 
     /**
+     * Handles the given response.
      * 
+     * @param connection The socket the response was recieved from.
+     * @param message The recieved response.
      */
     public void handleResponse(Connection connection, String message){
         /**
