@@ -10,14 +10,13 @@ import Token.TokenType.*;
 /**
  * Handles requests sent to a Dstore by a DSClient and Controller.
  */
-public class DstoreRequestHandler extends RequestHandler{
+public class DstoreRequestHandler implements RequestHandler{
     
     // member variables
     Dstore dstore;
 
     public DstoreRequestHandler(Dstore dstore){
         // initializing member variables
-        super(dstore);
         this.dstore = dstore;
     }
 
@@ -26,7 +25,7 @@ public class DstoreRequestHandler extends RequestHandler{
      * 
      * @param request Tokenized request to be handled.
      */
-    public void handleRequest(ServerConnection connection, Token request){
+    public void handleRequest(Connection connection, Token request){
 
         //////////////////////
         // Handling Request //
@@ -37,14 +36,12 @@ public class DstoreRequestHandler extends RequestHandler{
         }
 
         // TODO Handle rest of requests
-
-        connection.close(); // TODO Does it need to handle further requests? (at the moment i cant think of a case where it would as any request to the Dstore from a client is onlly requerst and response, with nothing after the response)
     }
 
     /**
      * Handles a LIST request.
      */
-    public void handleListRequest(ServerConnection connection){
+    public void handleListRequest(Connection connection){
         try{
             // gathering list of files
             File[] fileList = this.dstore.getFileStore().listFiles();
@@ -61,7 +58,7 @@ public class DstoreRequestHandler extends RequestHandler{
             String message = String.join(" ", messageElements);
 
             // sending the list of files back to the connector
-            connection.getConnection().sendMessage(message);
+            connection.sendMessage(message);
         }
         catch(Exception e){
             //TODO need to test for different types of exception to know where the error occuredd - e.g., SocketTimeoutException, NullPointerException, etc...

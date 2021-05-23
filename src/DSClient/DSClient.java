@@ -1,7 +1,10 @@
 package DSClient;
 
-import Interface.ClientInterface;
+import Interface.NetworkInterface;
 import Server.*;
+import Token.*;
+import Token.TokenType.ListToken;
+
 
 /**
  * Abstract class to represent a DSClient within the system.
@@ -19,7 +22,7 @@ public class DSClient extends Client{
      * @param cPort The port of the Controller.
      * @param timeout The message timeout period.
      */
-    public DSClient(int cPort, int timeout, ClientInterface clientInterface) {
+    public DSClient(int cPort, int timeout, NetworkInterface clientInterface) {
         // initialising member variables
         super(cPort, timeout, clientInterface);
     }
@@ -31,30 +34,50 @@ public class DSClient extends Client{
      * @param message The recieved response.
      */
     public void handleInputRequest(String request){
-        /**
-         * TODO
-         * 
-         * At the moment this just takes the inupt request, sends it to the server and gets the response.
-         * 
-         * Will need to handle different input requests differently based on what they tokenize to.
-         * 
-         * e.g., For Store, send store to controller, get response of which dstores to store to and then send messages
-         * to those dstores.
-         * 
-         * e.g., for list, will just need to send message and get response
-         */
-        try{
-            // sending message to Controller
-            this.getServerConnection().sendMessage(request);
+            try{
+                Token requestToken = RequestTokenizer.getToken(request);
 
-            // gathering response
-            this.getServerConnection().getMessageWithinTimeout(this.getTimeout());
-        }
-        catch(Exception e){
-            // unable to handle input request
+                // pattern matching for token type
+                if(requestToken instanceof ListToken){
+                    this.handleListRequest(request);
+                }
 
-            //TODO need to test for different types of exception to know where the error occuredd - e.g., SocketTimeoutException, NullPointerException, etc...
-            this.getClientInterface().handleError("Unable to handle input request : " + request + " sent to Controller on port : " + this.getCPort());
-        }
+                // invalid request or request not expected by Client
+                else{
+                    this.handleInvalidRequest(request);
+                }
+            }
+            catch(Exception e){
+                // unable to handle input request
+
+                //TODO need to test for different types of exception to know where the error occuredd - e.g., SocketTimeoutException, NullPointerException, etc...
+                this.getClientInterface().handleError("Unable to handle input request : " + request + " sent to Controller on port : " + this.getCPort());
+            }
+    }
+
+    /**
+     * 
+     * @param request
+     * @throws Exception
+     */
+    private void handleListRequest(String request) throws Exception{
+        // sending message to Controller
+        this.getServerConnection().sendMessage(request);
+
+        // gathering response
+        this.getServerConnection().getMessageWithinTimeout(this.getTimeout());
+    }
+
+    /**
+     * 
+     * @param request
+     * @throws Exception
+     */
+    private void handleInvalidRequest(String request) throws Exception{
+        // sending message to Controller
+        this.getServerConnection().sendMessage(request);
+
+        // gathering response
+        this.getServerConnection().getMessageWithinTimeout(this.getTimeout());
     }
 }

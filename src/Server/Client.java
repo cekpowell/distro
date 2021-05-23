@@ -2,7 +2,7 @@ package Server;
 
 import java.net.InetAddress;
 
-import Interface.ClientInterface;
+import Interface.NetworkInterface;
 
 /**
  * Abstract class to represent a Client within a Client-Server system.
@@ -14,14 +14,14 @@ import Interface.ClientInterface;
  * 'sendRequest' method, and the underlying Client implementation will recieve the responses
  * to these requests through the 'handleResponse' method.
  */
-public abstract class Client {
+public abstract class Client implements NetworkProcess{
 
     // member variables
     private int cPort;
     private int timeout;
     private Connection serverConnection;
     private HeartbeatConnection serverHeartbeat;
-    private ClientInterface clientInterface;
+    private NetworkInterface clientInterface;
 
     /**
      * Class Constructor.
@@ -29,7 +29,7 @@ public abstract class Client {
      * @param cPort The port of the Controller.
      * @param timeout The message timeout period.
      */
-    public Client(int cPort, int timeout, ClientInterface clientInterface) {
+    public Client(int cPort, int timeout, NetworkInterface clientInterface) {
         // initialising member variables
         this.cPort = cPort;
         this.timeout = timeout;
@@ -98,11 +98,11 @@ public abstract class Client {
         return this.timeout;
     }
 
-    public ClientInterface getClientInterface(){
-        return this.clientInterface;
-    }
-
     public Connection getServerConnection(){
         return this.serverConnection;
+    }
+
+    public NetworkInterface getClientInterface(){
+        return this.clientInterface;
     }
 }

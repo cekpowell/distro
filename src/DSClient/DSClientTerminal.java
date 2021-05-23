@@ -4,7 +4,7 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.Socket;
 
-import Interface.ClientInterface;
+import Interface.NetworkInterface;
 
 /**
  * Implementation of a ClientInterface that gathers user requests from the terminal.
@@ -16,7 +16,7 @@ import Interface.ClientInterface;
  * 
  * The interface logs the response to requests on stdout.
  */
-public class DSClientTerminal extends ClientInterface{
+public class DSClientTerminal extends NetworkInterface{
 
     // member variables
     private DSClient client;
@@ -32,7 +32,7 @@ public class DSClientTerminal extends ClientInterface{
         this.client = new DSClient(cPort, timeout, this);
 
         // connecting to network
-        this.startClient(this.client);
+        this.startNetworkProcess(this.client);
 
         // waiting for user input
         this.waitForInput();

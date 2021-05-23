@@ -11,7 +11,7 @@ import Interface.ServerInterface;
  * Servers listen for new connectors and create new Connection objects to 
  * handle the request(s) the connector.
  */
-public abstract class Server {
+public abstract class Server implements NetworkProcess{
 
     // member variables
     private ServerType type;

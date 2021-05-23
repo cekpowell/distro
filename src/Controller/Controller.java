@@ -20,8 +20,8 @@ public class Controller extends Server{
     private ControllerInterface controllerInterface; // TODO This is only required because Controller must log a JOIN request from a server seperatley - when this request is not needed, this property can be removed.
 
     // indexes
-    private HashMap<ServerConnection,Integer> dstores;
-    private ArrayList<ServerConnection> clients;
+    private HashMap<Connection,Integer> dstores;
+    private ArrayList<Connection> clients;
     private ArrayList<String> files;
 
     /**
@@ -43,8 +43,8 @@ public class Controller extends Server{
         this.setRequestHandler(new ControllerRequestHandler(this));
 
         // indexes
-        this.dstores = new HashMap<ServerConnection,Integer>();
-        this.clients = new ArrayList<ServerConnection>();
+        this.dstores = new HashMap<Connection,Integer>();
+        this.clients = new ArrayList<Connection>();
         this.files = new ArrayList<String>();
     }
 
@@ -68,8 +68,8 @@ public class Controller extends Server{
      */
     public void handleDisconnect(int port){
         // Checking for Client disconnect
-        for(ServerConnection clientConnection : this.clients){
-            if(clientConnection.getConnection().getSocket().getPort() == port){
+        for(Connection clientConnection : this.clients){
+            if(clientConnection.getSocket().getPort() == port){
                 this.controllerInterface.handleError("Client on port : " + port + " disconnected.");
                 this.removeClient(clientConnection);
                 return;
@@ -77,8 +77,8 @@ public class Controller extends Server{
         }
 
         // checking for Dstore disconnect
-        for(ServerConnection dstoreConnection : this.dstores.keySet()){
-            if(dstoreConnection.getConnection().getSocket().getPort() == port){
+        for(Connection dstoreConnection : this.dstores.keySet()){
+            if(dstoreConnection.getSocket().getPort() == port){
                 this.controllerInterface.handleError("Dstore listening on port : " + this.dstores.get(dstoreConnection)+ " disconnected.");
                 this.removeDstore(dstoreConnection);
                 return;
@@ -94,11 +94,11 @@ public class Controller extends Server{
      * 
      * @param dstore The connection to the Dstore to be added.
      */
-    public void addDstore(ServerConnection dstoreConnection, int dstorePort){
+    public void addDstore(Connection dstoreConnection, int dstorePort){
         this.dstores.put(dstoreConnection,dstorePort);
 
         // logging
-        this.controllerInterface.logDstoreJoined(dstoreConnection.getConnection().getSocket(), dstorePort);
+        this.controllerInterface.logDstoreJoined(dstoreConnection.getSocket(), dstorePort);
     }
 
     /**
@@ -106,7 +106,7 @@ public class Controller extends Server{
      * 
      * @param client The connection to the client.
      */
-    public void addClient(ServerConnection clientConnection){
+    public void addClient(Connection clientConnection){
         this.clients.add(clientConnection);
     }
 
@@ -115,7 +115,7 @@ public class Controller extends Server{
      * 
      * @param dstore The connection to the Dstore to be removed.
      */
-    private void removeDstore(ServerConnection dstore){
+    private void removeDstore(Connection dstore){
         this.dstores.remove(dstore);
     }
 
@@ -124,7 +124,7 @@ public class Controller extends Server{
      * 
      * @param client The connection to the client.
      */
-    private void removeClient(ServerConnection clientConnection){
+    private void removeClient(Connection clientConnection){
         this.clients.remove(clientConnection);
     }
 
@@ -141,11 +141,11 @@ public class Controller extends Server{
         return this.files;
     }
 
-    public HashMap<ServerConnection, Integer> getdstores(){
+    public HashMap<Connection, Integer> getdstores(){
         return this.dstores;
     }
 
-    public ArrayList<ServerConnection> getClients(){
+    public ArrayList<Connection> getClients(){
         return this.clients;
     }
 }

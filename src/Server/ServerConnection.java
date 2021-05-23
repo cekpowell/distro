@@ -1,13 +1,5 @@
 package Server;
 
-import java.net.Socket;
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
-
 import Token.RequestTokenizer;
 import Token.Token;
 
@@ -60,7 +52,7 @@ public class ServerConnection extends Thread {
                 Token requestToken = RequestTokenizer.getToken(request);
 
                 // handling request
-                this.server.getRequestHandler().handleRequest(this, requestToken); // TODO Does this need to be ran on a new Thread? Not doing it wont cause concurrency issues, but could be slow.
+                this.server.getRequestHandler().handleRequest(this.connection, requestToken); // TODO Does this need to be ran on a new Thread? Not doing it wont cause concurrency issues, but could be slow.
             }
         }
         catch(NullPointerException e){

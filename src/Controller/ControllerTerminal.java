@@ -27,7 +27,7 @@ public class ControllerTerminal extends ControllerInterface{
         this.controller = new Controller(port, r, timeout, rebalancePeriod, this);
 
         // starting Controller
-        this.startServer(this.controller); // start  it on seperate thread
+        this.startNetworkProcess(this.controller); // start  it on seperate thread
     }
 
     /**

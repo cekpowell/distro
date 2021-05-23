@@ -2,6 +2,8 @@ package Interface;
 
 import java.net.Socket;
 
+import Server.NetworkProcess;
+
 /**
  * Represents the type of object that acts as an interface between the user
  * and a component of the network.
@@ -11,7 +13,25 @@ import java.net.Socket;
  * 
  * How these events are logged is up the specific interface that implements this.
  */
-public interface NetworkInterface {
+public abstract class NetworkInterface {
+
+    /**
+     * Tries to start the underlying Server.
+     * 
+     * Passes an error to the interface's error logger if the start was unsuccessful.
+     */
+    public void startNetworkProcess(NetworkProcess process){
+        try{
+            // trying to start the server
+            process.start();
+
+            // Controller successfully started
+        }
+        catch(Exception e){
+            // handling error if server could not be started
+            this.handleError(e.getMessage());
+        }
+    }
 
     /**
      * Handles the logging of a message being sent.

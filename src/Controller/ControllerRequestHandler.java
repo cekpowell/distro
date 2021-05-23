@@ -17,7 +17,7 @@ import Token.TokenType.*;
 /**
  * Handles requests sent to a Controller by a DSClient.
  */
-public class ControllerRequestHandler extends RequestHandler{
+public class ControllerRequestHandler implements RequestHandler{
 
     // member variables
     private Controller controller;
@@ -29,7 +29,6 @@ public class ControllerRequestHandler extends RequestHandler{
      */
     public ControllerRequestHandler(Controller controller){
         // initialising member variables
-        super(controller);
         this.controller = controller;
     }
 
@@ -38,7 +37,7 @@ public class ControllerRequestHandler extends RequestHandler{
      * 
      * @param request Tokenized request to be handled.
      */
-    public void handleRequest(ServerConnection connection, Token request){
+    public void handleRequest(Connection connection, Token request){
 
         boolean clientRequest = true;
 
@@ -90,7 +89,7 @@ public class ControllerRequestHandler extends RequestHandler{
      * @param connection The connection associated with the request.
      * @param dstorePort The port number of the Dstore joining the system.
      */
-    public void handleJoinRequest(ServerConnection connection, int dstorePort){
+    public void handleJoinRequest(Connection connection, int dstorePort){
         // addding the Dstore to the controller
         this.controller.addDstore(connection, dstorePort);
     }
@@ -106,13 +105,13 @@ public class ControllerRequestHandler extends RequestHandler{
      * ALSO - it sends the LIST request to the Dstore's listen port, and does not use the existing 
      * connection that the Controller has with the Dstore - this may lead to some errors later down the line
      */
-    private void handleListRequest(ServerConnection connection){
+    private void handleListRequest(Connection connection){
         try{
             ArrayList<String> messageElements = new ArrayList<String>();
             messageElements.add("LIST");
     
             // looping through list of Dstores
-            for(ServerConnection dstore : this.controller.getdstores().keySet()){
+            for(Connection dstore : this.controller.getdstores().keySet()){
 
                 // setting up socket
                 int dstoreListenPort = this.controller.getdstores().get(dstore);
@@ -135,18 +134,18 @@ public class ControllerRequestHandler extends RequestHandler{
             // sending response back to client
             String message = String.join(" ", messageElements);
             if(messageElements.size() == 1) message += " "; // ERROR FIX : for case when there are no files, still need to add the space to make sure it is tokenized correctly on client side
-            connection.getConnection().sendMessage(message);
+            connection.sendMessage(message);
         }
         catch(Exception e){
             //TODO need to test for different types of exception to know where the error occuredd - e.g., SocketTimeoutException, NullPointerException, etc...
-            this.controller.getServerInterface().handleError("Unable to handle LIST request for Client on port : " + connection.getConnection().getSocket().getPort());
+            this.controller.getServerInterface().handleError("Unable to handle LIST request for Client on port : " + connection.getSocket().getPort());
         }
     }
 
     /**
      * Handles an invalid request.
      */
-    public void handleInvalidRequest(ServerConnection connection){
-        this.controller.getServerInterface().handleError("Invalid request recieved from connector on port : " + connection.getConnection().getSocket().getPort());
+    public void handleInvalidRequest(Connection connection){
+        this.controller.getServerInterface().handleError("Invalid request recieved from connector on port : " + connection.getSocket().getPort());
     }
 }
