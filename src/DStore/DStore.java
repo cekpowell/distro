@@ -47,10 +47,9 @@ public class Dstore extends Server{
     /**
      * Sets up the Dstore ready for use.
      * 
-     * Creates the logger, connects to controller, creates file store and waits for 
-     * connections.
+     * Creates the logger, connects to controller and creates file store.
      */
-    public void start() throws Exception{
+    public void setup() throws Exception{
         try{
             // creating the terminal logger
             this.getServerInterface().createLogger();
@@ -66,9 +65,6 @@ public class Dstore extends Server{
 
             // setting up file storage folder
             this.setupFileStore(this.folderPath);
-
-            // Starting the server listening for connections.
-            this.waitForConnection();
         }
         catch(Exception e){
             throw new Exception("Unable to connect DStore on port : " + this.port + " to controller on port : " + this.cPort);
@@ -80,14 +76,13 @@ public class Dstore extends Server{
      */
     public void connectToController() throws Exception{
         // creating communicatoin channel
-        Socket socket = new Socket(InetAddress.getLocalHost(), this.cPort);
-        this.controllerConnection = new ServerConnection(this, socket);
+        Connection connection = new Connection(this.getServerInterface(), InetAddress.getLocalHost(), this.cPort);
+        this.controllerConnection = new ServerConnection(this, connection);
         this.controllerConnection.start();
 
         // sending JOIN message to Controller
         String message = Protocol.JOIN_TOKEN + " " + this.getPort();
-        this.controllerConnection.getTextOut().println(message);
-        this.controllerConnection.getTextOut().flush();
+        this.controllerConnection.getConnection().sendMessage(message);
     }
 
     /**

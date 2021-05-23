@@ -42,12 +42,6 @@ public class ControllerRequestHandler extends RequestHandler{
 
         boolean clientRequest = true;
 
-        /////////////////////
-        // Logging request //
-        /////////////////////
-
-        this.controller.getServerInterface().logMessageReceived(connection.getConnection(), request.message);
-
         //////////////////////
         // Handling request //
         //////////////////////
@@ -122,25 +116,14 @@ public class ControllerRequestHandler extends RequestHandler{
 
                 // setting up socket
                 int dstoreListenPort = this.controller.getdstores().get(dstore);
-                Socket dstoreConnection = new Socket(InetAddress.getLocalHost(), dstoreListenPort);
-
-                // setting up streams
-                PrintWriter out = new PrintWriter (new OutputStreamWriter(dstoreConnection.getOutputStream()));
-                BufferedReader in = new BufferedReader (new InputStreamReader(dstoreConnection.getInputStream()));
+                Connection dstoreConnection = new Connection(this.controller.getServerInterface(), InetAddress.getLocalHost(), dstoreListenPort);
     
                 // sending request to dstore
                 String request = Protocol.LIST_TOKEN;
-                out.println(request);
-                out.flush(); // closing the stream
-    
-                // Logging
-                this.controller.getServerInterface().logMessageSent(dstoreConnection, request);
+                dstoreConnection.sendMessage(request);
     
                 // gathering response
-                Token response = RequestTokenizer.getToken(in.readLine());
-    
-                // Logging 
-                this.controller.getServerInterface().logMessageReceived(dstore.getConnection(), response.message);
+                Token response = RequestTokenizer.getToken(dstoreConnection.getMessage());
     
                 if(response instanceof ListFilesToken){
                     // adding response to message elements
@@ -152,14 +135,11 @@ public class ControllerRequestHandler extends RequestHandler{
             // sending response back to client
             String message = String.join(" ", messageElements);
             if(messageElements.size() == 1) message += " "; // ERROR FIX : for case when there are no files, still need to add the space to make sure it is tokenized correctly on client side
-            connection.getTextOut().println(message);
-            connection.getTextOut().flush();
-    
-            // Logging 
-            this.controller.getServerInterface().logMessageSent(connection.getConnection(), message);
+            connection.getConnection().sendMessage(message);
         }
         catch(Exception e){
-            this.controller.getServerInterface().handleError("Unable to perform LIST command for Client on port : " + connection.getConnection().getPort());
+            //TODO need to test for different types of exception to know where the error occuredd - e.g., SocketTimeoutException, NullPointerException, etc...
+            this.controller.getServerInterface().handleError("Unable to handle LIST request for Client on port : " + connection.getConnection().getSocket().getPort());
         }
     }
 
@@ -167,6 +147,6 @@ public class ControllerRequestHandler extends RequestHandler{
      * Handles an invalid request.
      */
     public void handleInvalidRequest(ServerConnection connection){
-        this.controller.getServerInterface().handleError("Invalid request recieved from connector on port : " + connection.getConnection().getPort());
+        this.controller.getServerInterface().handleError("Invalid request recieved from connector on port : " + connection.getConnection().getSocket().getPort());
     }
 }

@@ -49,7 +49,7 @@ public class HeartbeatConnection extends Thread{
         try{
             while(this.isActive){
                 // getting heartbeat from connnection
-                Token heartbeat = RequestTokenizer.getToken(this.connection.getTextIn().readLine());
+                Token heartbeat = RequestTokenizer.getToken(this.connection.getMessage());
             }
         }
         catch(NullPointerException e){
@@ -57,7 +57,8 @@ public class HeartbeatConnection extends Thread{
             this.client.handleServerDisconnect();
         }
         catch(Exception e){
-            this.client.getClientInterface().handleError("Error listening for heartbeat on port : " + this.connection.getLocalPort() + " for Controller on port " + this.connection.getPort());
+            this.client.getClientInterface().handleError("Error listening for heartbeat on port : " + this.connection.getSocket().getLocalPort() + " for Controller on port " + this.connection.getSocket().getPort() + e.toString());
+            e.printStackTrace();
         }
     }
 

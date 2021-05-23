@@ -59,7 +59,7 @@ public class DSClientTerminal extends ClientInterface{
                 }
                 else{
                     // sending request to controller
-                    this.client.sendRequest(request);
+                    this.client.handleInputRequest(request);
                 }
             }
         }
@@ -111,10 +111,14 @@ public class DSClientTerminal extends ClientInterface{
      * @param error The error to be logged.
      */
     public void handleError(String error){
+        // logging error to terminal
         System.out.println("*ERROR* " + error);
 
         // checking if error was controller disconnected
-        if(error.equals("Lost connection to Controller on port : " + this.client.getCPort())){
+        if(error.equals("Lost connection to Server on port : " + this.client.getCPort())){
+            System.exit(0);
+        }
+        else if(error.equals("Unable to connect Client to Server on port : " + this.client.getCPort())){
             System.exit(0);
         }
     }

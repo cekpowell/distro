@@ -24,13 +24,8 @@ public class ServerConnection extends Thread {
     
     // member variables
     private Server server;
-    private Socket connection;
+    private Connection connection;
     private boolean isActive;
-    
-    private PrintWriter textOut;
-    private BufferedReader textIn;
-    private OutputStream dataOut;
-    private InputStream dataIn;
 
     /**
      * Class constructor.
@@ -38,14 +33,10 @@ public class ServerConnection extends Thread {
      * @param server The Server object involved in the connection.
      * @param connection The conection between the Server and the connector.
      */
-    public ServerConnection(Server server, Socket connection) throws Exception{
+    public ServerConnection(Server server, Connection connection) throws Exception{
         this.server = server;
         this.connection = connection;
         this.isActive = true;
-        this.textOut = new PrintWriter (new OutputStreamWriter(connection.getOutputStream())); 
-        this.textIn = new BufferedReader (new InputStreamReader(connection.getInputStream()));
-        this.dataOut = connection.getOutputStream();
-        this.dataIn = connection.getInputStream();
     }
 
     /**
@@ -63,18 +54,21 @@ public class ServerConnection extends Thread {
         try{
             while(this.isActive()){
                 // getting request from connnection
-                Token request = RequestTokenizer.getToken(this.getTextIn().readLine());
+                String request = this.connection.getMessage();
+
+                // tokenizing request
+                Token requestToken = RequestTokenizer.getToken(request);
 
                 // handling request
-                this.server.getRequestHandler().handleRequest(this, request); // TODO Does this need to be ran on a new Thread? Not doing it wont cause concurrency issues, but could be slow.
+                this.server.getRequestHandler().handleRequest(this, requestToken); // TODO Does this need to be ran on a new Thread? Not doing it wont cause concurrency issues, but could be slow.
             }
         }
         catch(NullPointerException e){
             // Connector disconnected - passing it on to the server to handle
-            this.server.handleDisconnect(this.getConnection().getPort());
+            this.server.handleDisconnect(this.getConnection().getSocket().getPort());
         }
         catch(Exception e){
-            this.server.getServerInterface().handleError(this.server.getType().toString() + " on port : " + this.connection.getLocalPort() + " unable to handle request from port : " + this.connection.getPort());
+            this.server.getServerInterface().handleError(this.server.getType().toString() + " on port : " + this.connection.getSocket().getLocalPort() + " unable to handle request from port : " + this.connection.getSocket().getPort());
         }
     }
 
@@ -91,27 +85,11 @@ public class ServerConnection extends Thread {
     // GETTERS AND SETTERS //
     /////////////////////////
     
-    public Socket getConnection(){
+    public Connection getConnection(){
         return this.connection;
     }
 
     public boolean isActive(){
         return this.isActive;
-    }
-
-    public PrintWriter getTextOut(){
-        return this.textOut;
-    }
-
-    public BufferedReader getTextIn(){
-        return this.textIn;
-    }
-
-    public OutputStream getDataOut(){
-        return this.dataOut;
-    }
-
-    public InputStream getDataIn(){
-        return this.dataIn;
     }
 }

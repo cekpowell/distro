@@ -1,7 +1,6 @@
 package Server;
 
 import java.net.InetAddress;
-import java.net.SocketTimeoutException;
 
 import Interface.ClientInterface;
 
@@ -20,8 +19,8 @@ public abstract class Client {
     // member variables
     private int cPort;
     private int timeout;
-    private Connection controllerConnection;
-    private HeartbeatConnection controllerHeartbeat;
+    private Connection serverConnection;
+    private HeartbeatConnection serverHeartbeat;
     private ClientInterface clientInterface;
 
     /**
@@ -50,7 +49,7 @@ public abstract class Client {
             this.connectToServer();
         }
         catch(Exception e){
-            throw new Exception("Unable to connect Client to controller on port : " + this.cPort);
+            throw new Exception("Unable to connect Client to Server on port : " + this.cPort);
         }
     }
 
@@ -59,82 +58,23 @@ public abstract class Client {
      */
     private void connectToServer() throws Exception{
         // setting up main connection
-        this.controllerConnection = new Connection(InetAddress.getLocalHost(), this.cPort);
-        this.controllerConnection.setSoTimeout(timeout);
+        this.serverConnection = new Connection(this.clientInterface, InetAddress.getLocalHost(), this.cPort);
 
         // setting up heartbeat connection
-        Connection heartbeatConnection = new Connection(InetAddress.getLocalHost(), this.cPort);
-        this.controllerHeartbeat = new HeartbeatConnection(this, heartbeatConnection);
-        this.controllerHeartbeat.start();
+        Connection heartbeatConnection = new Connection(this.clientInterface, InetAddress.getLocalHost(), this.cPort);
+        this.serverHeartbeat = new HeartbeatConnection(this, heartbeatConnection);
+        this.serverHeartbeat.start();
     }
 
     /**
-     * Send's a user's input request to the Controller the Client is connected to.
+     * Handles the given input request from the user.
      * 
-     * All clients will send requests in the same way, so this method is implemented in the
-     * abstract class.
+     * Different clients will handle requests in different ways, and so the underlying
+     * Client will need to provide implementation for the method.
+     * 
+     * @param request The request provided by the user.
      */
-    public void sendRequest(String request){
-        try{
-            // Sending request
-            this.controllerConnection.getTextOut().println(request);
-            this.controllerConnection.getTextOut().flush(); 
-
-            // logging request
-            this.clientInterface.logMessageSent(this.controllerConnection, request);
-
-            // gathering response
-            this.gatherResponse(request);
-        }
-        catch(Exception e){
-            this.clientInterface.handleError("Unable to send request : \"" + request + "\" to Controller on port : " + this.cPort);
-        }
-    }
-
-    /**
-     * Gathers a response for a request.
-     * 
-     * Reads from the InputReader of the Server connection for the response.
-     * 
-     * @param request The request the response is being gathered for.
-     */
-    private void gatherResponse(String request){
-        try{
-            // FORMATTING
-            System.out.println("Waiting for response...");
-
-            // gathering response from controller 
-            String response = this.controllerConnection.getTextIn().readLine();
-
-            // response gathered within timeout...
-
-            // handling response
-            this.handleResponse(this.controllerConnection, response);
-        }
-        catch(SocketTimeoutException e){
-            this.clientInterface.handleError("Timeout occurred on request : \"" + request + "\" to Controller on port : " + this.cPort);
-        }
-        catch(Exception e){
-            this.clientInterface.handleError("Unable to recieve response for request : \"" + request + "\" from Controller on port : " + this.cPort + " (Controller likley disconnected).");
-        }
-    }
-
-    /**
-     * Handles the given response.
-     * 
-     * The underlying type of Client will need to implement the method to handle the recieved
-     * message appropriatley. 
-     * 
-     * This could involve simply outputting the response to the screen, or sending a further request 
-     * based on the recieved response.
-     * 
-     * Different types of client will handle responses in different ways, and so the specific type
-     * of client must provide implementation for this method.
-     * 
-     * @param connection The socket the response was recieved from.
-     * @param response The response message.
-     */
-    public abstract void handleResponse(Connection connection, String response);
+    public abstract void handleInputRequest(String request);
 
     /**
      * Handles the termination of the connection between the Client and the Controller.
@@ -143,7 +83,7 @@ public abstract class Client {
      */
     public void handleServerDisconnect(){
         // logging error
-        this.clientInterface.handleError("Lost connection to Controller on port : " + this.cPort);
+        this.clientInterface.handleError("Lost connection to Server on port : " + this.cPort);
     }
 
     /////////////////////////
@@ -154,7 +94,15 @@ public abstract class Client {
         return this.cPort;
     }
 
+    public int getTimeout(){
+        return this.timeout;
+    }
+
     public ClientInterface getClientInterface(){
         return this.clientInterface;
+    }
+
+    public Connection getServerConnection(){
+        return this.serverConnection;
     }
 }

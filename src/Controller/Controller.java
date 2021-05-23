@@ -49,15 +49,13 @@ public class Controller extends Server{
     }
 
     /**
-     * Ran to set the Controller up to start recieving connections
+     * Set's up the Controller ready for use.
      * 
-     * Set's up the logger and waits for connections.
+     * Creates the logger.
      */
-    public void start() throws Exception{
+    public void setup() throws Exception{
         try{
             this.getServerInterface().createLogger();
-
-            this.waitForConnection();
         }
         catch(Exception e){
             throw new Exception("Unable to create Controller Logger for Controller on port : " + this.port);
@@ -71,7 +69,7 @@ public class Controller extends Server{
     public void handleDisconnect(int port){
         // Checking for Client disconnect
         for(ServerConnection clientConnection : this.clients){
-            if(clientConnection.getConnection().getPort() == port){
+            if(clientConnection.getConnection().getSocket().getPort() == port){
                 this.controllerInterface.handleError("Client on port : " + port + " disconnected.");
                 this.removeClient(clientConnection);
                 return;
@@ -80,7 +78,7 @@ public class Controller extends Server{
 
         // checking for Dstore disconnect
         for(ServerConnection dstoreConnection : this.dstores.keySet()){
-            if(dstoreConnection.getConnection().getPort() == port){
+            if(dstoreConnection.getConnection().getSocket().getPort() == port){
                 this.controllerInterface.handleError("Dstore listening on port : " + this.dstores.get(dstoreConnection)+ " disconnected.");
                 this.removeDstore(dstoreConnection);
                 return;
@@ -100,7 +98,7 @@ public class Controller extends Server{
         this.dstores.put(dstoreConnection,dstorePort);
 
         // logging
-        this.controllerInterface.logDstoreJoined(dstoreConnection.getConnection(), dstorePort);
+        this.controllerInterface.logDstoreJoined(dstoreConnection.getConnection().getSocket(), dstorePort);
     }
 
     /**

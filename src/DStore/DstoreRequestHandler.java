@@ -28,12 +28,6 @@ public class DstoreRequestHandler extends RequestHandler{
      */
     public void handleRequest(ServerConnection connection, Token request){
 
-        /////////////////////
-        // Logging request //
-        /////////////////////
-
-        this.dstore.getServerInterface().logMessageReceived(connection.getConnection(), request.message);
-
         //////////////////////
         // Handling Request //
         //////////////////////
@@ -51,25 +45,27 @@ public class DstoreRequestHandler extends RequestHandler{
      * Handles a LIST request.
      */
     public void handleListRequest(ServerConnection connection){
-        // gathering list of files
-        File[] fileList = this.dstore.getFileStore().listFiles();
+        try{
+            // gathering list of files
+            File[] fileList = this.dstore.getFileStore().listFiles();
 
-        // creating message elements
-        ArrayList<String> messageElements = new ArrayList<String>();
-        messageElements.add("LIST");
+            // creating message elements
+            ArrayList<String> messageElements = new ArrayList<String>();
+            messageElements.add("LIST");
 
-        for(File file : fileList){
-            messageElements.add(file.getName());
+            for(File file : fileList){
+                messageElements.add(file.getName());
+            }
+
+            // creating message
+            String message = String.join(" ", messageElements);
+
+            // sending the list of files back to the connector
+            connection.getConnection().sendMessage(message);
         }
-
-        // creating message
-        String message = String.join(" ", messageElements);
-
-        // sending the list of files back to the connector
-        connection.getTextOut().println(message);
-        connection.getTextOut().flush();
-
-        // Logging
-        this.dstore.getServerInterface().logMessageSent(connection.getConnection(), message);
+        catch(Exception e){
+            //TODO need to test for different types of exception to know where the error occuredd - e.g., SocketTimeoutException, NullPointerException, etc...
+            this.dstore.getServerInterface().handleError("Unable to handle LIST request from Controller on port : " + this.dstore.getCPort());
+        }
     }
 }

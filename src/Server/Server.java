@@ -32,11 +32,25 @@ public abstract class Server {
     }
 
     /**
-     * Ran to set the server up to start recieving connections
+     * Ran to setup the server and start waiting for connections.
      * 
-     * Implemented by the Server instance (e.g., Controller)
+     * Throws exception if the server could not be setup.
      */
-    public abstract void start() throws Exception;
+    public void start() throws Exception{
+        // running the server's setup method
+        this.setup();
+
+        // starting the server
+        this.waitForConnection();
+    }
+
+    /**
+     * Sets up the server before starting it.
+     * 
+     * Implemented by the Server instance to perform setup actions before the 
+     * Server is started.
+     */
+    public abstract void setup() throws Exception;
 
     /**
      * Makes the server start listening for incoming communication.
@@ -49,13 +63,15 @@ public abstract class Server {
             // listening for connections
             while (this.isActive()){
                 try{
-                    Socket connection = this.serverSocket.accept();
+                    Socket socket = this.serverSocket.accept();
+                    Connection connection = new Connection(this.getServerInterface(), socket);
 
                     // setting up the connection
                     this.setUpConnection(connection);
                 }
                 catch(Exception e){
                     this.serverInterface.handleError(this.type.toString() + " on port : " + this.port + " unable to connect to new connector.");
+                    e.printStackTrace();
                 }
             }
         }
@@ -69,14 +85,14 @@ public abstract class Server {
      * 
      * @param connection The connection between the connector and the Server.
      */
-    public void setUpConnection(Socket connection){
+    public void setUpConnection(Connection connection){
         // Setting up connnection to connector
         try{
             ServerConnection serverConnection = new ServerConnection(this, connection);
             serverConnection.start();
         }
         catch(Exception e){
-            this.serverInterface.handleError("Unable to create socket streams for connector on port : " + connection.getPort());
+            this.serverInterface.handleError("Unable to create socket streams for connector on port : " + connection.getSocket().getPort());
         }
     }
 

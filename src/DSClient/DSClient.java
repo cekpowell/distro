@@ -30,12 +30,31 @@ public class DSClient extends Client{
      * @param connection The socket the response was recieved from.
      * @param message The recieved response.
      */
-    public void handleResponse(Connection connection, String message){
+    public void handleInputRequest(String request){
         /**
-         * TODO need to handle case where response requires some action
+         * TODO
          * 
-         * For now, just logs response to screen.
+         * At the moment this just takes the inupt request, sends it to the server and gets the response.
+         * 
+         * Will need to handle different input requests differently based on what they tokenize to.
+         * 
+         * e.g., For Store, send store to controller, get response of which dstores to store to and then send messages
+         * to those dstores.
+         * 
+         * e.g., for list, will just need to send message and get response
          */
-        this.getClientInterface().logMessageReceived(connection, message);
+        try{
+            // sending message to Controller
+            this.getServerConnection().sendMessage(request);
+
+            // gathering response
+            this.getServerConnection().getMessageWithinTimeout(this.getTimeout());
+        }
+        catch(Exception e){
+            // unable to handle input request
+
+            //TODO need to test for different types of exception to know where the error occuredd - e.g., SocketTimeoutException, NullPointerException, etc...
+            this.getClientInterface().handleError("Unable to handle input request : " + request + " sent to Controller on port : " + this.getCPort());
+        }
     }
 }
