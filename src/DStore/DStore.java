@@ -2,11 +2,10 @@ package Dstore;
 
 import java.io.File;
 import java.net.InetAddress;
-import java.net.Socket;
 
 import Interface.ServerInterface;
 import Logger.*;
-import Server.*;
+import Network.*;
 
  /**
   * Individual data store unit within the system. 
@@ -22,7 +21,7 @@ public class Dstore extends Server{
     private int timeout;
     private String folderPath;
     private File fileStore;
-    private ServerConnection controllerConnection;
+    private ServerThread controllerThread;
     private ServerInterface dstoreInterface;
 
     /**
@@ -77,12 +76,12 @@ public class Dstore extends Server{
     public void connectToController() throws Exception{
         // creating communicatoin channel
         Connection connection = new Connection(this.getServerInterface(), InetAddress.getLocalHost(), this.cPort);
-        this.controllerConnection = new ServerConnection(this, connection);
-        this.controllerConnection.start();
+        this.controllerThread = new ServerThread(this, connection);
+        this.controllerThread.start();
 
         // sending JOIN message to Controller
         String message = Protocol.JOIN_TOKEN + " " + this.getPort();
-        this.controllerConnection.getConnection().sendMessage(message);
+        this.controllerThread.getConnection().sendMessage(message);
     }
 
     /**
@@ -96,8 +95,8 @@ public class Dstore extends Server{
         this.fileStore = new File(folderPath);
 
         // creating the file if it doesnt exist
-        if(!fileStore.exists()){
-            fileStore.mkdir();
+        if(!this.fileStore.exists()){
+            this.fileStore.mkdir();
         }
     }
 
@@ -126,7 +125,19 @@ public class Dstore extends Server{
         return this.cPort;
     }
 
+    public int getTimeout(){
+        return this.timeout;
+    }
+
+    public String getFolderPath(){
+        return this.folderPath;
+    }
+
     public File getFileStore(){
         return this.fileStore;
+    }
+
+    public ServerThread getControllerThread(){
+        return this.controllerThread;
     }
 }

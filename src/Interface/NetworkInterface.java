@@ -2,7 +2,7 @@ package Interface;
 
 import java.net.Socket;
 
-import Server.NetworkProcess;
+import Network.NetworkProcess;
 
 /**
  * Represents the type of object that acts as an interface between the user

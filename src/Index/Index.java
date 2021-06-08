@@ -1,206 +1,383 @@
 package Index;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.concurrent.TimeoutException;
 
-import Index.State.*;
+import Index.State.OperationState;
+import Network.Connection;
 
 /**
- * Data structure that keeps track on the state of the system and the files stored in it.
+ * Controller that manages an Index model.
  * 
- * Contains three individual indexes to record the system state:
- * 
- *      * 1 - A HashMap of Dstores (DstoreConnections) to the files stored on the Dstore.
- *              - Each file contained as a FileState object, which records the file name and it's state with respect to
- *              the current Dstore.
- *      * 2 - A HashMap of Files (filenames) to the Dstores that the files are stored on.
- *              - Each Dstore is contained as a DstoreState object, which records the port of the Dstore as well as the 
- *              state of the file on that Dstore.
- *      * 3 - A HashMap of Dstore ports to the rebalance state of those Dstores.
- * 
- * An Index instance must be managed by an Index Manager. The Index represents
- * the model, and the IndexManager is the controller.
+ * An Index Manager creates a new Index instance when it is
+ * instantiated, and provides methods that allow for the owner
+ * of the manager to interact with the underlying Index.
  */
 public class Index {
-
+    
     // member variables
-    private HashMap<Integer, ArrayList<FileState>> dstoreIndex;
-    private HashMap<String, ArrayList<DstoreState>> fileIndex;
-    private HashMap<Integer, DstoreRebalanceState> rebalanceIndex;
+    private volatile ArrayList<DstoreIndex> dstores;
+    private volatile int minDstores;
 
     /**
      * Class constructor.
      * 
-     * Initialises new instances of the indexes..
+     * Creates a new Index instance to be managed.
      */
-    public Index(){
-        // initialising member variables
-        this.dstoreIndex = new HashMap<Integer, ArrayList<FileState>>();
-        this.fileIndex = new HashMap<String, ArrayList<DstoreState>>();
-        this.rebalanceIndex = new HashMap<Integer, DstoreRebalanceState>();
+    public Index(int minDstores){
+        this.dstores = new ArrayList<DstoreIndex>();
+        this.minDstores = minDstores;
+    }
+
+
+    //////////////////////////
+    // CONFIGURING DSTORES ///
+    //////////////////////////
+
+
+    /**
+     * Adds the given Dstore to the index.
+     * 
+     * @param port The port the Dstore is listening on.
+     * @param connection The connection between the Controller and the Dstore.
+     */
+    public void addDstore(Integer port, Connection connection){
+        // adding the dstore to the list of dstores
+        this.dstores.add(new DstoreIndex(port, connection));
+    }
+
+    /**
+     * Removes the given Dstore from the system.
+     * 
+     * @param port The port of the Dstore to be removed from the system.
+     */
+    public void removeDstore(Connection dstore){
+        // removing the Dstore from the list of Dstores
+        this.dstores.remove(this.getDstoreFromConnection(dstore));
+    }
+
+
+    ///////////////////
+    // STORING FILES //
+    ///////////////////
+
+
+    /**
+     * Starts the process of adding a given file to the system by adding it to
+     * the index.
+     * 
+     * @param file The name of the file being added.
+     */
+    public ArrayList<Integer> startStoring(String filename, int filesize) throws Exception{
+        // throwing exception if not enougn dstores have joined yet
+        if(this.dstores.size() < this.minDstores){
+            throw new Exception();
+        }
+
+        // getting the list of dstores that the file needs to be stored on.
+        ArrayList<Integer> dstoresToStoreOn = this.getDstoresToStoreOn();
+
+        // adding dstores the file is stored on to the the index 
+        for(Integer port : dstoresToStoreOn){
+            // adding the file to the dstore state
+            this.getDstoreFromListenPort(port).addFile(filename, filesize);
+        }
+
+        // returning the list of dstores the file needs to be stored on
+        return dstoresToStoreOn;
+    }
+
+    /**
+     * Updates the index based on a STORE_ACK that was recieved from the given Dstore.
+     * 
+     * @param port The port of the Dstore that send the STORE_ACK.
+     * @param filename The filename the STORE_ACK is relating to
+     */
+    public void storeAckRecieved(Connection dstore, String filename){
+        // updatiing the dstore index
+        this.getDstoreFromConnection(dstore).updateFileState(filename, OperationState.STORE_ACK_RECIEVED);
+    }
+
+
+    ////////////////////
+    // REMOVING FILES //
+    ////////////////////
+
+
+    /**
+     * Starts the process of removing a give file from the system by updating the system index.
+     * 
+     * @param file The file being removed.
+     */
+    public ArrayList<Integer> startRemoving(String filename) throws Exception{
+        // getting the list of dstores the file is stored on
+        ArrayList<Integer> dstoresStoredOn = this.getDstoresStoredOn(filename);
+
+        // updating the states
+        for(Integer dstore : dstoresStoredOn){
+            // updating the dstore state
+            this.getDstoreFromListenPort(dstore).updateFileState(filename, OperationState.REMOVE_IN_PROGRESS);
+        }
+
+        // returning the dstores the file is to be removed from
+        return dstoresStoredOn;
+    }
+
+    /**
+     * Updates the index after a REMOVE_ACK was recieved.
+     * 
+     * @param port The Dstore port that the REMOVE_ACK was recieved from.
+     */
+    public void removeAckRecieved(Connection dstore, String filename){
+        // updating the dstore index
+        this.getDstoreFromConnection(dstore).updateFileState(filename, OperationState.REMOVE_ACK_RECIEVED);
+    }
+
+    //////////////////////////////////////
+    // WAITING FOR OPERATION COMPLETION //
+    //////////////////////////////////////
+
+    /**
+     * Waits for the state of the given file across all Dstores to match the provided expected state. Changes the global
+     * state of the file to be the final state when this occurs.
+     * 
+     * @param filename The name of the file being tracked.
+     * @param timeout The timeout for the tracking.
+     * @param expectedState The expectedd state of the file.
+     * @param finalState The state the file will be changed to when the operation has completed.
+     * @return True if the operation completed, false if not.
+     * @throws TimeoutException When the state of the file does not match the expected state within the timeout.
+     */
+    public boolean waitForOperationComplete(String filename, int timeout, 
+                                            OperationState expectedState, OperationState finalState) throws TimeoutException{
+
+        long timeoutStamp = System.currentTimeMillis() + timeout;
+
+        while(!this.fileHasState(filename, expectedState)){
+            if(System.currentTimeMillis() < timeoutStamp){
+                Thread.onSpinWait();
+            }
+            else{
+                // timeout occured
+                this.handleOperationTimeout(filename, expectedState);
+
+                // throwing exception
+                throw new TimeoutException();
+            }
+        }
+
+        // Operation Complete //
+
+        // updating file state to the new state
+        for(DstoreIndex dstore : this.dstores){
+            for(DstoreFile file : dstore.getFiles()){
+                if(file.getFilename().equals(filename)){
+                    dstore.updateFileState(filename, finalState);
+                }
+            }
+        }
+
+        // returning true
+        return true;
+    }
+
+    /**
+     * Handles the case where an operation did not complete wthin the given timeout.
+     * 
+     * @param filename The filename for which the operation did not complete.
+     * @param expectedState The expected state of the file.
+     */
+    private void handleOperationTimeout(String filename, OperationState expectedState){
+        // Handling Store operation
+        if(expectedState == OperationState.STORE_ACK_RECIEVED){
+            // removing the file from the index
+            for(int dstore : this.getDstoresStoredOn(filename)){
+                this.getDstoreFromListenPort(dstore).removeFile(filename);
+            }
+        }
+    }
+
+
+    /////////////////
+    // REBALANCING //
+    /////////////////
+
+
+    /**
+     * Starts the process of rebalancing by updating the rebalance index to
+     * REBALANCE_IN_PROGRESS.
+     */
+    public void startRebalancing(){
+        // TODO
+    }
+
+    /**
+     * Waits for all REBALANCE_COMPLETE messages to be recieved for a given file within the 
+     * given timeout.
+     * 
+     * If not all REBALANCE_COMPLETE messages are recieved, the Dstores that did not send them
+     * are considered to have disconnected and so are removed from the system. A TimeoutException is
+     *  also thrown in this case.
+     * 
+     * @param timeout The timeout to wait for the REBALANCE_COMPELTE messages to be recieved.
+     * @throws TimeoutException Thrown if not all REBALANCE_COMPLETE messages were recieved within
+     * the timeout.
+     */
+    public boolean waitForRebalanceComplete(int timeout){
+
+        return false;
+    }
+
+
+    //////////////////////
+    // HELPER FUNCTIONS //
+    //////////////////////
+
+    /**
+     * Gets the DstoreIndex object associated with the provided Dstore Server Port.
+     * 
+     * @param port The port the Dstore is listening on.
+     * @return The DstoreIndex object associated wth the provided port, null if there 
+     * was no match.
+     */
+    public DstoreIndex getDstoreFromListenPort(int port){
+        for(DstoreIndex dstore : this.dstores){
+            if(dstore.getPort() == port){
+                return dstore;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Gets the DstoreIndex object assicitaed with the providedd Connection object.
+     * 
+     * @param connection The connection object between the Dstore and the Controller.
+     * @return The DstorerIndex object associated with the provided Connectoin object, null
+     * if there was no match.
+     */
+    public DstoreIndex getDstoreFromConnection(Connection connection){
+        for(DstoreIndex dstore : this.dstores){
+            if(dstore.getConnection().getSocket().getPort() == connection.getSocket().getPort()){
+                return dstore;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Returns the list of ports for all Dstores on the system.
+     * 
+     * @return The list of ports for all Dstores on the system.
+     */
+    public ArrayList<Integer> getDstorePorts(){
+        ArrayList<Integer> ports = new ArrayList<Integer>();
+
+        for(DstoreIndex dstore : this.dstores){
+            ports.add(dstore.getPort());
+        }
+
+        return ports;
+    }
+
+    /**
+     * Returns a list of all files stored in the system.
+     * 
+     * @return ArrayList of all files stored in the system.
+     */
+    public ArrayList<String> getFiles(){
+        // getting list of all files
+        ArrayList<String> allFiles = new ArrayList<String>();
+        for(DstoreIndex dstore : this.dstores){
+            for(DstoreFile file: dstore.getFiles()){
+                allFiles.add(file.getFilename());
+            }
+        }
+
+        // removing duplicates and returning
+        return new ArrayList<String>(new HashSet<String>(allFiles));
+    }
+
+    /**
+     * Gets a list of Dstores that a file can be stored on. Returns only Dstores
+     * that will remain balanced after storing the file.
+     * 
+     * @return The list of Dstore ports that the new file can be stored on.
+     */
+    private ArrayList<Integer> getDstoresToStoreOn(){
+        // sorting the dstores based on the number of files they contain
+        Collections.sort(this.dstores);
+
+        ArrayList<Integer> ports = new ArrayList<Integer>();
+
+        // picking the first r dstores to store on
+        for(int i =0; i < this.minDstores; i++){
+            ports.add(this.dstores.get(i).getPort());
+        }
+
+        // returning the list of dstores
+        return ports;
+    }
+
+    /**
+     * Returns the list Dstore ports that the given file is stored on.
+     * @param filename The name of the file being searched.
+     */
+    private ArrayList<Integer> getDstoresStoredOn(String filename){
+        ArrayList<Integer> ports = new ArrayList<Integer>();
+        
+        for(DstoreIndex dstore : this.dstores){
+            if(dstore.hasFile(filename)){
+                ports.add(dstore.getPort());
+            }
+        }
+
+        // file not stored on the system.
+        return ports;
+    }
+
+    /**
+     * Determines if the given file has the given state across all of the Dstores that
+     * it is stored on.
+     * 
+     * @param filename The file being checked.
+     * @param state The state of the file.
+     * @return True if the state of the file is the provided state, false if not.
+     */
+    public boolean fileHasState(String filename, OperationState state){
+        for(Integer port : this.getDstoresStoredOn(filename)){
+            for(DstoreFile file : this.getDstoreFromListenPort(port).getFiles()){
+                if(file.getFilename().equals(filename) && file.getState() != state){
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Converts the Index to a strnig representation.
+     */
+    public String toString(){
+        String string = "\n";
+
+        for(DstoreIndex dstore : this.dstores){
+            string += "\t" + dstore.toString() + "\n";
+        }
+
+        return string;
     }
 
     /////////////////////////
     // GETTERS AND SETTERS //
     /////////////////////////
 
-    public HashMap<Integer, ArrayList<FileState>> getDstoreIndex(){
-        return this.dstoreIndex;
-    }
-
-    public HashMap<String, ArrayList<DstoreState>> getFileIndex(){
-        return this.fileIndex;
-    }
-
-    public HashMap<Integer, DstoreRebalanceState> getRebalanceIndex(){
-        return this.rebalanceIndex;
-    }
-}
-
-/**
- * Represents the state of a file with regards to a Dstore it is stored on.
- * 
- * Inverse of DstoreState.
- */
-class FileState{
-
-    // member variables
-    String file;
-    OperationState state;
-
-    /**
-     * Class constructor.
-     * 
-     * @param file The filename the state is associated with.
-     */
-    public FileState(String file, OperationState state){
-        this.file = file;
-        this.state = state;;
-    }
-
-    /**
-     * Attempts to set the state of the file.
-     * 
-     * @param state The state the file will be set to.
-     * @throws Exception Thrown in case where state cannot be changed to the provided state.
-     */
-    public synchronized void setState(OperationState state) throws Exception{
-        /**
-         * if( shouldnt be able to change to the given state...)
-         *      throw exception...
-         * else{
-         *      change state...
-         * }
-         */
-        this.state =  state;
-    }
-
-    /////////////////////////
-    // GETTERS AND SETTERS //
-    /////////////////////////
-
-    public String getFile(){
-        return this.file;
-    }
-
-    public OperationState getState(){
-        return this.state;
-    }
-}
-
-/**
- * Represents the state of a Dstore with regards to specific file it stores.
- * 
- * Inverse of FileState.
- */
-class DstoreState{
-
-    //member variables
-    int dstorePort;
-    OperationState state;
-
-    /**
-     * Class constructor.
-     * 
-     * @param dstorePort The port of the Dstore the state is associated with.
-     */
-    public DstoreState(int dstorePort, OperationState state){
-        this.dstorePort = dstorePort;
-        this.state = state;
-    }
-
-    /**
-     * Attempts to set the state of the Dstore.
-     * 
-     * @param state The state the Dstore will be set to.
-     * @throws Exception Thrown in case where state cannot be changed to the provided state.
-     */
-    public synchronized void setState(OperationState state) throws Exception{
-        /**
-         * if( shouldnt be able to change to the given state...)
-         *      throw exception...
-         * else{
-         *      change state...
-         * }
-         */
-        this.state =  state;
-    }
-
-    /////////////////////////
-    // GETTERS AND SETTERS //
-    /////////////////////////
-
-    public int getDstorePort(){
-        return this.dstorePort;
-    }
-
-    public OperationState getState(){
-        return this.state;
-    }
-}
-
-/**
- * Represents the rebalance state of the Dstore.
- * 
- * Doesn't add anything on top of the RebalanceState class, but means 
- * that the user cannot change the state without using the setState method, which is
- * thread safe and handles invalid changes.
- */
-class DstoreRebalanceState{
-
-    // member variables
-    RebalanceState state; // the rebalance state of the Dstore
-
-    /**
-     * Class constructor.
-     * 
-     */
-    public DstoreRebalanceState(){
-        this.state = RebalanceState.IDLE;
-    }
-
-    /**
-     * Attempts to set the rebalance state of the Dstore.
-     * 
-     * @param state The rebalance state the Dstore will be set to.
-     * @throws Exception Thrown in case where state cannot be changed to the provided state.
-     */
-    public synchronized void setState(RebalanceState state) throws Exception{
-        /**
-         * if( shouldnt be able to change to the given state...)
-         *      throw exception...
-         * else{
-         *      change state...
-         * }
-         */
-        this.state =  state;
-    }
-
-    /////////////////////////
-    // GETTERS AND SETTERS //
-    /////////////////////////
-
-    public RebalanceState getState(){
-        return this.state;
+    public ArrayList<DstoreIndex> getDstores(){
+        return this.dstores;
     }
 }

@@ -47,7 +47,7 @@ public class RequestTokenizer {
 
         // STORE_ACK //
         else if(firstToken.equals(Protocol.STORE_ACK_TOKEN)){
-            return new StoreAckToken(message);
+            return getStoreAckToken(message, sTokenizer);
         }
 
         // STORE_COMPLETE //
@@ -148,10 +148,9 @@ public class RequestTokenizer {
      * @return
      */
     private static Token getStoreToken(String message, StringTokenizer sTokenizer) {
-        String filename = sTokenizer.nextToken();
-
         try{
-            Double filesize = Double.parseDouble(sTokenizer.nextToken());
+            String filename = sTokenizer.nextToken();
+            int filesize = Integer.parseInt(sTokenizer.nextToken());
             return new StoreToken(message, filename, filesize);
         }
         catch(Exception e){
@@ -182,15 +181,37 @@ public class RequestTokenizer {
     }
 
     /**
+     * Gathers a STORE_ACK token from a message string.
+     * @param message
+     * @param sTokenizer
+     * @return
+     */
+    public static Token getStoreAckToken(String message, StringTokenizer sTokenizer){
+        try{
+            String filename = sTokenizer.nextToken();
+
+            return new StoreAckToken(message, filename);
+        }
+        catch(Exception e){
+            return new InvalidRequestToken(message);
+        }
+    }
+
+    /**
      * Gathers a LOAD token from a message string.
      * @param message
      * @param sTokenizer
      * @return
      */
-    private static Token getLoadToken(String message, StringTokenizer sTokenizer) {
-        String filename = sTokenizer.nextToken();
+    private static Token getLoadToken(String message, StringTokenizer sTokenizer){
+        try{
+            String filename = sTokenizer.nextToken();
 
-        return new LoadToken(message, filename);
+            return new LoadToken(message, filename);
+        }
+        catch(Exception e){
+            return new InvalidRequestToken(message);
+        }
     }
 
     /**
@@ -219,9 +240,14 @@ public class RequestTokenizer {
      * @return
      */
     private static Token getLoadDataToken(String message, StringTokenizer sTokenizer) {
-        String filename = sTokenizer.nextToken();
+        try{
+            String filename = sTokenizer.nextToken();
 
-        return new LoadDataToken(message, filename);
+            return new LoadDataToken(message, filename);
+        }
+        catch(Exception e){
+            return new InvalidRequestToken(message);
+        }
     }
 
     /**
@@ -231,9 +257,14 @@ public class RequestTokenizer {
      * @return
      */
     private static Token getReloadToken(String message, StringTokenizer sTokenizer) {
-        String filename = sTokenizer.nextToken();
+        try{
+            String filename = sTokenizer.nextToken();
 
         return new ReloadToken(message, filename);
+        }
+        catch(Exception e){
+            return new InvalidRequestToken(message);
+        }
     }
 
     /**
@@ -243,9 +274,14 @@ public class RequestTokenizer {
      * @return
      */
     private static Token getRemoveToken(String message, StringTokenizer sTokenizer) {
-        String filename = sTokenizer.nextToken();
+        try{
+            String filename = sTokenizer.nextToken();
 
-        return new RemoveToken(message, filename);
+            return new RemoveToken(message, filename);
+        }
+        catch(Exception e){
+            return new InvalidRequestToken(message);
+        }
     }
 
     /**
@@ -255,9 +291,14 @@ public class RequestTokenizer {
      * @return
      */
     private static Token getRemoveAckToken(String message, StringTokenizer sTokenizer) {
-        String filename = sTokenizer.nextToken();
+        try{
+            String filename = sTokenizer.nextToken();
 
-        return new RemoveAckToken(message, filename);
+            return new RemoveAckToken(message, filename);
+        }
+        catch(Exception e){
+            return new InvalidRequestToken(message);
+        }
     }
 
     /**
@@ -267,22 +308,27 @@ public class RequestTokenizer {
      * @return
      */
     private static Token getListToken(String message, StringTokenizer sTokenizer) {
-        if(sTokenizer.hasMoreTokens()){
-            ArrayList<String> filenames = new ArrayList<String>();
-            while(sTokenizer.hasMoreTokens()){
-                String filename = sTokenizer.nextToken();
-
-                filenames.add(filename);
+        try{
+            if(sTokenizer.hasMoreTokens()){
+                ArrayList<String> filenames = new ArrayList<String>();
+                while(sTokenizer.hasMoreTokens()){
+                    String filename = sTokenizer.nextToken();
+    
+                    filenames.add(filename);
+                }
+    
+                return new ListFilesToken(message, filenames);
             }
-
-            return new ListFilesToken(message, filenames);
+            else if(message.length() == 5){ // ERROR FIX : Case where there are no files but is still a LIST filenames token - just LIST followed by space and therefore has 5 characters
+                ArrayList<String> filenames = new ArrayList<String>();
+                return new ListFilesToken(message, filenames);
+            }
+            else{
+                return new ListToken(message);
+            }
         }
-        else if(message.length() == 5){ // ERROR FIX : Case where there are no files but is still a LIST filenames token - just LIST followed by space and therefore has 5 characters
-            ArrayList<String> filenames = new ArrayList<String>();
-            return new ListFilesToken(message, filenames);
-        }
-        else{
-            return new ListToken(message);
+        catch(Exception e){
+            return new InvalidRequestToken(message);
         }
     }
 
@@ -361,9 +407,8 @@ public class RequestTokenizer {
      * @return
      */
     private static Token getRebalanceStoreToken(String message, StringTokenizer sTokenizer) {
-        String filename = sTokenizer.nextToken();
-
         try{
+            String filename = sTokenizer.nextToken();
             Double filesize = Double.parseDouble(sTokenizer.nextToken());
             return new RebalanceStoreToken(message, filename, filesize);
         }
@@ -379,7 +424,6 @@ public class RequestTokenizer {
      * @return
      */
     private static Token getErrorFileDoesNotExistToken(String message, StringTokenizer sTokenizer) {
-
         if(sTokenizer.hasMoreTokens()){
             String filename = sTokenizer.nextToken();
 

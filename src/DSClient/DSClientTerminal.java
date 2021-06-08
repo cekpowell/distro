@@ -7,7 +7,8 @@ import java.net.Socket;
 import Interface.NetworkInterface;
 
 /**
- * Implementation of a ClientInterface that gathers user requests from the terminal.
+ * Implementation of a ClientInterface that uses the terminal as an interface
+ * betweeen the Client and the user.
  * 
  * Creates a DSClient object, that connects to the Controller when started.
  * 

@@ -9,9 +9,9 @@ import Token.Token;
  */
 public class StoreToken extends Token{
     public String filename;
-    public double filesize;
+    public int filesize;
 
-    public StoreToken(String message, String filename, double filesize){
+    public StoreToken(String message, String filename, int filesize){
         this.message = message;
         this.filename = filename;
         this.filesize = filesize;

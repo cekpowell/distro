@@ -1,15 +1,11 @@
 package Controller;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
-import java.net.InetAddress;
-import java.net.Socket;
 import java.util.ArrayList;
+import java.util.concurrent.TimeoutException;
 
+import Index.State.OperationState;
 import Logger.Protocol;
-import Server.*;
+import Network.*;
 import Token.*;
 import Token.TokenType.*;
 
@@ -39,21 +35,19 @@ public class ControllerRequestHandler implements RequestHandler{
      */
     public void handleRequest(Connection connection, Token request){
 
-        boolean clientRequest = true;
-
-        //////////////////////
-        // Handling request //
-        //////////////////////
-
         // DStore Requests //
 
         if(request instanceof JoinToken){
-            clientRequest = false;
             // gathering JOIN token
             JoinToken joinRequest = (JoinToken) request;
             int dstorePort = joinRequest.port;
 
             this.handleJoinRequest(connection, dstorePort);
+        }
+
+        else if(request instanceof StoreAckToken){
+            StoreAckToken storeAckToken = (StoreAckToken) request;
+            this.handleStoreAckRequest(connection, storeAckToken.filename); 
         }
 
         // Client Requests //
@@ -62,25 +56,15 @@ public class ControllerRequestHandler implements RequestHandler{
             this.handleListRequest(connection);
         }
 
-        // Invalid Request //
-        else if(request instanceof InvalidRequestToken){
-            this.handleInvalidRequest(connection);
+        else if(request instanceof StoreToken){
+            StoreToken storeToken = (StoreToken) request;
+            this.handleStoreRequest(connection, storeToken.filename, storeToken.filesize);
         }
 
-        // Request tokenized but not expected by controller -(i.e., the request is not relevant for the controller) //
+        // Invalid Request //
+
         else{
             this.handleInvalidRequest(connection);
-        }
-
-        // TODO Handle rest of request types
-
-        // Adding the connector to the controller if they are a client
-        if(clientRequest){
-            // testing if the client is new
-            if(!this.controller.getClients().contains(connection)){
-                // adding the client to the ccontroller
-                this.controller.addClient(connection);
-            }
         }
     }
 
@@ -91,10 +75,83 @@ public class ControllerRequestHandler implements RequestHandler{
      */
     public void handleJoinRequest(Connection connection, int dstorePort){
         // addding the Dstore to the controller
-        this.controller.addDstore(connection, dstorePort);
+        this.controller.getIndex().addDstore(dstorePort, connection);
     }
 
     /**
+     * Handles a request to store a file in the system.
+     * 
+     * @param connection The connection associated with the request.
+     * @param filename The name of the file being stored.
+     * @param filesize The size of the file being stored.
+     */
+    public void handleStoreRequest(Connection connection, String filename, int filesize){
+        try{    
+            // starting to store the file
+            ArrayList<Integer> dstores = this.controller.getIndex().startStoring(filename, filesize);
+
+            // sending the store message to the Client
+            ArrayList<String> stringDstores = new ArrayList<String>();
+            for(int dstore : dstores){
+                stringDstores.add(Integer.toString(dstore));
+            }
+            connection.sendMessage(Protocol.STORE_TO_TOKEN + " " + String.join(" ", stringDstores));
+
+            // waiting for the store to be complete
+            this.controller.getIndex().waitForOperationComplete(filename, this.controller.getTimeout(), OperationState.STORE_ACK_RECIEVED, OperationState.IDLE);
+
+            // store complete, sending STORE_COMPLETE message to Client
+            connection.sendMessage(Protocol.STORE_COMPLETE_TOKEN);
+        }
+        catch(TimeoutException e){
+            this.controller.getServerInterface().handleError("Timeout occured on STORE request sent by Client on port : " + connection.getSocket().getPort());
+        }
+        catch(Exception e){
+            this.controller.getServerInterface().handleError("Unable to handle STORE request sent by Client on port : " + connection.getSocket().getPort());
+        }
+    }
+
+    /**
+     * Handles a STORE_ACK token.
+     * 
+     * @param connection The connection the STORE_ACK was receieved from.
+     * @param filename The filename associiated with the STORE_ACK.
+     */
+    private void handleStoreAckRequest(Connection connection, String filename){
+        this.controller.getIndex().storeAckRecieved(connection, filename);
+    }
+
+    /**
+     * Handles a LIST request.
+     */
+    private void handleListRequest(Connection connection){
+        try{
+            // gathering list of files
+            ArrayList<String> messageElements = new ArrayList<String>();
+            messageElements.add("LIST");
+            messageElements.addAll(this.controller.getIndex().getFiles());
+
+            // sending response back to client
+            String message = String.join(" ", messageElements);
+            if(messageElements.size() == 1) message += " "; // ERROR FIX : for case when there are no files, still need to add the space to make sure it is tokenized correctly on client side
+            connection.sendMessage(message);
+        }
+        catch(Exception e){
+            //TODO need to test for different types of exception to know where the error occuredd - e.g., SocketTimeoutException, NullPointerException, etc...
+            this.controller.getServerInterface().handleError("Unable to handle LIST request for Client on port : " + connection.getSocket().getPort());
+        }
+    }
+
+    /**
+     * Handles an invalid request.
+     */
+    public void handleInvalidRequest(Connection connection){
+        this.controller.getServerInterface().handleError("Invalid request recieved from connector on port : " + connection.getSocket().getPort());
+    }
+}
+
+/**
+ * /**
      * Handles a LIST request.
      * 
      * ### CURRENT LOGIC DONE FOR TESTING ###
@@ -104,18 +161,17 @@ public class ControllerRequestHandler implements RequestHandler{
      * 
      * ALSO - it sends the LIST request to the Dstore's listen port, and does not use the existing 
      * connection that the Controller has with the Dstore - this may lead to some errors later down the line
-     */
+     *
     private void handleListRequest(Connection connection){
         try{
             ArrayList<String> messageElements = new ArrayList<String>();
             messageElements.add("LIST");
     
             // looping through list of Dstores
-            for(Connection dstore : this.controller.getdstores().keySet()){
+            for(DstoreIndex dstore : this.controller.getIndex().getDstores()){
 
                 // setting up socket
-                int dstoreListenPort = this.controller.getdstores().get(dstore);
-                Connection dstoreConnection = new Connection(this.controller.getServerInterface(), InetAddress.getLocalHost(), dstoreListenPort);
+                Connection dstoreConnection = new Connection(this.controller.getServerInterface(), InetAddress.getLocalHost(), dstore.getPort());
     
                 // sending request to dstore
                 String request = Protocol.LIST_TOKEN;
@@ -141,11 +197,4 @@ public class ControllerRequestHandler implements RequestHandler{
             this.controller.getServerInterface().handleError("Unable to handle LIST request for Client on port : " + connection.getSocket().getPort());
         }
     }
-
-    /**
-     * Handles an invalid request.
-     */
-    public void handleInvalidRequest(Connection connection){
-        this.controller.getServerInterface().handleError("Invalid request recieved from connector on port : " + connection.getSocket().getPort());
-    }
-}
+ */

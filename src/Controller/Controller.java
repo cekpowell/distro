@@ -3,7 +3,9 @@ package Controller;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import Server.*;
+import Index.DstoreIndex;
+import Index.Index;
+import Network.*;
 
 /**
  * Data store controller. 
@@ -13,22 +15,20 @@ import Server.*;
 public class Controller extends Server{
 
     // member variables
-    private int port;
-    private int r;
-    private int timeout;
-    private int rebalancePeriod;
-    private ControllerInterface controllerInterface; // TODO This is only required because Controller must log a JOIN request from a server seperatley - when this request is not needed, this property can be removed.
+    private volatile int port;
+    private volatile int minDstores;
+    private volatile int timeout;
+    private volatile int rebalancePeriod;
+    private volatile ControllerInterface controllerInterface; // TODO This is only required because Controller must log a JOIN request from a server seperatley - when this request is not needed, this property can be removed.
 
     // indexes
-    private HashMap<Connection,Integer> dstores;
-    private ArrayList<Connection> clients;
-    private ArrayList<String> files;
+    private Index index;
 
     /**
      * Class constructor.
      * 
      * @param port The port the controller should listen on.
-     * @param r The number of data stores to replicate files across.
+     * @param minDstores The number of data stores to replicate files across.
      * @param timeout The timeout length for communication.
      * @param rebalancePeriod The rebalance period.
      */
@@ -36,16 +36,12 @@ public class Controller extends Server{
         // initializing new member variables
         super(ServerType.CONTROLLER, port, controllerInterface);
         this.port = port;
-        this.r = r;
+        this.minDstores = r;
         this.timeout = timeout;
         this.rebalancePeriod = rebalancePeriod;
         this.controllerInterface = controllerInterface;
+        this.index = new Index(this.minDstores);
         this.setRequestHandler(new ControllerRequestHandler(this));
-
-        // indexes
-        this.dstores = new HashMap<Connection,Integer>();
-        this.clients = new ArrayList<Connection>();
-        this.files = new ArrayList<String>();
     }
 
     /**
@@ -68,65 +64,21 @@ public class Controller extends Server{
      */
     public void handleDisconnect(int port){
         // Checking for Client disconnect
-        for(Connection clientConnection : this.clients){
-            if(clientConnection.getSocket().getPort() == port){
-                this.controllerInterface.handleError("Client on port : " + port + " disconnected.");
-                this.removeClient(clientConnection);
-                return;
-            }
-        }
+        // TODO
 
         // checking for Dstore disconnect
-        for(Connection dstoreConnection : this.dstores.keySet()){
-            if(dstoreConnection.getSocket().getPort() == port){
-                this.controllerInterface.handleError("Dstore listening on port : " + this.dstores.get(dstoreConnection)+ " disconnected.");
-                this.removeDstore(dstoreConnection);
+        for(DstoreIndex dstore : this.index.getDstores()){
+            if(dstore.getConnection().getSocket().getPort() == port){
+                this.controllerInterface.handleError("Dstore listening on port : " + dstore.getPort() + " disconnected.");
+                this.index.removeDstore(dstore.getConnection());
                 return;
             }
         }
 
         // Unknown connector
-        this.controllerInterface.handleError("Unknown connector on port : " + port + " disconnected (most likley a new client).");
+        this.controllerInterface.handleError("Unknown connector on port : " + port + " disconnected (most likley a client).");
     }
 
-    /**
-     * Adds the given Dstore to the index.
-     * 
-     * @param dstore The connection to the Dstore to be added.
-     */
-    public void addDstore(Connection dstoreConnection, int dstorePort){
-        this.dstores.put(dstoreConnection,dstorePort);
-
-        // logging
-        this.controllerInterface.logDstoreJoined(dstoreConnection.getSocket(), dstorePort);
-    }
-
-    /**
-     * Adds a given client to the index.
-     * 
-     * @param client The connection to the client.
-     */
-    public void addClient(Connection clientConnection){
-        this.clients.add(clientConnection);
-    }
-
-    /**
-     * Removes a given Dstore from the index.
-     * 
-     * @param dstore The connection to the Dstore to be removed.
-     */
-    private void removeDstore(Connection dstore){
-        this.dstores.remove(dstore);
-    }
-
-    /**
-     * Removes a given client from the index.
-     * 
-     * @param client The connection to the client.
-     */
-    private void removeClient(Connection clientConnection){
-        this.clients.remove(clientConnection);
-    }
 
     /////////////////////////
     // GETTERS AND SETTERS //
@@ -137,15 +89,19 @@ public class Controller extends Server{
         return this.port;
     }
 
-    public ArrayList<String> getFiles(){
-        return this.files;
+    public int getMinDstores(){
+        return this.minDstores;
     }
 
-    public HashMap<Connection, Integer> getdstores(){
-        return this.dstores;
+    public int getTimeout(){
+        return this.timeout;
     }
 
-    public ArrayList<Connection> getClients(){
-        return this.clients;
+    public int getRebalancePeriod(){
+        return this.rebalancePeriod;
+    }
+
+    public Index getIndex(){
+        return this.index;
     }
 }

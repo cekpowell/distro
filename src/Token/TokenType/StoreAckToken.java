@@ -9,7 +9,11 @@ import Token.Token;
  */
 public class StoreAckToken extends Token{
 
-    public StoreAckToken(String message){
+    // member variables
+    public String filename;
+
+    public StoreAckToken(String message, String filename){
         this.message = message;
+        this.filename = filename;
     }
 }

@@ -13,8 +13,10 @@ public class State{
         // states
         STORE_IN_PROGRESS("Store In Progress"),
         STORE_ACK_RECIEVED("Store Acknowledgement Recieved"),
+        STORE_COMPLETE("Store Complete"),
         REMOVE_IN_PROGRESS("Remove In Progress"),
         REMOVE_ACK_RECIEVED("Remove Acknowledgement Recieved"),
+        REMOVE_COMPLETE("Remove Complete"),
         IDLE("Idle");
 
         private String state;
@@ -38,7 +40,6 @@ public class State{
      */
     public enum RebalanceState{
         //states
-        REBALANCE_LIST_IN_PROGRESS("Rebalance List In Progress"),
         REBALANCE_IN_PROGRESS("Rebalance In Progress"),
         REBALANCE_ACK_RECIEVED("Rebalance Acknowledgement Recieved"),
         IDLE("Idle");

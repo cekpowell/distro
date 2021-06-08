@@ -7,6 +7,8 @@ CLASSPATH=${ODIR}
 # Rules
 build: 
 	javac ${SOURCES} --source-path src --class-path ${CLASSPATH} -d ${ODIR} ${COMP_OPTIONS}
+test:
+	java -cp ${CLASSPATH} MainTest 
 
 controller: 
 	java -cp ${CLASSPATH} Controller.ControllerTerminal $(cport) $(r) $(timeout) $(rperiod)

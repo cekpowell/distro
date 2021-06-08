@@ -1,7 +1,5 @@
 package Interface;
 
-import Server.Server;
-
 /**
  * Abstract class to represnt the interface betwen a Server and the user.
  * 
