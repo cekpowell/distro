@@ -44,6 +44,10 @@ public class DSClient extends Client{
         super(cPort, timeout, clientInterface);
     }
 
+    //////////
+    // MAIN //
+    //////////
+
     /**
      * Handles the given response.
      * 
@@ -72,24 +76,13 @@ public class DSClient extends Client{
         }
         catch(Exception e){
             // unable to handle input request
-
-            //TODO need to test for different types of exception to know where the error occuredd - e.g., SocketTimeoutException, NullPointerException, etc...
             this.getClientInterface().handleError("Unable to handle input request : " + request + " sent to Controller on port : " + this.getCPort());
         }
     }
 
-    /**
-     * Handles a LIST request.
-     * 
-     * @throws Exception Thrown if the request could not be handled (could not send request or recieve response).
-     */
-    private void handleListRequest() throws Exception{
-        // sending message to Controller
-        this.getServerConnection().sendMessage(Protocol.LIST_TOKEN);
-
-        // gathering response (dont need to do anything with it)
-        this.getServerConnection().getMessageWithinTimeout(this.getTimeout());
-    }
+    ///////////
+    // STORE //
+    ///////////
 
     /**
      * Handles a STORE request.
@@ -114,10 +107,10 @@ public class DSClient extends Client{
             }
 
             // waiting for STORE_COMPLETE from controller
-            Token response2 = RequestTokenizer.getToken(this.getServerConnection().getMessageWithinTimeout(this.getTimeout()));
+            response = RequestTokenizer.getToken(this.getServerConnection().getMessageWithinTimeout(this.getTimeout()));
 
             // checking response is of correct form
-            if(response2 instanceof StoreCompleteToken){
+            if(response instanceof StoreCompleteToken){
                 // nothing to do...
             }
 
@@ -179,6 +172,27 @@ public class DSClient extends Client{
             throw new TimeoutException();
         }
     }
+
+    //////////
+    // LIST //
+    //////////
+
+    /**
+     * Handles a LIST request.
+     * 
+     * @throws Exception Thrown if the request could not be handled (could not send request or recieve response).
+     */
+    private void handleListRequest() throws Exception{
+        // sending message to Controller
+        this.getServerConnection().sendMessage(Protocol.LIST_TOKEN);
+
+        // gathering response (dont need to do anything with it)
+        this.getServerConnection().getMessageWithinTimeout(this.getTimeout());
+    }
+
+    /////////////
+    // INVALID //
+    /////////////
 
     /**
      * Handles an invalid request.

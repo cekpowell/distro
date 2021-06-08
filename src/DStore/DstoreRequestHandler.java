@@ -25,6 +25,10 @@ public class DstoreRequestHandler implements RequestHandler{
         this.dstore = dstore;
     }
 
+    //////////
+    // MAIN //
+    //////////
+
     /**
      * Handles a given request.
      * 
@@ -32,30 +36,33 @@ public class DstoreRequestHandler implements RequestHandler{
      */
     public void handleRequest(Connection connection, Token request){
 
-        //////////////////////
-        // Handling Request //
-        //////////////////////
-
+        // LIST //
         if(request instanceof ListToken){
             this.handleListRequest(connection);
         }
 
+        // STORE //
         else if(request instanceof StoreToken){
             StoreToken storeToken = (StoreToken) request;
             this.handleStoreRequest(connection, storeToken.filename, storeToken.filesize);
         }
 
+        // Invalid //
         else{
             this.handleInvalidRequest(connection);
         }
     }
 
+    ///////////
+    // STORE //
+    ///////////
+
     /**
      * Handles a STORE request.
      * 
-     * @param connection
-     * @param filename
-     * @param filesize
+     * @param connection The connection associated with the request.
+     * @param filename The name of the file being stored.
+     * @param filesize The size of the file being stored.
      */
     private void handleStoreRequest(Connection connection, String filename, int filesize){
         try{
@@ -83,8 +90,14 @@ public class DstoreRequestHandler implements RequestHandler{
         }
     }
 
+    //////////
+    // LIST //
+    //////////
+
     /**
      * Handles a LIST request.
+     * 
+     * @param connection The connection associated with the request.
      */
     public void handleListRequest(Connection connection){
         try{
@@ -110,6 +123,10 @@ public class DstoreRequestHandler implements RequestHandler{
             this.dstore.getServerInterface().handleError("Unable to handle LIST request from Controller on port : " + this.dstore.getCPort());
         }
     }
+
+    /////////////
+    // INVALID //
+    /////////////
 
     /**
      * Handles an invalid request.

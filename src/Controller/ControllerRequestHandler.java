@@ -28,6 +28,10 @@ public class ControllerRequestHandler implements RequestHandler{
         this.controller = controller;
     }
 
+    //////////
+    // MAIN //
+    //////////
+
     /**
      * Handles a given request.
      * 
@@ -37,14 +41,13 @@ public class ControllerRequestHandler implements RequestHandler{
 
         // DStore Requests //
 
+        // JOIN
         if(request instanceof JoinToken){
-            // gathering JOIN token
-            JoinToken joinRequest = (JoinToken) request;
-            int dstorePort = joinRequest.port;
-
-            this.handleJoinRequest(connection, dstorePort);
+            JoinToken joinToken = (JoinToken) request;
+            this.handleJoinRequest(connection, joinToken.port);
         }
 
+        // STORE_ACK
         else if(request instanceof StoreAckToken){
             StoreAckToken storeAckToken = (StoreAckToken) request;
             this.handleStoreAckRequest(connection, storeAckToken.filename); 
@@ -52,13 +55,15 @@ public class ControllerRequestHandler implements RequestHandler{
 
         // Client Requests //
 
-        else if(request instanceof ListToken){
-            this.handleListRequest(connection);
-        }
-
+        // STORE
         else if(request instanceof StoreToken){
             StoreToken storeToken = (StoreToken) request;
             this.handleStoreRequest(connection, storeToken.filename, storeToken.filesize);
+        }
+
+        // LIST
+        else if(request instanceof ListToken){
+            this.handleListRequest(connection);
         }
 
         // Invalid Request //
@@ -67,6 +72,10 @@ public class ControllerRequestHandler implements RequestHandler{
             this.handleInvalidRequest(connection);
         }
     }
+
+    //////////
+    // JOIN //
+    //////////
 
     /**
      * Handles a JOIN request.
@@ -77,6 +86,10 @@ public class ControllerRequestHandler implements RequestHandler{
         // addding the Dstore to the controller
         this.controller.getIndex().addDstore(dstorePort, connection);
     }
+
+    ///////////
+    // STORE //
+    ///////////
 
     /**
      * Handles a request to store a file in the system.
@@ -121,6 +134,10 @@ public class ControllerRequestHandler implements RequestHandler{
         this.controller.getIndex().storeAckRecieved(connection, filename);
     }
 
+    //////////
+    // LIST //
+    //////////
+
     /**
      * Handles a LIST request.
      */
@@ -141,6 +158,10 @@ public class ControllerRequestHandler implements RequestHandler{
             this.controller.getServerInterface().handleError("Unable to handle LIST request for Client on port : " + connection.getSocket().getPort());
         }
     }
+
+    /////////////
+    // INVALID //
+    /////////////
 
     /**
      * Handles an invalid request.

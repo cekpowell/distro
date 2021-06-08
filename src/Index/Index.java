@@ -16,7 +16,7 @@ import Network.Connection;
  * of the manager to interact with the underlying Index.
  */
 public class Index {
-    
+
     // member variables
     private volatile ArrayList<DstoreIndex> dstores;
     private volatile int minDstores;
@@ -82,7 +82,7 @@ public class Index {
         // adding dstores the file is stored on to the the index 
         for(Integer port : dstoresToStoreOn){
             // adding the file to the dstore state
-            this.getDstoreFromListenPort(port).addFile(filename, filesize);
+            this.getDstoreFromPort(port).addFile(filename, filesize);
         }
 
         // returning the list of dstores the file needs to be stored on
@@ -118,7 +118,7 @@ public class Index {
         // updating the states
         for(Integer dstore : dstoresStoredOn){
             // updating the dstore state
-            this.getDstoreFromListenPort(dstore).updateFileState(filename, OperationState.REMOVE_IN_PROGRESS);
+            this.getDstoreFromPort(dstore).updateFileState(filename, OperationState.REMOVE_IN_PROGRESS);
         }
 
         // returning the dstores the file is to be removed from
@@ -150,9 +150,13 @@ public class Index {
      * @return True if the operation completed, false if not.
      * @throws TimeoutException When the state of the file does not match the expected state within the timeout.
      */
-    public boolean waitForOperationComplete(String filename, int timeout, 
-                                            OperationState expectedState, OperationState finalState) throws TimeoutException{
+    public boolean waitForOperationComplete(String filename, 
+                                            int timeout, 
+                                            OperationState expectedState, 
+                                            OperationState finalState) throws TimeoutException{
 
+        // Waiting for Operation to Complete //
+        
         long timeoutStamp = System.currentTimeMillis() + timeout;
 
         while(!this.fileHasState(filename, expectedState)){
@@ -194,7 +198,7 @@ public class Index {
         if(expectedState == OperationState.STORE_ACK_RECIEVED){
             // removing the file from the index
             for(int dstore : this.getDstoresStoredOn(filename)){
-                this.getDstoreFromListenPort(dstore).removeFile(filename);
+                this.getDstoreFromPort(dstore).removeFile(filename);
             }
         }
     }
@@ -226,7 +230,7 @@ public class Index {
      * the timeout.
      */
     public boolean waitForRebalanceComplete(int timeout){
-
+        // TODO
         return false;
     }
 
@@ -242,13 +246,15 @@ public class Index {
      * @return The DstoreIndex object associated wth the provided port, null if there 
      * was no match.
      */
-    public DstoreIndex getDstoreFromListenPort(int port){
+    public DstoreIndex getDstoreFromPort(int port){
+        // findiing the matching DstoreIndex
         for(DstoreIndex dstore : this.dstores){
             if(dstore.getPort() == port){
                 return dstore;
             }
         }
 
+        // returning null if no match found
         return null;
     }
 
@@ -260,13 +266,95 @@ public class Index {
      * if there was no match.
      */
     public DstoreIndex getDstoreFromConnection(Connection connection){
+        // finding the matching DstoreIndex
         for(DstoreIndex dstore : this.dstores){
             if(dstore.getConnection().getSocket().getPort() == connection.getSocket().getPort()){
                 return dstore;
             }
         }
 
+        // returning null if no match found
         return null;
+    }
+
+    /**
+     * Gets a list of Dstores that a file can be stored on. Returns only Dstores
+     * that will remain balanced after storing the file.
+     * 
+     * @return The list of Dstore ports that the new file can be stored on.
+     */
+    public ArrayList<Integer> getDstoresToStoreOn(){
+        // sorting the dstores based on the number of files they contain
+        Collections.sort(this.dstores);
+
+        ArrayList<Integer> ports = new ArrayList<Integer>();
+
+        // picking the first r dstores to store on
+        for(int i =0; i < this.minDstores; i++){
+            ports.add(this.dstores.get(i).getPort());
+        }
+
+        // returning the list of dstores
+        return ports;
+    }
+
+    /**
+     * Returns the list Dstore ports that the given file is stored on.
+     * @param filename The name of the file being searched.
+     */
+    public ArrayList<Integer> getDstoresStoredOn(String filename){
+        ArrayList<Integer> ports = new ArrayList<Integer>();
+        
+        // looping through all dstores and seeing if they contain the file
+        for(DstoreIndex dstore : this.dstores){
+            if(dstore.hasFile(filename)){
+                ports.add(dstore.getPort());
+            }
+        }
+
+        // file not stored on the system.
+        return ports;
+    }
+
+    /**
+     * Determines if the given file has the given state across all of the Dstores that
+     * it is stored on.
+     * 
+     * @param filename The file being checked.
+     * @param state The state of the file.
+     * @return True if the state of the file is the provided state, false if not.
+     */
+    public boolean fileHasState(String filename, OperationState state){
+        for(Integer port : this.getDstoresStoredOn(filename)){
+            for(DstoreFile file : this.getDstoreFromPort(port).getFiles()){
+                if(file.getFilename().equals(filename) && file.getState() != state){
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Converts the Index to a strnig representation.
+     */
+    public String toString(){
+        String string = "\n";
+
+        for(DstoreIndex dstore : this.dstores){
+            string += "\t" + dstore.toString() + "\n";
+        }
+
+        return string;
+    }
+
+    /////////////////////////
+    // GETTERS AND SETTERS //
+    /////////////////////////
+
+    public ArrayList<DstoreIndex> getDstores(){
+        return this.dstores;
     }
 
     /**
@@ -300,84 +388,5 @@ public class Index {
 
         // removing duplicates and returning
         return new ArrayList<String>(new HashSet<String>(allFiles));
-    }
-
-    /**
-     * Gets a list of Dstores that a file can be stored on. Returns only Dstores
-     * that will remain balanced after storing the file.
-     * 
-     * @return The list of Dstore ports that the new file can be stored on.
-     */
-    private ArrayList<Integer> getDstoresToStoreOn(){
-        // sorting the dstores based on the number of files they contain
-        Collections.sort(this.dstores);
-
-        ArrayList<Integer> ports = new ArrayList<Integer>();
-
-        // picking the first r dstores to store on
-        for(int i =0; i < this.minDstores; i++){
-            ports.add(this.dstores.get(i).getPort());
-        }
-
-        // returning the list of dstores
-        return ports;
-    }
-
-    /**
-     * Returns the list Dstore ports that the given file is stored on.
-     * @param filename The name of the file being searched.
-     */
-    private ArrayList<Integer> getDstoresStoredOn(String filename){
-        ArrayList<Integer> ports = new ArrayList<Integer>();
-        
-        for(DstoreIndex dstore : this.dstores){
-            if(dstore.hasFile(filename)){
-                ports.add(dstore.getPort());
-            }
-        }
-
-        // file not stored on the system.
-        return ports;
-    }
-
-    /**
-     * Determines if the given file has the given state across all of the Dstores that
-     * it is stored on.
-     * 
-     * @param filename The file being checked.
-     * @param state The state of the file.
-     * @return True if the state of the file is the provided state, false if not.
-     */
-    public boolean fileHasState(String filename, OperationState state){
-        for(Integer port : this.getDstoresStoredOn(filename)){
-            for(DstoreFile file : this.getDstoreFromListenPort(port).getFiles()){
-                if(file.getFilename().equals(filename) && file.getState() != state){
-                    return false;
-                }
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * Converts the Index to a strnig representation.
-     */
-    public String toString(){
-        String string = "\n";
-
-        for(DstoreIndex dstore : this.dstores){
-            string += "\t" + dstore.toString() + "\n";
-        }
-
-        return string;
-    }
-
-    /////////////////////////
-    // GETTERS AND SETTERS //
-    /////////////////////////
-
-    public ArrayList<DstoreIndex> getDstores(){
-        return this.dstores;
     }
 }

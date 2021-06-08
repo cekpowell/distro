@@ -59,13 +59,46 @@ public class Controller extends Server{
     }
 
     /**
+     * Adds the given Dstore to the index.
+     * 
+     * @param port The port of the Dstore to be added.
+     * @param connection The connection to the Dstore to be added.
+     */
+    public void addDstore(int port, Connection connection){
+        // adding dstore to the index
+        this.index.addDstore(port, connection);
+
+        // logging
+        this.controllerInterface.logDstoreJoined(connection.getSocket(), port);
+    }
+
+    /**
+     * Adds the given file to the index provided there are enough Dstores in the system.
+     * 
+     * @param file The name of the file being added.
+     */
+    public ArrayList<Integer> addFile(String filename, int filesize) throws Exception{
+        // throwing exception if not enougn dstores have joined yet
+        if(this.index.getDstores().size() < this.minDstores){
+            throw new Exception();
+        }
+
+        // getting the list of dstores that the file needs to be stored on.
+        ArrayList<Integer> dstoresToStoreOn = this.index.getDstoresToStoreOn();
+
+        // calling the store method in the index
+        this.index.startStoring(filename, filesize, dstoresToStoreOn);
+
+        // returning the list of dstores the file needs to be stored on
+        return dstoresToStoreOn;
+    }
+
+    /**
      * Handles the disconnection of a Connector at the specified port.
+     * 
      * @param port The port of the connector.
      */
     public void handleDisconnect(int port){
-        // Checking for Client disconnect
-        // TODO
-
         // checking for Dstore disconnect
         for(DstoreIndex dstore : this.index.getDstores()){
             if(dstore.getConnection().getSocket().getPort() == port){
