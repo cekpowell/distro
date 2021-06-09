@@ -3,8 +3,11 @@ package Index;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeoutException;
 
+import Controller.Controller;
 import Index.State.OperationState;
 import Network.Connection;
 
@@ -18,17 +21,22 @@ import Network.Connection;
 public class Index {
 
     // member variables
-    private volatile ArrayList<DstoreIndex> dstores;
+    private Controller controller;
+    private volatile CopyOnWriteArrayList<DstoreIndex> dstores;
     private volatile int minDstores;
+    private volatile ConcurrentHashMap<Connection, ConcurrentHashMap<String, CopyOnWriteArrayList<Integer>>> loadRecord;
 
     /**
      * Class constructor.
      * 
      * Creates a new Index instance to be managed.
      */
-    public Index(int minDstores){
-        this.dstores = new ArrayList<DstoreIndex>();
+    public Index(Controller controller){
+        this.controller = controller;
+        this.minDstores = controller.getMinDstores();
+        this.dstores = new CopyOnWriteArrayList<DstoreIndex>();
         this.minDstores = minDstores;
+        this.loadRecord = new ConcurrentHashMap<Connection, ConcurrentHashMap<String, CopyOnWriteArrayList<Integer>>>();
     }
 
 
@@ -43,9 +51,12 @@ public class Index {
      * @param port The port the Dstore is listening on.
      * @param connection The connection between the Controller and the Dstore.
      */
-    public void addDstore(Integer port, Connection connection){
+    public synchronized void addDstore(Integer port, Connection connection){
         // adding the dstore to the list of dstores
         this.dstores.add(new DstoreIndex(port, connection));
+
+        // logging
+        this.controller.logDstoreJoined(connection.getSocket(), port);
     }
 
     /**
@@ -53,9 +64,9 @@ public class Index {
      * 
      * @param port The port of the Dstore to be removed from the system.
      */
-    public void removeDstore(Connection dstore){
+    public synchronized void removeDstore(Connection dstore){
         // removing the Dstore from the list of Dstores
-        this.dstores.remove(this.getDstoreFromConnection(dstore));
+        this.dstores.remove(this.getIndexFromConnection(dstore));
     }
 
 
@@ -70,11 +81,20 @@ public class Index {
      * 
      * @param file The name of the file being added.
      */
-    public ArrayList<Integer> startStoring(String filename, int filesize) throws Exception{
-        // throwing exception if not enougn dstores have joined yet
-        if(this.dstores.size() < this.minDstores){
-            throw new Exception();
+    public synchronized ArrayList<Integer> startStoring(String filename, int filesize) throws Exception{
+        // ERROR CHECKING //
+
+        // not enough dstores
+        if(!this.hasEnoughDstores()){
+            throw new Exception("Not enough Dstores");
         }
+
+        // file already exists
+        if(this.hasFile(filename)){
+            throw new Exception("File already exists");
+        }
+
+        // ADDING FILE //
 
         // getting the list of dstores that the file needs to be stored on.
         ArrayList<Integer> dstoresToStoreOn = this.getDstoresToStoreOn();
@@ -82,7 +102,7 @@ public class Index {
         // adding dstores the file is stored on to the the index 
         for(Integer port : dstoresToStoreOn){
             // adding the file to the dstore state
-            this.getDstoreFromPort(port).addFile(filename, filesize);
+            this.getIndexFromPort(port).addFile(filename, filesize);
         }
 
         // returning the list of dstores the file needs to be stored on
@@ -95,9 +115,120 @@ public class Index {
      * @param port The port of the Dstore that send the STORE_ACK.
      * @param filename The filename the STORE_ACK is relating to
      */
-    public void storeAckRecieved(Connection dstore, String filename){
+    public synchronized void storeAckRecieved(Connection dstore, String filename){
         // updatiing the dstore index
-        this.getDstoreFromConnection(dstore).updateFileState(filename, OperationState.STORE_ACK_RECIEVED);
+        this.getIndexFromConnection(dstore).updateFileState(filename, OperationState.STORE_ACK_RECIEVED);
+    }
+
+    ///////////////////
+    // LOADING FILES //
+    ///////////////////
+
+    /**
+     * Gathers a Dstore that the provided file should be loaded from.
+     * 
+     * @param filename The name of the file to be loaded.
+     * @param invalidLoads List of Dstores that have already been tried.
+     * @param isReload Boolean representing if this load operation is a LOAD or RELOAD.
+     * @return The Dstore the file should be loaded from.
+     */
+    public synchronized int getDstoreToLoadFrom(Connection connection, String filename, boolean isReload) throws Exception{
+
+        // ERROR CHECKING //
+
+        // not enough dstores
+        if(!this.hasEnoughDstores()){
+            throw new Exception("Not enough Dstores");
+        }
+
+        // file does not exist
+        if((!this.hasFile(filename) || !this.fileHasState(filename, OperationState.IDLE))){
+            throw new Exception("File does not exist");
+        }
+
+        // GETTING DSTORE //
+
+        // list of all ports
+        ArrayList<DstoreIndex> dstores = this.getDstoresStoredOn(filename);
+
+        // load record for the connection
+        ConcurrentHashMap<String,CopyOnWriteArrayList<Integer>> fileLoadRecord = this.loadRecord.get(connection);
+
+        // Load record is null (Client never performed a LOAD before)
+        if(fileLoadRecord == null){
+            // selecting port to load from
+            int selectedPort = dstores.get(0).getPort();
+
+            // creating new file load record
+            this.loadRecord.put(connection, new ConcurrentHashMap<String,CopyOnWriteArrayList<Integer>>());
+
+            // adding this file to the load record.
+            this.loadRecord.get(connection).put(filename, new CopyOnWriteArrayList<Integer>());
+
+            // adding the port to the fileLoadRecord
+            this.loadRecord.get(connection).get(filename).add(selectedPort);
+
+            // returning selected
+            return selectedPort;
+        }
+        // Load record is non-null (Client has done performed a LOAD before)
+        else{
+            // LOAD command
+            if(!isReload){
+                // placing/replacing the mapping in the load record
+                fileLoadRecord.put(filename, new CopyOnWriteArrayList<Integer>());
+
+                // selecting port to load from
+                int selectedPort = dstores.get(0).getPort();
+
+                // adding the selected port to the load record
+                fileLoadRecord.get(filename).add(selectedPort);
+
+                // returning the selected port
+                return selectedPort;
+            }
+            // RELOAD command
+            else{
+                // list of attempted ports
+                CopyOnWriteArrayList<Integer> attemptedPorts = fileLoadRecord.get(filename);
+
+                // finding Dstore that has not already been tried
+                for(DstoreIndex dstore : dstores){
+                    if(!attemptedPorts.contains(dstore.getPort())){
+                        // adding the port to the list of attempted ports
+                        attemptedPorts.add(dstore.getPort());
+
+                        // returning the port
+                        return dstore.getPort();
+                    }
+                }
+
+                // throwing Exception if no suitable Dstore is found
+                throw new Exception("No valid Dstore");
+            }
+        }
+    }
+
+    /**
+     * Gathers the size of a stored file.
+     * 
+     * @param filename The name of the file being searched.
+     * @return The size of the searched file in bytes.
+     * @throws Exception If the file is not stored in the Index.
+     */
+    public synchronized int getFileSize(String filename) throws Exception{
+        // file exists
+        if(this.hasFile(filename)){
+            // gathering a dstore the file is stored on
+            int port = this.getDstoresStoredOn(filename).get(0).getPort();
+
+            // returning the size of the file
+            return this.getIndexFromPort(port).getFile(filename).getFilesize();
+        }
+        // file does not exist
+        else{
+            throw new Exception();
+        }
     }
 
 
@@ -111,18 +242,35 @@ public class Index {
      * 
      * @param file The file being removed.
      */
-    public ArrayList<Integer> startRemoving(String filename) throws Exception{
-        // getting the list of dstores the file is stored on
-        ArrayList<Integer> dstoresStoredOn = this.getDstoresStoredOn(filename);
+    public synchronized ArrayList<Connection> startRemoving(String filename) throws Exception{
 
-        // updating the states
-        for(Integer dstore : dstoresStoredOn){
+        // ERROR CHECKING //
+
+        // not enough dstores
+        if(!this.hasEnoughDstores()){
+            throw new Exception("Not enough Dstores");
+        }
+
+        // file does not exist
+        if((!this.hasFile(filename) || !this.fileHasState(filename, OperationState.IDLE))){
+            throw new Exception("File does not exist");
+        }
+
+        // getting the list of dstores the file is stored on
+        ArrayList<DstoreIndex> dstores = this.getDstoresStoredOn(filename);
+        ArrayList<Connection> connections = new ArrayList<Connection>();
+
+        // updating the states of the dstores
+        for(DstoreIndex dstore : dstores){
             // updating the dstore state
-            this.getDstoreFromPort(dstore).updateFileState(filename, OperationState.REMOVE_IN_PROGRESS);
+            dstore.updateFileState(filename, OperationState.REMOVE_IN_PROGRESS);
+
+            // adding the connection to the list
+            connections.add(dstore.getConnection());
         }
 
         // returning the dstores the file is to be removed from
-        return dstoresStoredOn;
+        return connections;
     }
 
     /**
@@ -130,9 +278,9 @@ public class Index {
      * 
      * @param port The Dstore port that the REMOVE_ACK was recieved from.
      */
-    public void removeAckRecieved(Connection dstore, String filename){
+    public synchronized void removeAckRecieved(Connection dstore, String filename){
         // updating the dstore index
-        this.getDstoreFromConnection(dstore).updateFileState(filename, OperationState.REMOVE_ACK_RECIEVED);
+        this.getIndexFromConnection(dstore).updateFileState(filename, OperationState.REMOVE_ACK_RECIEVED);
     }
 
     //////////////////////////////////////
@@ -152,8 +300,7 @@ public class Index {
      */
     public boolean waitForOperationComplete(String filename, 
                                             int timeout, 
-                                            OperationState expectedState, 
-                                            OperationState finalState) throws TimeoutException{
+                                            OperationState expectedState) throws TimeoutException{
 
         // Waiting for Operation to Complete //
         
@@ -174,17 +321,39 @@ public class Index {
 
         // Operation Complete //
 
-        // updating file state to the new state
-        for(DstoreIndex dstore : this.dstores){
-            for(DstoreFile file : dstore.getFiles()){
-                if(file.getFilename().equals(filename)){
-                    dstore.updateFileState(filename, finalState);
+        this.handleOperationComplete(filename, expectedState);
+
+        // returning true
+        return true;
+    }
+
+    /**
+     * Updates the index to reflect an operation having been completed.
+     * 
+     * @param filename
+     * @param expectedState
+     */
+    private synchronized void handleOperationComplete(String filename, OperationState expectedState){
+        
+        // STORE 
+        if(expectedState == OperationState.STORE_ACK_RECIEVED){
+            // updating file state to the new state
+            for(DstoreIndex dstore : this.dstores){
+                for(DstoreFile file : dstore.getFiles()){
+                    if(file.getFilename().equals(filename)){
+                        dstore.updateFileState(filename, OperationState.IDLE);
+                    }
                 }
             }
         }
 
-        // returning true
-        return true;
+        // REMOVE
+        else if(expectedState == OperationState.REMOVE_ACK_RECIEVED){
+            // removing the file from the index
+            for(DstoreIndex dstore : this.dstores){
+                dstore.removeFile(filename);
+            }
+        }
     }
 
     /**
@@ -193,12 +362,20 @@ public class Index {
      * @param filename The filename for which the operation did not complete.
      * @param expectedState The expected state of the file.
      */
-    private void handleOperationTimeout(String filename, OperationState expectedState){
-        // Handling Store operation
+    private synchronized void handleOperationTimeout(String filename, OperationState expectedState){
+        // STORE
         if(expectedState == OperationState.STORE_ACK_RECIEVED){
             // removing the file from the index
-            for(int dstore : this.getDstoresStoredOn(filename)){
-                this.getDstoreFromPort(dstore).removeFile(filename);
+            for(DstoreIndex dstore : this.getDstoresStoredOn(filename)){
+                dstore.removeFile(filename);
+            }
+        }
+
+        // REMOVE
+        if(expectedState == OperationState.REMOVE_ACK_RECIEVED){
+            // removing the file from the index
+            for(DstoreIndex dstore : this.dstores){
+                dstore.removeFile(filename);
             }
         }
     }
@@ -240,13 +417,47 @@ public class Index {
     //////////////////////
 
     /**
+     * Determines if the index has enough Dstores connectedd to it.
+     * 
+     * @return True if there are enough Dstores, false otherwise.
+     */
+    private synchronized boolean hasEnoughDstores(){
+        if(this.dstores.size() < this.minDstores){
+            // not enough dstores
+            return false;
+        }
+        else{
+            // enough dstores
+            return true;
+        }
+    }
+
+    /**
+     * Determines if the given file is stored on the system.
+     * 
+     * @param filename The file being checked.
+     * @return True if the file is on the system, false otherwise
+     */
+    private synchronized boolean hasFile(String filename){
+        for(DstoreIndex dstore : this.dstores){
+            if(dstore.hasFile(filename)){
+                // file found
+                return true;
+            }
+        }
+
+        // file not found.
+        return false;
+    }
+
+    /**
      * Gets the DstoreIndex object associated with the provided Dstore Server Port.
      * 
      * @param port The port the Dstore is listening on.
      * @return The DstoreIndex object associated wth the provided port, null if there 
      * was no match.
      */
-    public DstoreIndex getDstoreFromPort(int port){
+    public synchronized DstoreIndex getIndexFromPort(int port){
         // findiing the matching DstoreIndex
         for(DstoreIndex dstore : this.dstores){
             if(dstore.getPort() == port){
@@ -265,10 +476,10 @@ public class Index {
      * @return The DstorerIndex object associated with the provided Connectoin object, null
      * if there was no match.
      */
-    public DstoreIndex getDstoreFromConnection(Connection connection){
+    public synchronized DstoreIndex getIndexFromConnection(Connection connection){
         // finding the matching DstoreIndex
         for(DstoreIndex dstore : this.dstores){
-            if(dstore.getConnection().getSocket().getPort() == connection.getSocket().getPort()){
+            if(dstore.getConnection().getPort() == connection.getPort()){
                 return dstore;
             }
         }
@@ -283,7 +494,7 @@ public class Index {
      * 
      * @return The list of Dstore ports that the new file can be stored on.
      */
-    public ArrayList<Integer> getDstoresToStoreOn(){
+    private synchronized ArrayList<Integer> getDstoresToStoreOn(){
         // sorting the dstores based on the number of files they contain
         Collections.sort(this.dstores);
 
@@ -299,21 +510,23 @@ public class Index {
     }
 
     /**
-     * Returns the list Dstore ports that the given file is stored on.
+     * Gathers a list of Indexes which store the provided file.
+     * 
      * @param filename The name of the file being searched.
+     * @return The list of DstoreIndexes that store the file.
      */
-    public ArrayList<Integer> getDstoresStoredOn(String filename){
-        ArrayList<Integer> ports = new ArrayList<Integer>();
+    private synchronized ArrayList<DstoreIndex> getDstoresStoredOn(String filename){
+        ArrayList<DstoreIndex> indexes = new ArrayList<DstoreIndex>();
         
         // looping through all dstores and seeing if they contain the file
         for(DstoreIndex dstore : this.dstores){
             if(dstore.hasFile(filename)){
-                ports.add(dstore.getPort());
+                indexes.add(dstore);
             }
         }
 
         // file not stored on the system.
-        return ports;
+        return indexes;
     }
 
     /**
@@ -324,9 +537,9 @@ public class Index {
      * @param state The state of the file.
      * @return True if the state of the file is the provided state, false if not.
      */
-    public boolean fileHasState(String filename, OperationState state){
-        for(Integer port : this.getDstoresStoredOn(filename)){
-            for(DstoreFile file : this.getDstoreFromPort(port).getFiles()){
+    public synchronized boolean fileHasState(String filename, OperationState state){
+        for(DstoreIndex dstore : this.getDstoresStoredOn(filename)){
+            for(DstoreFile file : dstore.getFiles()){
                 if(file.getFilename().equals(filename) && file.getState() != state){
                     return false;
                 }
@@ -353,7 +566,7 @@ public class Index {
     // GETTERS AND SETTERS //
     /////////////////////////
 
-    public ArrayList<DstoreIndex> getDstores(){
+    public CopyOnWriteArrayList<DstoreIndex> getDstores(){
         return this.dstores;
     }
 

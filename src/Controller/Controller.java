@@ -1,7 +1,6 @@
 package Controller;
 
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.net.Socket;
 
 import Index.DstoreIndex;
 import Index.Index;
@@ -15,14 +14,12 @@ import Network.*;
 public class Controller extends Server{
 
     // member variables
-    private volatile int port;
-    private volatile int minDstores;
-    private volatile int timeout;
-    private volatile int rebalancePeriod;
-    private volatile ControllerInterface controllerInterface; // TODO This is only required because Controller must log a JOIN request from a server seperatley - when this request is not needed, this property can be removed.
-
-    // indexes
-    private Index index;
+    private int port;
+    private int minDstores;
+    private int timeout;
+    private int rebalancePeriod;
+    private ControllerInterface controllerInterface; 
+    private volatile Index index;
 
     /**
      * Class constructor.
@@ -40,9 +37,13 @@ public class Controller extends Server{
         this.timeout = timeout;
         this.rebalancePeriod = rebalancePeriod;
         this.controllerInterface = controllerInterface;
-        this.index = new Index(this.minDstores);
+        this.index = new Index(this);
         this.setRequestHandler(new ControllerRequestHandler(this));
     }
+
+    ///////////
+    // SETUP //
+    ///////////
 
     /**
      * Set's up the Controller ready for use.
@@ -58,40 +59,9 @@ public class Controller extends Server{
         }
     }
 
-    /**
-     * Adds the given Dstore to the index.
-     * 
-     * @param port The port of the Dstore to be added.
-     * @param connection The connection to the Dstore to be added.
-     */
-    public void addDstore(int port, Connection connection){
-        // adding dstore to the index
-        this.index.addDstore(port, connection);
-
-        // logging
-        this.controllerInterface.logDstoreJoined(connection.getSocket(), port);
-    }
-
-    /**
-     * Adds the given file to the index provided there are enough Dstores in the system.
-     * 
-     * @param file The name of the file being added.
-     */
-    public ArrayList<Integer> addFile(String filename, int filesize) throws Exception{
-        // throwing exception if not enougn dstores have joined yet
-        if(this.index.getDstores().size() < this.minDstores){
-            throw new Exception();
-        }
-
-        // getting the list of dstores that the file needs to be stored on.
-        ArrayList<Integer> dstoresToStoreOn = this.index.getDstoresToStoreOn();
-
-        // calling the store method in the index
-        this.index.startStoring(filename, filesize, dstoresToStoreOn);
-
-        // returning the list of dstores the file needs to be stored on
-        return dstoresToStoreOn;
-    }
+    ////////////////
+    // DISCONNECT //
+    ////////////////
 
     /**
      * Handles the disconnection of a Connector at the specified port.
@@ -101,7 +71,7 @@ public class Controller extends Server{
     public void handleDisconnect(int port){
         // checking for Dstore disconnect
         for(DstoreIndex dstore : this.index.getDstores()){
-            if(dstore.getConnection().getSocket().getPort() == port){
+            if(dstore.getConnection().getPort() == port){
                 this.controllerInterface.handleError("Dstore listening on port : " + dstore.getPort() + " disconnected.");
                 this.index.removeDstore(dstore.getConnection());
                 return;
@@ -110,6 +80,21 @@ public class Controller extends Server{
 
         // Unknown connector
         this.controllerInterface.handleError("Unknown connector on port : " + port + " disconnected (most likley a client).");
+    }
+
+
+    ////////////////////
+    // DSTORE LOGGING //
+    ////////////////////
+
+    /**
+     * Logs the joining of a Dstore into the system.
+     * 
+     * @param socket The connection to the Dstore.
+     * @param port The port the Dstore listens on.
+     */
+    public void logDstoreJoined(Socket socket, int port){
+        this.controllerInterface.logDstoreJoined(socket, port);
     }
 
 

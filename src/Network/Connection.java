@@ -66,7 +66,7 @@ public class Connection{
      */
     public void close(){
         try{
-            this.getSocket().close();
+            this.socket.close();
         }
         catch(Exception e){
             this.networkInterface.handleError("Unable to close connection to connector on port : " + this.socket.getPort());
@@ -137,6 +137,7 @@ public class Connection{
             // logging message
             this.networkInterface.logMessageReceived(this.socket, message.message);
 
+            this.socket.setSoTimeout(0);
             return message.message;
         }
         catch(NullPointerException e){
@@ -214,7 +215,14 @@ public class Connection{
             byte[] bytes = this.dataIn.readNBytes(n);
 
             // returninig the gathered bytes
-            return bytes;
+            if(bytes.length == n){
+                this.socket.setSoTimeout(0);
+                return bytes;
+            }
+            else{
+                this.socket.setSoTimeout(0);
+                throw new NullPointerException();
+            }
         }
         catch(NullPointerException e){
             // connection disconnected - throwing exception
@@ -241,5 +249,13 @@ public class Connection{
 
     public Socket getSocket(){
         return this.socket;
+    }
+
+    public int getPort(){
+        return this.socket.getPort();
+    }
+
+    public int getLocalPort(){
+        return this.socket.getLocalPort();
     }
 }

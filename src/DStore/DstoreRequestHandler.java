@@ -7,7 +7,11 @@ import Logger.Protocol;
 import Network.*;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Paths;
 
 import Token.*;
 import Token.TokenType.*;
@@ -18,7 +22,7 @@ import Token.TokenType.*;
 public class DstoreRequestHandler implements RequestHandler{
     
     // member variables
-    Dstore dstore;
+    private Dstore dstore;
 
     public DstoreRequestHandler(Dstore dstore){
         // initializing member variables
@@ -36,15 +40,27 @@ public class DstoreRequestHandler implements RequestHandler{
      */
     public void handleRequest(Connection connection, Token request){
 
-        // LIST //
-        if(request instanceof ListToken){
-            this.handleListRequest(connection);
-        }
-
         // STORE //
-        else if(request instanceof StoreToken){
+        if(request instanceof StoreToken){
             StoreToken storeToken = (StoreToken) request;
             this.handleStoreRequest(connection, storeToken.filename, storeToken.filesize);
+        }
+
+        // LOAD_DATA //
+        else if(request instanceof LoadDataToken){
+            LoadDataToken loadToken = (LoadDataToken) request;
+            this.handleLoadDataRequest(connection, loadToken.filename);
+        }
+
+        // REMOVE //
+        else if(request instanceof RemoveToken){
+            RemoveToken removeToken = (RemoveToken) request;
+            this.handleRemoveRequest(connection, removeToken.filename);
+        }
+
+        // LIST //
+        else if(request instanceof ListToken){
+            this.handleListRequest(connection);
         }
 
         // Invalid //
@@ -90,6 +106,79 @@ public class DstoreRequestHandler implements RequestHandler{
         }
     }
 
+    ////////// 
+    // LOAD //
+    //////////
+
+    /**
+     * Handles a LOAD request. 
+     * 
+     * @param connection The connection associated with the request.
+     * @param filename The name of the file being loaded.
+     */
+    private void handleLoadDataRequest(Connection connection, String filename){
+        try{
+            // getting file
+            File file = new File(this.dstore.getFolderPath() + File.separatorChar + filename);
+
+            // file exists
+            if(file.exists()){
+                // gathering file
+                FileInputStream fileInput = new FileInputStream(file);
+
+                // sending file to client
+                byte[] fileContent = fileInput.readAllBytes();
+                connection.sendBytes(fileContent);
+                fileInput.close();
+            }
+            // file does not exist - closing connection
+            else{
+                connection.close();
+            }
+        }
+        catch(Exception e){
+            this.dstore.getServerInterface().handleError("Unable to handle LOAD request sent by Client on port : " + connection.getSocket().getPort());
+        }
+    }
+
+    ////////////
+    // REMOVE //
+    ////////////
+
+    /**
+     * Handles a REMOVE request.
+     * 
+     * @param connection The connection associated with the request.
+     * @param filename The name of the file being removed.
+     */
+    private void handleRemoveRequest(Connection connection, String filename){
+        try{
+            // creating file object
+            File file = new File(this.dstore.getFolderPath() + File.separatorChar + filename);
+
+            // deleting file
+            Files.delete(Paths.get(file.getAbsolutePath()));
+
+            // sending acknowleddgement to controller
+            connection.sendMessage(Protocol.REMOVE_ACK_TOKEN + " " + filename);
+        }
+        catch(NoSuchFileException e){
+            // logging error
+            this.dstore.getServerInterface().handleError("Unable to handle REMOVE sent by Controller on port : " + this.dstore.getCPort() + " as the file does not exist.");
+
+            try{
+                // sending error to controller
+                connection.sendMessage(Protocol.ERROR_FILE_DOES_NOT_EXIST_TOKEN + " " + filename);
+            }
+            catch(Exception ex){
+                this.dstore.getServerInterface().handleError("Unable to send error message to controller on port : " + this.dstore.getCPort());
+            }
+        }
+        catch(Exception e){
+            this.dstore.getServerInterface().handleError("Unable to handle REMOVE request sent by Controller on port : " + this.dstore.getCPort());
+        }
+    }
+
     //////////
     // LIST //
     //////////
@@ -99,7 +188,7 @@ public class DstoreRequestHandler implements RequestHandler{
      * 
      * @param connection The connection associated with the request.
      */
-    public void handleListRequest(Connection connection){
+    private void handleListRequest(Connection connection){
         try{
             // gathering list of files
             File[] fileList = this.dstore.getFileStore().listFiles();

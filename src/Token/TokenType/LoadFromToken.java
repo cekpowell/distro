@@ -9,9 +9,9 @@ import Token.Token;
  */
 public class LoadFromToken extends Token{
     public int port;
-    public double filesize;
+    public int filesize;
 
-    public LoadFromToken(String message, int port, double filesize){
+    public LoadFromToken(String message, int port, int filesize){
         this.message = message;
         this.port = port;
         this.filesize = filesize;

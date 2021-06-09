@@ -224,7 +224,7 @@ public class RequestTokenizer {
         try{
             int port = Integer.parseInt(sTokenizer.nextToken());
 
-            Double filesize = Double.parseDouble(sTokenizer.nextToken());
+            int filesize = Integer.parseInt(sTokenizer.nextToken());
 
             return new LoadFromToken(message, port, filesize);
         }

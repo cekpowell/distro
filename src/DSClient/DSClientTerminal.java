@@ -20,7 +20,7 @@ import Interface.NetworkInterface;
 public class DSClientTerminal extends NetworkInterface{
 
     // member variables
-    private DSClient client;
+    public DSClient client;
 
     /**
      * Class Constructor.
@@ -36,7 +36,7 @@ public class DSClientTerminal extends NetworkInterface{
         this.startNetworkProcess(this.client);
 
         // waiting for user input
-        this.waitForInput();
+        //this.waitForInput();
     }
 
     /**

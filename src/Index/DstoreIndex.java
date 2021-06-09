@@ -1,6 +1,6 @@
 package Index;
 
-import java.util.ArrayList;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import Index.State.OperationState;
 import Index.State.RebalanceState;
@@ -13,10 +13,10 @@ import Network.Connection;
 public class DstoreIndex implements Comparable<DstoreIndex>{
     
     // member variables
-    private int port;
-    private Connection connection;
-    private ArrayList<DstoreFile> files;
-    private RebalanceState rebalanceState;
+    private volatile int port;
+    private volatile Connection connection;
+    private volatile CopyOnWriteArrayList<DstoreFile> files;
+    private volatile RebalanceState rebalanceState;
 
     /**
      * Class constructor.
@@ -27,7 +27,7 @@ public class DstoreIndex implements Comparable<DstoreIndex>{
     public DstoreIndex(int port, Connection connection){
         this.port = port;
         this.connection = connection;
-        this.files = new ArrayList<DstoreFile>();
+        this.files = new CopyOnWriteArrayList<DstoreFile>();
         this.rebalanceState = RebalanceState.IDLE;
     }
 
@@ -47,10 +47,19 @@ public class DstoreIndex implements Comparable<DstoreIndex>{
      * @param filename The file to be removed
      */
     public void removeFile(String filename){
+        // place holder for the file object
+        DstoreFile foundFile = null;
+
+        // finding the file object
         for(DstoreFile file : this.files){
             if(file.getFilename().equals(filename)){
-                this.files.remove(file);
+                foundFile = file;
             }
+        }
+
+        // removing the file if it was found
+        if(foundFile != null){
+            this.files.remove(foundFile);
         }
     }
 
@@ -116,8 +125,18 @@ public class DstoreIndex implements Comparable<DstoreIndex>{
         return this.connection;
     }
 
-    public ArrayList<DstoreFile> getFiles(){
+    public CopyOnWriteArrayList<DstoreFile> getFiles(){
         return this.files;
+    }
+
+    public DstoreFile getFile(String filename){
+        for(DstoreFile file : this.files){
+            if(file.getFilename().equals(filename)){
+                return file;
+            }
+        }
+        
+        return null;
     }
 
     public RebalanceState getRebalanceState(){

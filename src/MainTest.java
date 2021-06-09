@@ -4,6 +4,8 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 
 import Controller.*;
+import DSClient.DSClient;
+import DSClient.DSClientTerminal;
 import Dstore.*;
 import Index.Index;
 import Index.State.OperationState;
@@ -15,13 +17,13 @@ public class MainTest {
     public static void main(String[] args) throws Exception{
 
         // Testing Tokenizer //
-        testTokenizer();
+        //testTokenizer();
 
         // Testing connections //
         //testConnection();
 
-        // Testing Index Manager //
-        //testIndexManager();
+        // Testing Concurrency
+        testConcurrency();
     }
 
     public static void testTokenizer() throws IOException{
@@ -60,47 +62,34 @@ public class MainTest {
         }).start();
     }
 
-    public static void testIndexManager(){
-        // Index indexManager = new Index(2);
+    public static void testConcurrency(){
+        new Thread(() -> {
+            DSClientTerminal client = new DSClientTerminal(4000, 2000);
 
-        // System.out.println("Adding dstore 1, 2 and 3....");
-        // indexManager.addDstore(1, null);
-        // indexManager.addDstore(2, null);
-        // indexManager.addDstore(3, null);
-        // System.out.println(indexManager.toString());
+            client.client.handleInputRequest("STORE test.txt 14");
+            try{ Thread.sleep(500);} catch(Exception e){}
+            client.client.handleInputRequest("REMOVE test2.txt");
+        }).start();
+        new Thread(() -> {
+            DSClientTerminal client = new DSClientTerminal(4000, 2000);
 
-        // System.out.println("Adding file 'Test' ...");
-        // indexManager.startStoring("Test", 1);
-        // System.out.println(indexManager.toString());
+            client.client.handleInputRequest("STORE test1.txt 14");
+            try{ Thread.sleep(500);} catch(Exception e){}
+            client.client.handleInputRequest("REMOVE test.txt");
+        }).start();
+        new Thread(() -> {
+            DSClientTerminal client = new DSClientTerminal(4000, 2000);
 
-        // System.out.println("Adding file 'Test Two' ...");
-        // indexManager.startStoring("Test Two", 1);
-        // System.out.println(indexManager.toString());
+            client.client.handleInputRequest("STORE test2.txt 14");
+            try{ Thread.sleep(500);} catch(Exception e){}
+            client.client.handleInputRequest("LOAD test.txt");
+        }).start();
+        new Thread(() -> {
+            DSClientTerminal client = new DSClientTerminal(4000, 2000);
 
-        // System.out.println("Adding file 'Test Three' ...");
-        // indexManager.startStoring("Test Three", 1);
-        // System.out.println(indexManager.toString());
-
-        // System.out.println("Sending STORE_ACK for Dstore on port 1 for file 'Test'...");
-        // indexManager.storeAckRecieved(1, "Test");
-        // System.out.println(indexManager.toString());
-
-        // System.out.println("Sending STORE_ACK for Dstore on port 2 for file 'Test'...");
-        // indexManager.storeAckRecieved(2, "Test");
-        // System.out.println(indexManager.toString());
-
-        // System.out.println("Sending STORE_ACK for Dstore on port 3 for file 'Test'...");
-        // indexManager.storeAckRecieved(3, "Test");
-        // System.out.println(indexManager.toString());
-
-        // System.out.println("Waiting for store to be complete for file 'Test'...");
-        // try{
-        //     indexManager.waitForOperationComplete("Test", 3000, OperationState.STORE_ACK_RECIEVED, OperationState.IDLE);
-        // }
-        // catch(Exception e){
-        //     System.out.println("*ERROR* : Failed to complete store operation.");
-        // }
-        // System.out.println(indexManager.toString())
-;        
+            client.client.handleInputRequest("STORE test3.txt 14");
+            try{ Thread.sleep(500);} catch(Exception e){}
+            client.client.handleInputRequest("LOAD test1.txt");
+        }).start();
     }
 }
