@@ -70,13 +70,12 @@ public abstract class Server implements NetworkProcess{
                     this.setUpConnection(connection);
                 }
                 catch(Exception e){
-                    this.serverInterface.handleError(this.type.toString() + " on port : " + this.port + " unable to connect to new connector.");
-                    e.printStackTrace();
+                    this.serverInterface.handleError(this.type.toString() + " on port : " + this.port + " unable to connect to new connector." , e);
                 }
             }
         }
         catch(Exception e){
-            this.serverInterface.handleError(this.type.toString() + " on port : " + this.port + " no longer running.");
+            this.serverInterface.handleError(this.type.toString() + " on port : " + this.port + " unable to setup Server Socket." , e);
         }
     }
 
@@ -87,20 +86,15 @@ public abstract class Server implements NetworkProcess{
      */
     public void setUpConnection(Connection connection){
         // Setting up connnection to connector
-        try{
-            ServerThread serverConnection = new ServerThread(this, connection);
-            serverConnection.start();
-        }
-        catch(Exception e){
-            this.serverInterface.handleError("Unable to create socket streams for connector on port : " + connection.getSocket().getPort());
-        }
+        ServerThread serverConnection = new ServerThread(this, connection);
+        serverConnection.start();
     }
 
     /**
      * Handles the disconnection of a Connector at the specified port.
      * @param port The port of the connector.
      */
-    public abstract void handleDisconnect(int port);
+    public abstract void handleDisconnect(int port, Exception cause);
 
     /**
      * Closes the server.

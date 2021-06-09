@@ -24,12 +24,10 @@ public abstract class NetworkInterface {
         try{
             // trying to start the server
             process.start();
-
-            // Controller successfully started
         }
         catch(Exception e){
             // handling error if server could not be started
-            this.handleError(e.getMessage());
+            this.handleError("Failure starting server", e);
         }
     }
 
@@ -59,11 +57,10 @@ public abstract class NetworkInterface {
     public abstract void logEvent(String event);
 
     /**
-     * Handles an error.
+     * Handles an error and it's cause.
      * 
-     * // TODO Instead of the error being passed as a string, create Exception objects for all of the types of exception.
-     * 
-     * @param error The error to be logged.
+     * @param error The error to be handeled.
+     * @param cause The cause of the error.
      */
-    public abstract void handleError(String error);
+    public abstract void handleError(String error, Exception cause);
 }

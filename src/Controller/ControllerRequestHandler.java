@@ -1,9 +1,8 @@
 package Controller;
 
 import java.util.ArrayList;
-import java.util.concurrent.TimeoutException;
 
-import Index.State.OperationState;
+import Controller.Index.State.OperationState;
 import Logger.Protocol;
 import Network.*;
 import Token.*;
@@ -93,7 +92,7 @@ public class ControllerRequestHandler implements RequestHandler{
 
         // Invalid Request
         else{
-            this.handleInvalidRequest(connection);
+            this.handleInvalidRequest(connection, request);
         }
     }
 
@@ -140,39 +139,31 @@ public class ControllerRequestHandler implements RequestHandler{
             // store complete, sending STORE_COMPLETE message to Client
             connection.sendMessage(Protocol.STORE_COMPLETE_TOKEN);
         }
-        catch(TimeoutException e){
-            this.controller.getServerInterface().handleError("Timeout occured on STORE request sent by Client on port : " + connection.getPort());
-        }
         catch(Exception e){
+            // logging error
+            this.controller.getServerInterface().handleError("Unable to handle STORE request from Client on port : " + connection.getPort(), e);
+
+            // Handling Specific Cases //
+
             // Not enough Dstores
             if(e.getMessage().equals("Not enough Dstores")){
                 try{
                     // sending error message to client
                     connection.sendMessage(Protocol.ERROR_NOT_ENOUGH_DSTORES_TOKEN);
-
-                    // logging error
-                    this.controller.getServerInterface().handleError("Not enough Dstores available for STORE request from Client on port : " + connection.getPort());
                 }
                 catch(Exception ex){
-                    this.controller.getServerInterface().handleError("Unable to handle STORE request from Client on port : " + connection.getPort());
+                    this.controller.getServerInterface().handleError("Unable to send error message : " + Protocol.ERROR_NOT_ENOUGH_DSTORES_TOKEN + " to Client on port : " + connection.getPort(), ex);
                 }
             }
-            // file already exists
+            // File already exists
             else if(e.getMessage().equals("File already exists")){
                 try{
                     // sending error message to client
                     connection.sendMessage(Protocol.ERROR_FILE_ALREADY_EXISTS_TOKEN);
-
-                    // logging error
-                    this.controller.getServerInterface().handleError("File already exists for STORE request from Client on port : "+ connection.getPort());
                 }
                 catch(Exception ex){
-                    this.controller.getServerInterface().handleError("Unable to handle STORE request from Client on port : " + connection.getPort());
+                    this.controller.getServerInterface().handleError("Unable to send error message : " + Protocol.ERROR_FILE_ALREADY_EXISTS_TOKEN + " to Client on port : " + connection.getPort(), ex);
                 }
-            }
-            // unknown error
-            else{
-                this.controller.getServerInterface().handleError("Unable to handle STORE request sent by Client on port : " + connection.getPort());
             }
         }
     }
@@ -209,30 +200,29 @@ public class ControllerRequestHandler implements RequestHandler{
             connection.sendMessage(Protocol.LOAD_FROM_TOKEN + " " + dstoreToLoadFrom + " " + filesize);
         }
         catch(Exception e){
+            // logging error
+            this.controller.getServerInterface().handleError("Unable to handle STORE request from Client on port : " + connection.getPort(), e);
+
+            // Handling Specific Cases //
+
             // Not enough Dstores
             if(e.getMessage().equals("Not enough Dstores")){
                 try{
                     // sending error message to client
                     connection.sendMessage(Protocol.ERROR_NOT_ENOUGH_DSTORES_TOKEN);
-
-                    // logging error
-                    this.controller.getServerInterface().handleError("Not enough Dstores available for LOAD request from Client on port : " + connection.getPort());
                 }
                 catch(Exception ex){
-                    this.controller.getServerInterface().handleError("Unable to handle LOAD request from Client on port : " + connection.getPort());
+                    this.controller.getServerInterface().handleError("Unable to send error message : " + Protocol.ERROR_NOT_ENOUGH_DSTORES_TOKEN + " to Client on port : " + connection.getPort(), ex);
                 }
             }
-            // file does not exist
+            // File does not exist
             else if(e.getMessage().equals("File does not exist")){
                 try{
                     // sending error message to client
                     connection.sendMessage(Protocol.ERROR_FILE_DOES_NOT_EXIST_TOKEN);
-
-                    // logging error
-                    this.controller.getServerInterface().handleError("File does not exist for LOAD request from Client on port : "+ connection.getPort());
                 }
                 catch(Exception ex){
-                    this.controller.getServerInterface().handleError("Unable to handle LOAD request from Client on port : " + connection.getPort());
+                    this.controller.getServerInterface().handleError("Unable to send error message : " + Protocol.ERROR_FILE_DOES_NOT_EXIST_TOKEN + " to Client on port : " + connection.getPort(), ex);
                 }
             }
             // No valid Dstores
@@ -240,17 +230,10 @@ public class ControllerRequestHandler implements RequestHandler{
                 try{
                     // sending error messagr to client
                     connection.sendMessage(Protocol.ERROR_LOAD_TOKEN);
-
-                    // logging error
-                    this.controller.getServerInterface().handleError("No valid Dstore found for LOAD request from Client on port : " + connection.getPort());
                 }
                 catch(Exception ex){
-                    this.controller.getServerInterface().handleError("Unable to handle LOAD request from Client on port : " + connection.getPort());
+                    this.controller.getServerInterface().handleError("Unable to send error message : " + Protocol.ERROR_LOAD_TOKEN + " to Client on port : " + connection.getPort(), ex);
                 }
-            }
-            // unknown error
-            else{
-                this.controller.getServerInterface().handleError("Unable to handle LOAD request sent by Client on port : " + connection.getPort());
             }
         }
     }
@@ -284,39 +267,31 @@ public class ControllerRequestHandler implements RequestHandler{
             // store complete, sending REMOVE_COMPLETEE message to Client
             connection.sendMessage(Protocol.REMOVE_COMPLETE_TOKEN);
         }
-        catch(TimeoutException e){
-            this.controller.getServerInterface().handleError("Timeout occured on REMOVE request sent by Client on port : " + connection.getPort());
-        }
         catch(Exception e){
+            // logging error
+            this.controller.getServerInterface().handleError("Unable to handle REMOVE request sent by Client on port : " + connection.getPort(), e);
+
+            // Handling Specific Cases //
+
             // Not enough Dstores
             if(e.getMessage().equals("Not enough Dstores")){
                 try{
                     // sending error message to client
                     connection.sendMessage(Protocol.ERROR_NOT_ENOUGH_DSTORES_TOKEN);
-
-                    // logging error
-                    this.controller.getServerInterface().handleError("Not enough Dstores available for REMOVE request from Client on port : " + connection.getPort());
                 }
                 catch(Exception ex){
-                    this.controller.getServerInterface().handleError("Unable to handle REMOVE request from Client on port : " + connection.getPort());
+                    this.controller.getServerInterface().handleError("Unable to send error message : " + Protocol.ERROR_NOT_ENOUGH_DSTORES_TOKEN + " to Client on port : " + connection.getPort(), ex);
                 }
             }
-            // file does not exist
+            // File does not exist
             else if(e.getMessage().equals("File does not exist")){
                 try{
                     // sending error message to client
                     connection.sendMessage(Protocol.ERROR_FILE_DOES_NOT_EXIST_TOKEN);
-
-                    // logging error
-                    this.controller.getServerInterface().handleError("Unable to handle REMOVE send by Client on port : "+ connection.getPort() + " as the file does not exist.");
                 }
                 catch(Exception ex){
-                    this.controller.getServerInterface().handleError("Unable to handle STORE request from Client on port : " + connection.getPort());
+                    this.controller.getServerInterface().handleError("Unable to send error message : " + Protocol.ERROR_FILE_DOES_NOT_EXIST_TOKEN + " to Client on port : " + connection.getPort(), ex);
                 }
-            }
-            // unknown error
-            else{
-                this.controller.getServerInterface().handleError("Unable to handle STORE request sent by Client on port : " + connection.getPort());
             }
         }
     }
@@ -355,8 +330,7 @@ public class ControllerRequestHandler implements RequestHandler{
             connection.sendMessage(message);
         }
         catch(Exception e){
-            //TODO need to test for different types of exception to know where the error occuredd - e.g., SocketTimeoutException, NullPointerException, etc...
-            this.controller.getServerInterface().handleError("Unable to handle LIST request for Client on port : " + connection.getPort());
+            this.controller.getServerInterface().handleError("Unable to handle LIST request for Client on port : " + connection.getPort(), e);
         }
     }
 
@@ -367,8 +341,8 @@ public class ControllerRequestHandler implements RequestHandler{
     /**
      * Handles an invalid request.
      */
-    public void handleInvalidRequest(Connection connection){
-        this.controller.getServerInterface().handleError("Invalid request recieved from connector on port : " + connection.getPort());
+    public void handleInvalidRequest(Connection connection, Token request){
+        this.controller.getServerInterface().handleError("Unable to handle request '" + request.message +  "' received from connector on port : " + connection.getPort(), new Exception("Request is invalid"));
     }
 }
 

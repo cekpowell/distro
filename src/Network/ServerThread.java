@@ -1,5 +1,7 @@
 package Network;
 
+import java.net.SocketException;
+
 import Token.RequestTokenizer;
 import Token.Token;
 
@@ -25,7 +27,7 @@ public class ServerThread extends Thread {
      * @param server The Server object involved in the connection.
      * @param connection The conection between the Server and the connector.
      */
-    public ServerThread(Server server, Connection connection) throws Exception{
+    public ServerThread(Server server, Connection connection){
         this.server = server;
         this.connection = connection;
         this.isActive = true;
@@ -45,22 +47,19 @@ public class ServerThread extends Thread {
     public void waitForRequest(){
         try{
             while(this.isActive()){
-                // getting request from connnection
-                String request = this.connection.getMessage();
-
-                // tokenizing request
-                Token requestToken = RequestTokenizer.getToken(request);
+                // getting request
+                Token requestToken = RequestTokenizer.getToken(this.connection.getMessage());
 
                 // handling request
-                this.server.getRequestHandler().handleRequest(this.connection, requestToken); // TODO Does this need to be ran on a new Thread? Not doing it wont cause concurrency issues, but could be slow.
+                this.server.getRequestHandler().handleRequest(this.connection, requestToken);
             }
         }
         catch(NullPointerException e){
             // Connector disconnected - passing it on to the server to handle
-            this.server.handleDisconnect(this.getConnection().getSocket().getPort());
+            this.server.handleDisconnect(this.getConnection().getSocket().getPort(), new Exception("Connection terminated client side"));
         }
         catch(Exception e){
-            this.server.getServerInterface().handleError(this.server.getType().toString() + " on port : " + this.connection.getSocket().getLocalPort() + " unable to handle request from port : " + this.connection.getSocket().getPort());
+            this.server.getServerInterface().handleError(this.server.getType().toString() + " on port : " + this.connection.getSocket().getLocalPort() + " unable to handle request from port : " + this.connection.getSocket().getPort(), e);
         }
     }
 

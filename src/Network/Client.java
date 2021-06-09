@@ -77,9 +77,9 @@ public abstract class Client implements NetworkProcess{
      * 
      * Onlly thing to do is log error and let the interface deal with it.
      */
-    public void handleServerDisconnect(){
+    public void handleServerDisconnect(Exception cause){
         // logging error
-        this.clientInterface.handleError("Lost connection to Server on port : " + this.cPort);
+        this.clientInterface.handleError("Lost connection to Server on port : " + this.cPort, cause);
     }
 
     /////////////////////////

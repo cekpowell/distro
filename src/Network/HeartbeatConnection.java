@@ -47,11 +47,10 @@ public class HeartbeatConnection extends Thread{
         }
         catch(NullPointerException e){
             // Connector disconnected - passing it on to the server to handle
-            this.client.handleServerDisconnect();
+            this.client.handleServerDisconnect(new Exception("Connection terminated server side"));
         }
         catch(Exception e){
-            this.client.getClientInterface().handleError("Error listening for heartbeat on port : " + this.connection.getSocket().getLocalPort() + " for Controller on port " + this.connection.getSocket().getPort() + e.toString());
-            e.printStackTrace();
+            this.client.getClientInterface().handleError("Error listening for heartbeat on port : " + this.connection.getSocket().getLocalPort() + " for Controller on port " + this.connection.getSocket().getPort(), e);
         }
     }
 

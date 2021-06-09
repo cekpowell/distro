@@ -86,12 +86,14 @@ public class ControllerTerminal extends ControllerInterface{
     }
 
     /**
-     * Handles the logging of an error.
+     * Handles the logging of an error and it's cause.
      * 
      * @param error The error to be logged.
+     * @param cause The cause of the error.
      */
-    public void handleError(String error){
+    public void handleError(String error, Exception cause){
         System.out.println("*ERROR* " + error);
+        System.out.println("\t|-CAUSE : " + cause.getMessage());
     }
 
     /////////////////

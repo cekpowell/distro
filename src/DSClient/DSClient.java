@@ -3,7 +3,6 @@ package DSClient;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.net.InetAddress;
 import java.net.SocketTimeoutException;
 
@@ -64,40 +63,34 @@ public class DSClient extends Client{
      * @param message The recieved response.
      */
     public void handleInputRequest(String request){
-        try{
-            Token requestToken = RequestTokenizer.getToken(request);
+        Token requestToken = RequestTokenizer.getToken(request);
 
-            // STORE //
-            if(requestToken instanceof StoreToken){
-                StoreToken storeToken = (StoreToken) requestToken;
-                this.handleStoreRequest(storeToken.filename, storeToken.filesize);
-            }
-
-            // LOAD //
-            else if(requestToken instanceof LoadToken){
-                LoadToken loadToken = (LoadToken) requestToken;
-                this.handleLoadRequest(loadToken.filename, false);
-            }
-
-            // REMOVE //
-            else if(requestToken instanceof RemoveToken){
-                RemoveToken removeToken = (RemoveToken) requestToken;
-                this.handleRemoveRequest(removeToken.filename);
-            }
-
-            // LIST //
-            else if(requestToken instanceof ListToken){
-                this.handleListRequest();
-            }
-
-            // Invalid Request
-            else{
-                this.handleInvalidRequest(request);
-            }
+        // STORE //
+        if(requestToken instanceof StoreToken){
+            StoreToken storeToken = (StoreToken) requestToken;
+            this.handleStoreRequest(storeToken.filename, storeToken.filesize);
         }
-        catch(Exception e){
-            // unable to handle input request
-            this.getClientInterface().handleError("Unable to handle input request : " + request + " sent to Controller on port : " + this.getCPort());
+
+        // LOAD //
+        else if(requestToken instanceof LoadToken){
+            LoadToken loadToken = (LoadToken) requestToken;
+            this.handleLoadRequest(loadToken.filename, false);
+        }
+
+        // REMOVE //
+        else if(requestToken instanceof RemoveToken){
+            RemoveToken removeToken = (RemoveToken) requestToken;
+            this.handleRemoveRequest(removeToken.filename);
+        }
+
+        // LIST //
+        else if(requestToken instanceof ListToken){
+            this.handleListRequest();
+        }
+
+        // Invalid Request
+        else{
+            this.handleInvalidRequest(request);
         }
     }
 
@@ -111,50 +104,56 @@ public class DSClient extends Client{
      * @param filename
      * @param filesize
      */
-    private void handleStoreRequest(String filename, int filesize) throws Exception{
-        // sending the store message to the controller
-        this.getServerConnection().sendMessage(Protocol.STORE_TOKEN + " " + filename + " " + filesize);
+    private void handleStoreRequest(String filename, int filesize){
+        try{
+            // sending the store message to the controller
+            this.getServerConnection().sendMessage(Protocol.STORE_TOKEN + " " + filename + " " + filesize);
 
-        // gathering response
-        Token response = RequestTokenizer.getToken(this.getServerConnection().getMessageWithinTimeout(this.getTimeout()));
-        
-        // STORE_TO
-        if(response instanceof StoreToToken){
-            // gathering the token
-            StoreToToken storeToToken = (StoreToToken) response;
+            // gathering response
+            Token response = RequestTokenizer.getToken(this.getServerConnection().getMessageWithinTimeout(this.getTimeout()));
             
-            // sending file to each dstore
-            for(int dstore : storeToToken.ports){
-                this.sendFileToDstore(filename, filesize, dstore);
+            // STORE_TO
+            if(response instanceof StoreToToken){
+                // gathering the token
+                StoreToToken storeToToken = (StoreToToken) response;
+                
+                // sending file to each dstore
+                for(int dstore : storeToToken.ports){
+                    this.sendFileToDstore(filename, filesize, dstore);
+                }
+
+                // waiting for response from Controller
+                response = RequestTokenizer.getToken(this.getServerConnection().getMessageWithinTimeout(this.getTimeout()));
+
+                // STORE_COMPLETE
+                if(response instanceof StoreCompleteToken){
+                    // nothing to do... as the store is complete
+                }
+
+                // Invalid Response
+                else{
+                    throw new Exception("Invalid response receieved from controller on port : " + this.getCPort());
+                }
             }
 
-            // waiting for response from Controller
-            response = RequestTokenizer.getToken(this.getServerConnection().getMessageWithinTimeout(this.getTimeout()));
+            // ERROR_NOT_ENOUGH_DSTORES
+            else if(response instanceof ErrorNotEnoughDStoresToken){
+                throw new Exception("Not enough Dstores are connected to the Controller");
+            }
 
-            // STORE_COMPLETE
-            if(response instanceof StoreCompleteToken){
-                // nothing to do... as the store is complete
+            // ERROR_FILE_ALREADY_EXISTS
+            else if(response instanceof ErrorFileAlreadyExistsToken){
+                throw new Exception("A file with the same name already exists within the system");
             }
 
             // Invalid Response
             else{
-                this.getClientInterface().handleError("Invalid response receieved from controller on port : " + this.getCPort());
+                throw new Exception("Invalid response receieved from controller on port : " + this.getCPort());            
             }
         }
-
-        // ERROR_NOT_ENOUGH_DSTORES
-        else if(response instanceof ErrorNotEnoughDStoresToken){
-            this.getClientInterface().handleError("The file '" + filename + "' could not be stored as there are not enough Dstores connected.");
-        }
-
-        // ERROR_FILE_ALREADY_EXISTS
-        else if(response instanceof ErrorFileAlreadyExistsToken){
-            this.getClientInterface().handleError("The file '" + filename + "' could not be stored as it already exists.");
-        }
-
-        // Invalid Response
-        else{
-            this.getClientInterface().handleError("Invalid response receieved from controller on port : " + this.getCPort());
+        catch(Exception e){
+            // logging error
+            this.getClientInterface().handleError("Unable to handle STORE request for file '" + filename + "'", e);
         }
     }
 
@@ -196,12 +195,15 @@ public class DSClient extends Client{
                 fileInput.close();
 
                 // throwing exception
-                throw new Exception();
+                throw new Exception("Invalid response receieved from Dstore on port : " + connection.getPort());
             }
         }
-        catch(SocketTimeoutException e){
+        catch(Exception e){
+            // closing connection
             connection.close();
-            throw new SocketTimeoutException();
+
+            // throwing exception
+            throw e;
         }
     }
 
@@ -216,79 +218,73 @@ public class DSClient extends Client{
      * @param filename The name of the file being removed.
      * @param isReload Determines if this LOAD operation is a Reload or not.
      */
-    private void handleLoadRequest(String filename, boolean isReload) throws Exception{
-        // gathering the protocol command
-        String command = "";
-        if(!isReload){
-            command = Protocol.LOAD_TOKEN;
-        }
-        else{
-            command = Protocol.RELOAD_TOKEN;
-        }
-
-        // sending LOAD message to controller
-        this.getServerConnection().sendMessage(command+ " " + filename);
-
-        // gathering response
-        Token response = RequestTokenizer.getToken(this.getServerConnection().getMessageWithinTimeout(this.getTimeout()));
-        
-        // LOAD_FROM
-        if(response instanceof LoadFromToken){
-            // gathering the token
-            LoadFromToken loadFromToken = (LoadFromToken) response;
-
-            // LOADING FILE
-            try{
-                // loading file from Dstore
-                byte[] fileContent = this.loadFileFromDstore(loadFromToken.port, filename, loadFromToken.filesize);
-
-                // storing the file
-                File file = new File(filename);
-                FileOutputStream fileOutput = new FileOutputStream(file);
-                fileOutput.write(fileContent);
-                fileOutput.flush();
-                fileOutput.close();
+    private void handleLoadRequest(String filename, boolean isReload){
+        try{
+            // gathering the protocol command
+            String command = "";
+            if(!isReload){
+                command = Protocol.LOAD_TOKEN;
             }
-            catch(SocketTimeoutException e){
-                // logging error
-                this.getClientInterface().handleError("The file '" + filename + "' could not be loaded as the Dstore on port : " + loadFromToken.port +  " timed-out.");
-
-                // reloading the file
-                this.handleLoadRequest(filename, true);
+            else{
+                command = Protocol.RELOAD_TOKEN;
             }
-            // unable to store file
-            catch(IOException e){
-                // logging error
-                this.getClientInterface().handleError("The file '" + filename + "' could not be loaded due to an IOException.");
+
+            // sending LOAD message to controller
+            this.getServerConnection().sendMessage(command+ " " + filename);
+
+            // gathering response
+            Token response = RequestTokenizer.getToken(this.getServerConnection().getMessageWithinTimeout(this.getTimeout()));
+            
+            // LOAD_FROM
+            if(response instanceof LoadFromToken){
+                // gathering the token
+                LoadFromToken loadFromToken = (LoadFromToken) response;
+
+                // LOADING FILE
+                try{
+                    // loading file from Dstore
+                    byte[] fileContent = this.loadFileFromDstore(loadFromToken.port, filename, loadFromToken.filesize);
+
+                    // storing the file
+                    File file = new File(filename);
+                    FileOutputStream fileOutput = new FileOutputStream(file);
+                    fileOutput.write(fileContent);
+                    fileOutput.flush();
+                    fileOutput.close();
+                }
+                // unable to load file content
+                catch(Exception e){
+                    // Logging error
+                    this.getClientInterface().handleError("The file content for file '" + filename +  "' could not be loaded from Dstore on port : " + loadFromToken.port, e);
+
+                    // reloading if data could not be gathered
+                    this.handleLoadRequest(filename, true);
+                }
             }
-            // unable to load file content
-            catch(Exception e){
-                // Logging error
-                this.getClientInterface().handleError("The file content for file '" + filename +  "' could not be loaded from Dstore on port : " + loadFromToken.port);
 
-                // reloading if data could not be gathered
-                this.handleLoadRequest(filename, true);
+            // ERROR_NOT_ENOUGH_DSTORES
+            else if(response instanceof ErrorNotEnoughDStoresToken){
+                throw new Exception("Not enough Dstores are connected to the Controller");
+            }
+
+            // ERROR_FILE_DOES_NOT_EXIST
+            else if(response instanceof ErrorFileDoesNotExistToken){
+                throw new Exception("No file with this name is registered in the system");
+            }
+
+            // ERROR_LOAD
+            else if(response instanceof ErrorLoadToken){
+                throw new Exception("All possible Dstores have been attempted and have failed");
+            }
+
+            // Invalid Response
+            else{
+                throw new Exception("Invalid response receieved from controller on port : " + this.getCPort() + response.message);
             }
         }
-
-        // ERROR_NOT_ENOUGH_DSTORES
-        else if(response instanceof ErrorNotEnoughDStoresToken){
-            this.getClientInterface().handleError("The file '" + filename + "' could not be loaded as there are not enough Dstores connected.");
-        }
-
-        // ERROR_FILE_DOES_NOT_EXIST
-        else if(response instanceof ErrorFileDoesNotExistToken){
-            this.getClientInterface().handleError("The file '" + filename + "' could not be loaded as it does not exist.");
-        }
-
-        // ERROR_LOAD
-        else if(response instanceof ErrorLoadToken){
-            this.getClientInterface().handleError("The file '" + filename + "' could not be loaded as no Dstores are available.");
-        }
-
-        // Invalid Response
-        else{
-            this.getClientInterface().handleError("Invalid response receieved from controller on port : " + this.getCPort() + response.message);
+        catch(Exception e){
+            // Logging error
+            this.getClientInterface().handleError("Unable to handle LOAD request for file '" + filename + "'", e);
         }
     }
 
@@ -317,7 +313,10 @@ public class DSClient extends Client{
             return fileContent;
         }
         catch(Exception e){
+            // closing connection
             connection.close();
+
+            // throwing exception
             throw e;
         }
     }
@@ -333,31 +332,37 @@ public class DSClient extends Client{
      * 
      * @param filename The name of the file being removed.
      */
-    private void handleRemoveRequest(String filename) throws Exception{
-        // sending remove to controller
-        this.getServerConnection().sendMessage(Protocol.REMOVE_TOKEN + " " + filename);
+    private void handleRemoveRequest(String filename){
+        try{
+            // sending remove to controller
+            this.getServerConnection().sendMessage(Protocol.REMOVE_TOKEN + " " + filename);
 
-        // gathering response
-        Token response = RequestTokenizer.getToken(this.getServerConnection().getMessageWithinTimeout(this.getTimeout()));
+            // gathering response
+            Token response = RequestTokenizer.getToken(this.getServerConnection().getMessageWithinTimeout(this.getTimeout()));
 
-        // LOAD_COMPLETE
-        if(response instanceof RemoveCompleteToken){
-            // nothing to do ...
+            // LOAD_COMPLETE
+            if(response instanceof RemoveCompleteToken){
+                // Nothing to do...
+            }
+
+            // ERROR_NOT_ENOUGH_DSTORES
+            else if(response instanceof ErrorNotEnoughDStoresToken){
+                throw new Exception("Not enough Dstores are connected to the Controller");
+            }
+
+            // ERROR_FILE_DOES_NOT_EXIST
+            else if(response instanceof ErrorFileDoesNotExistToken){
+                throw new Exception("No file with this name is registered in the system");
+            }
+
+            // Invalid Response
+            else{
+                throw new Exception("Invalid response receieved from controller on port : " + this.getCPort());
+            }
         }
-
-        // ERROR_NOT_ENOUGH_DSTORES
-        else if(response instanceof ErrorNotEnoughDStoresToken){
-            this.getClientInterface().handleError("The file '" + filename + "' could not be removed as there are not enough Dstores connected.");
-        }
-
-        // ERROR_FILE_DOES_NOT_EXIST
-        else if(response instanceof ErrorFileDoesNotExistToken){
-            this.getClientInterface().handleError("The file '" + filename + "' could not be removed as it does not exist.");
-        }
-
-        // Invalid Response
-        else{
-            this.getClientInterface().handleError("Invalid response receieved from controller on port : " + this.getCPort());
+        catch(Exception e){
+            // Logging error
+            this.getClientInterface().handleError("Unable to handle REMOVE request for file '" + filename + "'" , e);
         }
     }
 
@@ -371,12 +376,18 @@ public class DSClient extends Client{
      * 
      * @throws Exception Thrown if the request could not be handled (could not send request or recieve response).
      */
-    private void handleListRequest() throws Exception{
-        // sending message to Controller
-        this.getServerConnection().sendMessage(Protocol.LIST_TOKEN);
+    private void handleListRequest(){
+        try{
+            // sending message to Controller
+            this.getServerConnection().sendMessage(Protocol.LIST_TOKEN);
 
-        // gathering response (dont need to do anything with it)
-        this.getServerConnection().getMessageWithinTimeout(this.getTimeout());
+            // gathering response (dont need to do anything with it)
+            this.getServerConnection().getMessageWithinTimeout(this.getTimeout());
+        }
+        catch(Exception e){
+            // Logging error
+            this.getClientInterface().handleError("Unable to handle LIST request", e);
+        }
     }
 
     /////////////
@@ -389,11 +400,17 @@ public class DSClient extends Client{
      * @param request Handles an invalid request.
      * @throws Exception Thrown if the request could not be handled (could not send request or recieve response).
      */
-    private void handleInvalidRequest(String request) throws Exception{
-        // sending message to Controller
-        this.getServerConnection().sendMessage(request);
+    private void handleInvalidRequest(String request){
+        try{
+            // sending message to Controller
+            this.getServerConnection().sendMessage(request);
 
-        // gathering response
-        this.getServerConnection().getMessageWithinTimeout(this.getTimeout());
+            // gathering response
+            this.getServerConnection().getMessageWithinTimeout(this.getTimeout());
+        }
+        catch(Exception e){
+            // Logging error
+            this.getClientInterface().handleError("Unable to handle request '" + request + "'", e);
+        }
     }
 }

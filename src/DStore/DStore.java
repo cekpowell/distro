@@ -54,7 +54,7 @@ public class Dstore extends Server{
             this.getServerInterface().createLogger();
         }
         catch(Exception e){
-            throw new Exception("Unable to create Dstore Logger on port : " + this.getPort());
+            throw new Exception("Unable to create Dstore Logger on port : " + this.getPort(), e);
         }
 
         // connecting to controller
@@ -107,9 +107,9 @@ public class Dstore extends Server{
      * 
      * @param port The port of the connector.
      */
-    public void handleDisconnect(int port){
+    public void handleDisconnect(int port, Exception cause){
         // logging disconnect
-        this.getServerInterface().handleError("A connector on port : " + port + " has disconnected.");
+        this.getServerInterface().handleError("A connector on port : " + port + " has disconnected.", cause);
     }
 
 

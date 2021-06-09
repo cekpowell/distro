@@ -2,8 +2,8 @@ package Controller;
 
 import java.net.Socket;
 
-import Index.DstoreIndex;
-import Index.Index;
+import Controller.Index.DstoreIndex;
+import Controller.Index.Index;
 import Network.*;
 
 /**
@@ -68,18 +68,18 @@ public class Controller extends Server{
      * 
      * @param port The port of the connector.
      */
-    public void handleDisconnect(int port){
+    public void handleDisconnect(int port, Exception cause){
         // checking for Dstore disconnect
         for(DstoreIndex dstore : this.index.getDstores()){
             if(dstore.getConnection().getPort() == port){
-                this.controllerInterface.handleError("Dstore listening on port : " + dstore.getPort() + " disconnected.");
+                this.controllerInterface.handleError("Dstore listening on port : " + dstore.getPort() + " disconnected.", cause);
                 this.index.removeDstore(dstore.getConnection());
                 return;
             }
         }
 
         // Unknown connector
-        this.controllerInterface.handleError("Unknown connector on port : " + port + " disconnected (most likley a client).");
+        this.controllerInterface.handleError("Unknown connector on port : " + port + " disconnected (most likley a client).", cause);
     }
 
 

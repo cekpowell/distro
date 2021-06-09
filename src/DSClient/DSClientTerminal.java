@@ -36,7 +36,7 @@ public class DSClientTerminal extends NetworkInterface{
         this.startNetworkProcess(this.client);
 
         // waiting for user input
-        //this.waitForInput();
+        this.waitForInput();
     }
 
     /**
@@ -56,7 +56,7 @@ public class DSClientTerminal extends NetworkInterface{
 
                 // making sure client request is non-null
                 if(request.equals("")){
-                    this.handleError("Request cannot be null.");
+                    this.handleError("Unable to handle input request", new Exception("Request cannot be null."));
                 }
                 else{
                     // sending request to controller
@@ -65,7 +65,7 @@ public class DSClientTerminal extends NetworkInterface{
             }
         }
         catch(Exception e){
-            this.handleError("Unable to gather user input for Client.");
+            this.handleError("Unable to gather user input for Client.", e);
         }
     }
 
@@ -91,9 +91,6 @@ public class DSClientTerminal extends NetworkInterface{
      */
     public void logMessageReceived(Socket connection, String message){
         System.out.println("[" + connection.getLocalPort() + " <- " + connection.getPort() + "] " + message);
-
-        // Formatting
-        System.out.println();
     }
 
     /**
@@ -107,11 +104,14 @@ public class DSClientTerminal extends NetworkInterface{
     }
 
     /**
-     * Handles the logging of an error.
+     * Handles the logging of an error and it's cause.
      * 
      * @param error The error to be logged.
+     * @param cause The cause of the error.
      */
-    public void handleError(String error){
+    public void handleError(String error, Exception cause){
+        // HANDLING ERROR //
+
         // logging error to terminal
         System.out.println("*ERROR* " + error);
 
@@ -122,6 +122,10 @@ public class DSClientTerminal extends NetworkInterface{
         else if(error.equals("Unable to connect Client to Server on port : " + this.client.getCPort())){
             System.exit(0);
         }
+
+        // HANDLING CAUSE //
+
+        System.out.println("\t|-CAUSE : " + cause.getMessage());
     }
 
     /////////////////

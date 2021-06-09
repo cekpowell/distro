@@ -79,11 +79,14 @@ public class DstoreTerminal extends ServerInterface{
     }
 
     /**
-     * Handles the logging of an error.
+     * Handles the logging of an error and it's cause.
      * 
      * @param error The error to be logged.
+     * @param cause The cause of the error.
      */
-    public void handleError(String error){
+    public void handleError(String error, Exception cause){
+        // HANDLING ERROR //
+
         // checking if the error was the controller disconnecting
         if(error.equals("A connector on port : " + this.dstore.getCPort() + " has disconnected.")){
             // logging error
@@ -95,6 +98,9 @@ public class DstoreTerminal extends ServerInterface{
         else{
             System.out.println("*ERROR* " + error);
         }
+
+        // HANDLING CAUSE //
+        System.out.println("\t|-CAUSE : " + cause.getMessage());
     }
 
     /////////////////

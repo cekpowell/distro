@@ -1,7 +1,6 @@
 package Dstore;
 
 import java.util.ArrayList;
-import java.util.concurrent.TimeoutException;
 
 import Logger.Protocol;
 import Network.*;
@@ -65,7 +64,7 @@ public class DstoreRequestHandler implements RequestHandler{
 
         // Invalid //
         else{
-            this.handleInvalidRequest(connection);
+            this.handleInvalidRequest(connection, request);
         }
     }
 
@@ -98,11 +97,9 @@ public class DstoreRequestHandler implements RequestHandler{
             // sending STORE_ACK to contoller
             this.dstore.getControllerThread().getConnection().sendMessage(Protocol.STORE_ACK_TOKEN + " " + filename);
         }
-        catch(TimeoutException e){
-            this.dstore.getServerInterface().handleError("Timeout occured on STORE request sent by Client on port : " + connection.getSocket().getPort());
-        }
         catch(Exception e){
-            this.dstore.getServerInterface().handleError("Unable to handle STORE request sent by Client on port : " + connection.getSocket().getPort());
+            // logging error
+            this.dstore.getServerInterface().handleError("Unable to handle STORE request sent by Client on port : " + connection.getSocket().getPort(), e);
         }
     }
 
@@ -121,7 +118,7 @@ public class DstoreRequestHandler implements RequestHandler{
             // getting file
             File file = new File(this.dstore.getFolderPath() + File.separatorChar + filename);
 
-            // file exists
+            // file exists - sending file to client
             if(file.exists()){
                 // gathering file
                 FileInputStream fileInput = new FileInputStream(file);
@@ -137,7 +134,8 @@ public class DstoreRequestHandler implements RequestHandler{
             }
         }
         catch(Exception e){
-            this.dstore.getServerInterface().handleError("Unable to handle LOAD request sent by Client on port : " + connection.getSocket().getPort());
+            // logging error
+            this.dstore.getServerInterface().handleError("Unable to handle LOAD request sent by Client on port : " + connection.getSocket().getPort(), e);
         }
     }
 
@@ -164,18 +162,18 @@ public class DstoreRequestHandler implements RequestHandler{
         }
         catch(NoSuchFileException e){
             // logging error
-            this.dstore.getServerInterface().handleError("Unable to handle REMOVE sent by Controller on port : " + this.dstore.getCPort() + " as the file does not exist.");
+            this.dstore.getServerInterface().handleError("Unable to handle REMOVE sent by Controller on port : " + this.dstore.getCPort(), e);
 
             try{
                 // sending error to controller
                 connection.sendMessage(Protocol.ERROR_FILE_DOES_NOT_EXIST_TOKEN + " " + filename);
             }
             catch(Exception ex){
-                this.dstore.getServerInterface().handleError("Unable to send error message to controller on port : " + this.dstore.getCPort());
+                this.dstore.getServerInterface().handleError("Unable to send error message : " + Protocol.ERROR_FILE_DOES_NOT_EXIST_TOKEN + " to Controller on port : " + this.dstore.getCPort(), ex);
             }
         }
         catch(Exception e){
-            this.dstore.getServerInterface().handleError("Unable to handle REMOVE request sent by Controller on port : " + this.dstore.getCPort());
+            this.dstore.getServerInterface().handleError("Unable to handle REMOVE request sent by Controller on port : " + this.dstore.getCPort(), e);
         }
     }
 
@@ -208,8 +206,7 @@ public class DstoreRequestHandler implements RequestHandler{
             connection.sendMessage(message);
         }
         catch(Exception e){
-            //TODO need to test for different types of exception to know where the error occuredd - e.g., SocketTimeoutException, NullPointerException, etc...
-            this.dstore.getServerInterface().handleError("Unable to handle LIST request from Controller on port : " + this.dstore.getCPort());
+            this.dstore.getServerInterface().handleError("Unable to handle LIST request from Controller on port : " + this.dstore.getCPort(), e);
         }
     }
 
@@ -220,7 +217,7 @@ public class DstoreRequestHandler implements RequestHandler{
     /**
      * Handles an invalid request.
      */
-    public void handleInvalidRequest(Connection connection){
-        this.dstore.getServerInterface().handleError("Invalid request recieved from connector on port : " + connection.getSocket().getPort());
+    public void handleInvalidRequest(Connection connection, Token request){
+        this.dstore.getServerInterface().handleError("Unable to handle request '" + request.message +  "' received from connector on port : " + connection.getPort(), new Exception("Request is invalid"));
     }
 }

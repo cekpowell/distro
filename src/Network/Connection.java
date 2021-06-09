@@ -2,7 +2,6 @@ package Network;
 
 import java.net.InetAddress;
 import java.net.Socket;
-import java.net.SocketTimeoutException;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -69,7 +68,7 @@ public class Connection{
             this.socket.close();
         }
         catch(Exception e){
-            this.networkInterface.handleError("Unable to close connection to connector on port : " + this.socket.getPort());
+            this.networkInterface.handleError("Unable to close connection to connector on port : " + this.socket.getPort(), e);
         }
     }
     
@@ -81,17 +80,12 @@ public class Connection{
      * @param The message to be sent
      */
     public void sendMessage(String request) throws Exception{
-        try{
-            // Sending request
-            this.textOut.println(request);
-            this.textOut.flush(); 
+        // Sending request
+        this.textOut.println(request);
+        this.textOut.flush(); 
 
-            // logging message
-            this.networkInterface.logMessageSent(this.socket, request);
-        }
-        catch(Exception e){
-            throw new Exception();
-        }
+        // logging message
+        this.networkInterface.logMessageSent(this.socket, request);
     }
 
     /**
@@ -100,22 +94,13 @@ public class Connection{
      * Logs and returns the message if one was recieved, throws an exception if the connection closed.
      */
     public String getMessage() throws Exception{
-        try{
-            // getting request from connnection
-            Token message = RequestTokenizer.getToken(this.textIn.readLine());
+        // getting request from connnection
+        Token message = RequestTokenizer.getToken(this.textIn.readLine());
 
-            // logging message
-            this.networkInterface.logMessageReceived(this.socket, message.message);
+        // logging message
+        this.networkInterface.logMessageReceived(this.socket, message.message);
 
-            return message.message;
-        }
-        catch(NullPointerException e){
-            // connection disconnected - throwing exception
-            throw new NullPointerException(e.toString());
-        }
-        catch(Exception e){
-            throw new Exception(e.toString());
-        }
+        return message.message;
     }
 
     /**
@@ -131,7 +116,7 @@ public class Connection{
 
         // trying to gather message from socket
         try{
-            // getting request from connnection
+            // getting request from connnection - returns NullPointerException if connection drops
             Token message = RequestTokenizer.getToken(this.textIn.readLine());
 
             // logging message
@@ -140,18 +125,9 @@ public class Connection{
             this.socket.setSoTimeout(0);
             return message.message;
         }
-        catch(NullPointerException e){
-            // connection disconnected - throwing exception
-            this.socket.setSoTimeout(0);
-            throw new NullPointerException();
-        }
-        catch(SocketTimeoutException e){
-            this.socket.setSoTimeout(0);
-            throw new SocketTimeoutException();
-        }
         catch(Exception e){
             this.socket.setSoTimeout(0);
-            throw new Exception();
+            throw e;
         }
     }
 
@@ -163,14 +139,9 @@ public class Connection{
      * @param The message to be sent
      */
     public void sendBytes(byte[] bytes) throws Exception{
-        try{
-            // Sending request
-            this.dataOut.write(bytes);
-            this.textOut.flush(); 
-        }
-        catch(Exception e){
-            throw new Exception();
-        }
+        // Sending request
+        this.dataOut.write(bytes);
+        this.textOut.flush(); 
     }
 
     /**
@@ -180,21 +151,11 @@ public class Connection{
      * the specified time.
      */
     public byte[] getNBytes(int n) throws Exception{
-        // trying to gather message from socket
-        try{
-            // getting request from connnection
-            byte[] bytes = this.dataIn.readNBytes(n);
+        // getting request from connnection
+        byte[] bytes = this.dataIn.readNBytes(n);
 
-            // returninig the gathered bytes
-            return bytes;
-        }
-        catch(NullPointerException e){
-            // connection disconnected - throwing exception
-            throw new NullPointerException();
-        }
-        catch(Exception e){
-            throw new Exception();
-        }
+        // returninig the gathered bytes
+        return bytes;
     }
 
     /**
@@ -211,7 +172,7 @@ public class Connection{
 
         // trying to gather message from socket
         try{
-            // getting request from connnection
+            // getting request from connnection - returns empty as soon as connection drops
             byte[] bytes = this.dataIn.readNBytes(n);
 
             // returninig the gathered bytes
@@ -220,22 +181,12 @@ public class Connection{
                 return bytes;
             }
             else{
-                this.socket.setSoTimeout(0);
-                throw new NullPointerException();
+                throw new Exception();
             }
-        }
-        catch(NullPointerException e){
-            // connection disconnected - throwing exception
-            this.socket.setSoTimeout(0);
-            throw new NullPointerException();
-        }
-        catch(SocketTimeoutException e){
-            this.socket.setSoTimeout(0);
-            throw new SocketTimeoutException();
         }
         catch(Exception e){
             this.socket.setSoTimeout(0);
-            throw new Exception();
+            throw e;
         }
     }
 
@@ -249,6 +200,10 @@ public class Connection{
 
     public Socket getSocket(){
         return this.socket;
+    }
+
+    public boolean isClosed(){
+        return this.socket.isClosed();
     }
 
     public int getPort(){

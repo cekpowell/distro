@@ -1,14 +1,10 @@
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
 
 import Controller.*;
-import DSClient.DSClient;
 import DSClient.DSClientTerminal;
 import Dstore.*;
-import Index.Index;
-import Index.State.OperationState;
 import Token.RequestTokenizer;
 import Token.Token;
 
@@ -67,29 +63,22 @@ public class MainTest {
             DSClientTerminal client = new DSClientTerminal(4000, 2000);
 
             client.client.handleInputRequest("STORE test.txt 14");
-            try{ Thread.sleep(500);} catch(Exception e){}
-            client.client.handleInputRequest("REMOVE test2.txt");
-        }).start();
-        new Thread(() -> {
-            DSClientTerminal client = new DSClientTerminal(4000, 2000);
-
-            client.client.handleInputRequest("STORE test1.txt 14");
-            try{ Thread.sleep(500);} catch(Exception e){}
+            try{ Thread.sleep(3000);} catch(Exception e){}
             client.client.handleInputRequest("REMOVE test.txt");
         }).start();
         new Thread(() -> {
             DSClientTerminal client = new DSClientTerminal(4000, 2000);
 
-            client.client.handleInputRequest("STORE test2.txt 14");
-            try{ Thread.sleep(500);} catch(Exception e){}
-            client.client.handleInputRequest("LOAD test.txt");
+            client.client.handleInputRequest("STORE test1.txt 14");
+            try{ Thread.sleep(3000);} catch(Exception e){}
+            client.client.handleInputRequest("REMOVE test1.txt");
         }).start();
         new Thread(() -> {
             DSClientTerminal client = new DSClientTerminal(4000, 2000);
 
             client.client.handleInputRequest("STORE test3.txt 14");
-            try{ Thread.sleep(500);} catch(Exception e){}
-            client.client.handleInputRequest("LOAD test1.txt");
+            try{ Thread.sleep(3000);} catch(Exception e){}
+            client.client.handleInputRequest("REMOVE test3.txt");
         }).start();
     }
 }
