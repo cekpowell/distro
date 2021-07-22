@@ -2,9 +2,10 @@ package Controller;
 
 import java.net.Socket;
 
-import Controller.Index.DstoreIndex;
-import Controller.Index.Index;
-import Network.*;
+import Controller.Index.*;
+import Protocol.Exception.*;
+import Network.Protocol.Exception.*;
+import Network.Server.*;
 
 /**
  * Data store controller. 
@@ -18,7 +19,7 @@ public class Controller extends Server{
     private int minDstores;
     private int timeout;
     private int rebalancePeriod;
-    private ControllerInterface controllerInterface; 
+    private ControllerInterface networkInterface; 
     private volatile Index index;
 
     /**
@@ -28,15 +29,16 @@ public class Controller extends Server{
      * @param minDstores The number of data stores to replicate files across.
      * @param timeout The timeout length for communication.
      * @param rebalancePeriod The rebalance period.
+     * @param networkInterface The NetworkInterface associated with the controller.
      */
-    public Controller(int port, int r, int timeout, int rebalancePeriod, ControllerInterface controllerInterface){
+    public Controller(int port, int r, int timeout, int rebalancePeriod, ControllerInterface networkInterface){
         // initializing new member variables
-        super(ServerType.CONTROLLER, port, controllerInterface);
+        super(ServerType.CONTROLLER, port, networkInterface);
         this.port = port;
         this.minDstores = r;
         this.timeout = timeout;
         this.rebalancePeriod = rebalancePeriod;
-        this.controllerInterface = controllerInterface;
+        this.networkInterface = networkInterface;
         this.index = new Index(this);
         this.setRequestHandler(new ControllerRequestHandler(this));
     }
@@ -49,39 +51,54 @@ public class Controller extends Server{
      * Set's up the Controller ready for use.
      * 
      * Creates the logger.
+     *
+     * @throws ServerSertupException If the Controller could not be setup.
      */
-    public void setup() throws Exception{
+    public void setup() throws ServerSetupException{
         try{
             this.getServerInterface().createLogger();
         }
         catch(Exception e){
-            throw new Exception("Unable to create Controller Logger for Controller on port : " + this.port);
+            throw new ServerSetupException(ServerType.CONTROLLER, e);
         }
     }
 
-    ////////////////
-    // DISCONNECT //
-    ////////////////
+    ////////////////////
+    // ERROR HANDLING //
+    ////////////////////
 
     /**
-     * Handles the disconnection of a Connector at the specified port.
+     * Handles an error that occured within the system.
      * 
-     * @param port The port of the connector.
+     * @param error The error that has occured.
      */
-    public void handleDisconnect(int port, Exception cause){
-        // checking for Dstore disconnect
-        for(DstoreIndex dstore : this.index.getDstores()){
-            if(dstore.getConnection().getPort() == port){
-                this.controllerInterface.handleError("Dstore listening on port : " + dstore.getPort() + " disconnected.", cause);
-                this.index.removeDstore(dstore.getConnection());
-                return;
+    public void handleError(NetworkException error){
+        // Connection Termination
+        if(error instanceof ConnectionTerminatedException){
+            // getting connection exception
+            ConnectionTerminatedException connection = (ConnectionTerminatedException) error;
+
+            // Dstore disconnecteed
+            for(DstoreIndex dstore : this.index.getDstores()){
+                if(dstore.getConnection().getPort() == connection.getPort()){
+                    // removing the dstore
+                    this.index.removeDstore(dstore.getConnection());
+
+                    // logging the disconnect
+                    this.getServerInterface().logError(new HandeledNetworkException(new DstoreDisconnectException(connection.getPort(), connection)));
+                    return;
+                }
             }
+
+            // Client disconnected
+            this.getServerInterface().logError(new HandeledNetworkException(new ClientDisconnectException(connection.getPort(), connection)));
         }
-
-        // Unknown connector
-        this.controllerInterface.handleError("Unknown connector on port : " + port + " disconnected (most likley a client).", cause);
+        // Non-important error - just need to log
+        else{
+            // logging error
+            this.getServerInterface().logError(new HandeledNetworkException(error));
+        } 
     }
-
 
     ////////////////////
     // DSTORE LOGGING //
@@ -94,7 +111,7 @@ public class Controller extends Server{
      * @param port The port the Dstore listens on.
      */
     public void logDstoreJoined(Socket socket, int port){
-        this.controllerInterface.logDstoreJoined(socket, port);
+        this.networkInterface.logDstoreJoined(socket, port);
     }
 
 

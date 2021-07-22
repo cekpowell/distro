@@ -13,7 +13,7 @@ import Network.Connection;
 public class DstoreIndex implements Comparable<DstoreIndex>{
     
     // member variables
-    private volatile int port;
+    private volatile int port; // the port the Dstore is listening on
     private volatile Connection connection;
     private volatile CopyOnWriteArrayList<DstoreFile> files;
     private volatile RebalanceState rebalanceState;
@@ -98,7 +98,8 @@ public class DstoreIndex implements Comparable<DstoreIndex>{
      * they have stored on them.
      * 
      * @param otherDstore
-     * @return
+     * @return -1 if this DstoreIndex has less files than the Dstore index it is being 
+     * comparedd to, 0 if it has the same, and 1 if it has more.
      */
     @Override
     public int compareTo(DstoreIndex otherDstore){
@@ -164,7 +165,8 @@ class DstoreFile{
     /**
      * Class constructor.
      * 
-     * @param file The filename the state is associated with.
+     * @param file The name of the file.
+     * @param filesize The size of the file in bytes.
      */
     public DstoreFile(String filename, int filesize){
         this.filename = filename;
@@ -176,7 +178,6 @@ class DstoreFile{
      * Attempts to set the state of the file.
      * 
      * @param state The state the file will be set to.
-     * @throws Exception Thrown in case where state cannot be changed to the provided state.
      */
     public synchronized void setState(OperationState state){
         /**
@@ -189,6 +190,11 @@ class DstoreFile{
         this.state =  state;
     }
 
+    /**
+     * Converts the DstoreIndex to a string.
+     * 
+     * @return String representation of the DstoreIndex
+     */
     public String toString(){
         return ("(" + this.filename + ", " + this.state.toString() + ")");
     }

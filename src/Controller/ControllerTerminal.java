@@ -2,6 +2,10 @@ package Controller;
 
 import java.net.Socket;
 
+import Logger.ControllerLogger;
+import Network.Protocol.Exception.*;
+import Network.Server.Server.ServerType;
+import Protocol.Exception.LoggerCreationException;
 import Logger.*;
 
 /**
@@ -36,10 +40,17 @@ public class ControllerTerminal extends ControllerInterface{
      * Needed so that the logger can be set up.
      * 
      * Dont need the method for future implementations as won't need to set up the logger like this.
+     * 
+     * @throws LoggerCreationException If the Logger could not be created.
      */
-    public void createLogger() throws Exception{
-        // initialising Logger //
-        ControllerLogger.init(Logger.LoggingType.ON_TERMINAL_ONLY);
+    public void createLogger() throws LoggerCreationException{
+        try{
+            // initialising Logger //
+            ControllerLogger.init(Logger.LoggingType.ON_TERMINAL_ONLY);
+        }
+        catch(Exception e){
+            throw new LoggerCreationException(ServerType.CONTROLLER, e);
+        }
     }
 
     /////////////
@@ -47,9 +58,10 @@ public class ControllerTerminal extends ControllerInterface{
     /////////////
 
     /**
-     * Handles the logging of a new Dstore joining the 
-     * @param connection
-     * @param port
+     * Handles the logging of a new Dstore joining the Controller.
+     * 
+     * @param connection The Connection to the Dstore.
+     * @param port The port the Dstore listens on.
      */
     public void logDstoreJoined(Socket connection, int port){
         ControllerLogger.getInstance().dstoreJoined(connection, port);
@@ -58,7 +70,7 @@ public class ControllerTerminal extends ControllerInterface{
     /**
      * Handles the logging of a message being sent.
      * 
-     * @param connection The socket between the sender and reciever.
+     * @param connection The Connection between the sender and reciever.
      * @param message The message to be logged.
      */
     public void logMessageSent(Socket connection, String message){
@@ -68,7 +80,7 @@ public class ControllerTerminal extends ControllerInterface{
     /**
      * Handles the logging of a message being recieved.
      * 
-     * @param connection The socket between the sender and reciever.
+     * @param connection The Connection between the sender and reciever.
      * @param message The message to be logged.
      */
     public void logMessageReceived(Socket connection, String message){
@@ -78,7 +90,6 @@ public class ControllerTerminal extends ControllerInterface{
     /**
      * Handles the logging of an event.
      * 
-     * 
      * @param event The event to be logged.
      */
     public void logEvent(String event){
@@ -86,15 +97,23 @@ public class ControllerTerminal extends ControllerInterface{
     }
 
     /**
-     * Handles the logging of an error and it's cause.
+     * Handles the logging of an error.
      * 
      * @param error The error to be logged.
-     * @param cause The cause of the error.
      */
-    public void handleError(String error, Exception cause){
-        System.out.println("*ERROR* " + error);
-        System.out.println("\t|-CAUSE : " + cause.getMessage());
+    public void logError(HandeledNetworkException error){
+        // logging error to terminal
+        System.out.println(error.toString());
+
+        // HANDLING ERROR //
+
+        // Server Start Exception
+        if(error.getException() instanceof ServerStartException){
+            // closing the system
+            System.exit(0);
+        }
     }
+    
 
     /////////////////
     // MAIN METHOD //

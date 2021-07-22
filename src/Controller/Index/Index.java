@@ -5,18 +5,22 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.TimeoutException;
 
 import Controller.Controller;
 import Controller.Index.State.OperationState;
+import Protocol.Exception.*;
 import Network.Connection;
 
 /**
- * Controller that manages an Index model.
+ * Object that manages an Index model.
  * 
- * An Index Manager creates a new Index instance when it is
- * instantiated, and provides methods that allow for the owner
- * of the manager to interact with the underlying Index.
+ * The Index keeps track of the Dstores currently connected to the
+ * controller, the files stored on these Dstores and their corresponding
+ * states. The Controller interacts with the Index to make changes to the system
+ * as requests come in from Clients.
+ * 
+ * Methods are syncrhonized and properties are volatile to support concurrent access
+ * that may occur as the Controller serves requests from multiple Clients concurrently.
  */
 public class Index {
 
@@ -30,12 +34,12 @@ public class Index {
      * Class constructor.
      * 
      * Creates a new Index instance to be managed.
+     * @param controller The Controller instance that manages this Index.
      */
     public Index(Controller controller){
         this.controller = controller;
         this.minDstores = controller.getMinDstores();
         this.dstores = new CopyOnWriteArrayList<DstoreIndex>();
-        this.minDstores = minDstores;
         this.loadRecord = new ConcurrentHashMap<Connection, ConcurrentHashMap<String, CopyOnWriteArrayList<Integer>>>();
     }
 
@@ -48,10 +52,19 @@ public class Index {
     /**
      * Adds the given Dstore to the index.
      * 
-     * @param port The port the Dstore is listening on.
+     * @param port The port of the Dstore to be added (listen port).
      * @param connection The connection between the Controller and the Dstore.
+     * 
+     * @throws DstorePortInUseException If the port of the Dstore is already in use by another Dstore
      */
-    public synchronized void addDstore(Integer port, Connection connection){
+    public synchronized void addDstore(Integer port, Connection connection) throws DstorePortInUseException{
+        // ERROR CHECKING //
+
+        // Dstore Port already in use
+        if(this.getDstorePorts().contains(port)){
+            throw new DstorePortInUseException(port);
+        }
+
         // adding the dstore to the list of dstores
         this.dstores.add(new DstoreIndex(port, connection));
 
@@ -62,11 +75,42 @@ public class Index {
     /**
      * Removes the given Dstore from the system.
      * 
-     * @param port The port of the Dstore to be removed from the system.
+     * @param port The port of the Dstore to be removed from the system (listen port).
      */
     public synchronized void removeDstore(Connection dstore){
         // removing the Dstore from the list of Dstores
         this.dstores.remove(this.getIndexFromConnection(dstore));
+    }
+
+
+    //////////
+    // LIST //
+    //////////
+
+    /**
+     * Returns a list of all files stored in the system.
+     * 
+     * @return ArrayList of all files stored in the system.
+     * @throws NotEnoughDstoresException In the case where there are not enough Dstores connected.
+     */
+    public ArrayList<String> getFileList() throws Exception{
+        // ERROR CHECKING //
+
+        // not enough dstores
+        if(!this.hasEnoughDstores()){
+            throw new NotEnoughDstoresException();
+        }
+
+        // getting list of all files
+        ArrayList<String> allFiles = new ArrayList<String>();
+        for(DstoreIndex dstore : this.dstores){
+            for(DstoreFile file: dstore.getFiles()){
+                allFiles.add(file.getFilename());
+            }
+        }
+
+        // removing duplicates and returning
+        return new ArrayList<String>(new HashSet<String>(allFiles));
     }
 
 
@@ -80,18 +124,21 @@ public class Index {
      * the index.
      * 
      * @param file The name of the file being added.
+     * @param filesize The size of the file being added in bytes.
+     * @throws NotEnoughDstoresException If there are not enough Dstores connected to the controller to handle the request.
+     * @throws FileAlreadyExists If the file being stored already exists in the Index.
      */
     public synchronized ArrayList<Integer> startStoring(String filename, int filesize) throws Exception{
         // ERROR CHECKING //
 
         // not enough dstores
         if(!this.hasEnoughDstores()){
-            throw new Exception("Not enough Dstores");
+            throw new NotEnoughDstoresException();
         }
 
         // file already exists
         if(this.hasFile(filename)){
-            throw new Exception("File already exists");
+            throw new FileAlreadyExistsException(filename);
         }
 
         // ADDING FILE //
@@ -112,8 +159,8 @@ public class Index {
     /**
      * Updates the index based on a STORE_ACK that was recieved from the given Dstore.
      * 
-     * @param port The port of the Dstore that send the STORE_ACK.
-     * @param filename The filename the STORE_ACK is relating to
+     * @param dstore The connection to the Dstore that the STORE_ACK was receieved from.
+     * @param filename The filename referenced by the STORE_ACK.
      */
     public synchronized void storeAckRecieved(Connection dstore, String filename){
         // updatiing the dstore index
@@ -127,10 +174,13 @@ public class Index {
     /**
      * Gathers a Dstore that the provided file should be loaded from.
      * 
-     * @param filename The name of the file to be loaded.
-     * @param invalidLoads List of Dstores that have already been tried.
+     * @param connection The connection to the Client that sent the LOAD request.
+     * @param filename The name of the file being requested.
      * @param isReload Boolean representing if this load operation is a LOAD or RELOAD.
      * @return The Dstore the file should be loaded from.
+     * @throws NotEnoughDstoresException If there are not enough Dstores connected to the controller to handle the request.
+     * @throws FileDoesNotExistException If the file being requested is not stored within the Index.
+     * @throws NoValidDstoresException If there are no Dstores left to try to load from (exhausted all possible Dstores).
      */
     public synchronized int getDstoreToLoadFrom(Connection connection, String filename, boolean isReload) throws Exception{
 
@@ -138,12 +188,12 @@ public class Index {
 
         // not enough dstores
         if(!this.hasEnoughDstores()){
-            throw new Exception("Not enough Dstores");
+            throw new NotEnoughDstoresException();
         }
 
         // file does not exist
         if((!this.hasFile(filename) || !this.fileHasState(filename, OperationState.IDLE))){
-            throw new Exception("File does not exist");
+            throw new FileDoesNotExistException(filename);
         }
 
         // GETTING DSTORE //
@@ -209,13 +259,13 @@ public class Index {
                 }
 
                 // throwing Exception if no suitable Dstore is found
-                throw new Exception("No valid Dstore");
+                throw new NoValidDstoresException();
             }
         }
     }
 
     /**
-     * Gathers the size of a stored file.
+     * Gathers the size of a file stored in the Index.
      * 
      * @param filename The name of the file being searched.
      * @return The size of the searched file in bytes.
@@ -246,6 +296,8 @@ public class Index {
      * Starts the process of removing a give file from the system by updating the system index.
      * 
      * @param file The file being removed.
+     * @throws NotEnoughDstoresException If there are not enough Dstores connected to the controller to handle the request.
+     * @throws FileDoesNotExistException If the file being requested is not stored within the Index.
      */
     public synchronized ArrayList<Connection> startRemoving(String filename) throws Exception{
 
@@ -253,12 +305,12 @@ public class Index {
 
         // not enough dstores
         if(!this.hasEnoughDstores()){
-            throw new Exception("Not enough Dstores");
+            throw new NotEnoughDstoresException();
         }
 
         // file does not exist
         if((!this.hasFile(filename) || !this.fileHasState(filename, OperationState.IDLE))){
-            throw new Exception("File does not exist");
+            throw new FileDoesNotExistException(filename);
         }
 
         // getting the list of dstores the file is stored on
@@ -281,7 +333,8 @@ public class Index {
     /**
      * Updates the index after a REMOVE_ACK was recieved.
      * 
-     * @param port The Dstore port that the REMOVE_ACK was recieved from.
+     * @param dstore The Connection for the Dstore that the REMOVE_ACK was recieved from.
+     * @param filename The name of the file referenced by the REMOVE_ACK.
      */
     public synchronized void removeAckRecieved(Connection dstore, String filename){
         // updating the dstore index
@@ -293,21 +346,18 @@ public class Index {
     //////////////////////////////////////
 
     /**
-     * Waits for the state of the given file across all Dstores to match the provided expected state. Changes the global
-     * state of the file to be the final state when this occurs.
+     * Waits for the state of the given file across all Dstores to match the provided expected state. Will
+     * only wait for the provided amount of time.
      * 
      * @param filename The name of the file being tracked.
+     * @param expectedState The expected state of the file.
      * @param timeout The timeout for the tracking.
-     * @param expectedState The expectedd state of the file.
-     * @param finalState The state the file will be changed to when the operation has completed.
      * @return True if the operation completed, false if not.
-     * @throws TimeoutException When the state of the file does not match the expected state within the timeout.
+     * @throws OperationTimeoutException When the state of the file does not match the expected state within the timeout.
      */
-    public boolean waitForOperationComplete(String filename, 
-                                            int timeout, 
-                                            OperationState expectedState) throws Exception{
+    public boolean waitForFileState(String filename, OperationState expectedState, int timeout) throws Exception{
 
-        // Waiting for Operation to Complete //
+        // Waiting for File to have State //
         
         long timeoutStamp = System.currentTimeMillis() + timeout;
 
@@ -320,7 +370,7 @@ public class Index {
                 this.handleOperationTimeout(filename, expectedState);
 
                 // throwing exception
-                throw new Exception("Timeout");
+                throw new OperationTimeoutException();
             }
         }
 
@@ -335,13 +385,13 @@ public class Index {
     /**
      * Updates the index to reflect an operation having been completed.
      * 
-     * @param filename
-     * @param expectedState
+     * @param filename The name of the file that the operation was completed on.
+     * @param stateFileIsIn The state that the file is in now that the operation has completed.
      */
-    private synchronized void handleOperationComplete(String filename, OperationState expectedState){
+    private synchronized void handleOperationComplete(String filename, OperationState stateFileIsIn){
         
         // STORE 
-        if(expectedState == OperationState.STORE_ACK_RECIEVED){
+        if(stateFileIsIn == OperationState.STORE_ACK_RECIEVED){
             // updating file state to the new state
             for(DstoreIndex dstore : this.dstores){
                 for(DstoreFile file : dstore.getFiles()){
@@ -353,7 +403,7 @@ public class Index {
         }
 
         // REMOVE
-        else if(expectedState == OperationState.REMOVE_ACK_RECIEVED){
+        else if(stateFileIsIn == OperationState.REMOVE_ACK_RECIEVED){
             // removing the file from the index
             for(DstoreIndex dstore : this.dstores){
                 dstore.removeFile(filename);
@@ -365,7 +415,7 @@ public class Index {
      * Handles the case where an operation did not complete wthin the given timeout.
      * 
      * @param filename The filename for which the operation did not complete.
-     * @param expectedState The expected state of the file.
+     * @param expectedState The state the file should have been in if the operation had compeleted.
      */
     private synchronized void handleOperationTimeout(String filename, OperationState expectedState){
         // STORE
@@ -408,10 +458,10 @@ public class Index {
      *  also thrown in this case.
      * 
      * @param timeout The timeout to wait for the REBALANCE_COMPELTE messages to be recieved.
-     * @throws TimeoutException Thrown if not all REBALANCE_COMPLETE messages were recieved within
+     * @throws OperationTimeoutException Thrown if not all REBALANCE_COMPLETE messages were recieved within
      * the timeout.
      */
-    public boolean waitForRebalanceComplete(int timeout){
+    public boolean waitForRebalanceComplete(int timeout) throws OperationTimeoutException{
         // TODO
         return false;
     }
@@ -554,19 +604,6 @@ public class Index {
         return true;
     }
 
-    /**
-     * Converts the Index to a strnig representation.
-     */
-    public String toString(){
-        String string = "\n";
-
-        for(DstoreIndex dstore : this.dstores){
-            string += "\t" + dstore.toString() + "\n";
-        }
-
-        return string;
-    }
-
     /////////////////////////
     // GETTERS AND SETTERS //
     /////////////////////////
@@ -595,7 +632,7 @@ public class Index {
      * 
      * @return ArrayList of all files stored in the system.
      */
-    public ArrayList<String> getFiles(){
+    private ArrayList<String> getFiles(){
         // getting list of all files
         ArrayList<String> allFiles = new ArrayList<String>();
         for(DstoreIndex dstore : this.dstores){

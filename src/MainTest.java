@@ -5,8 +5,8 @@ import java.io.InputStreamReader;
 import Controller.*;
 import DSClient.DSClientTerminal;
 import Dstore.*;
-import Token.RequestTokenizer;
-import Token.Token;
+import Protocol.Token.RequestTokenizer;
+import Protocol.Token.Token;
 
 public class MainTest {
 
@@ -69,9 +69,9 @@ public class MainTest {
         new Thread(() -> {
             DSClientTerminal client = new DSClientTerminal(4000, 2000);
 
-            client.client.handleInputRequest("STORE test1.txt 14");
+            client.client.handleInputRequest("STORE test2.txt 14");
             try{ Thread.sleep(3000);} catch(Exception e){}
-            client.client.handleInputRequest("REMOVE test1.txt");
+            client.client.handleInputRequest("REMOVE test2.txt");
         }).start();
         new Thread(() -> {
             DSClientTerminal client = new DSClientTerminal(4000, 2000);

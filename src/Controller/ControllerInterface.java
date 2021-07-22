@@ -2,7 +2,7 @@ package Controller;
 
 import java.net.Socket;
 
-import Interface.ServerInterface;
+import Network.ServerInterface;
 
 /**
  * Class needed for the reason that a controller must also log the joining of a 

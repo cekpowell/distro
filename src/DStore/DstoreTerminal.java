@@ -2,8 +2,12 @@ package Dstore;
 
 import java.net.Socket;
 
-import Interface.ServerInterface;
 import Logger.*;
+import Network.ServerInterface;
+import Network.Protocol.Exception.HandeledNetworkException;
+import Network.Protocol.Exception.ServerStartException;
+import Network.Server.Server.ServerType;
+import Protocol.Exception.*;
 
 /**
  * Implementation of ServerInterface that provides an interface for a 
@@ -22,7 +26,7 @@ public class DstoreTerminal extends ServerInterface{
      * @param port The port the DStore will listen on.
      * @param cPort The port the Controller that the DStore will connect to is on.
      * @param timeout The timout period for the DStore.
-     * @param fileFolder The folder where the DStore will store files.
+     * @param folderPath The folder where the DStore will store files.
      */
     public DstoreTerminal(int port, int cPort, int timeout, String folderPath){
         this.port = port;
@@ -38,10 +42,17 @@ public class DstoreTerminal extends ServerInterface{
      * Needed so that the logger can be set up.
      * 
      * Dont need the method for future implementations as won't need to set up the logger like this.
+     * 
+     * @throws LoggerCreationException If the Logger could not be created.
      */
     public void createLogger() throws Exception{
-        // initialising Logger //
-        DstoreLogger.init(Logger.LoggingType.ON_TERMINAL_ONLY, this.port);
+        try{
+            // initialising Logger //
+            DstoreLogger.init(Logger.LoggingType.ON_TERMINAL_ONLY, this.port);
+        }
+        catch(Exception e){
+            throw new LoggerCreationException(ServerType.DSTORE, e);
+        }
     }
 
     /////////////
@@ -77,30 +88,29 @@ public class DstoreTerminal extends ServerInterface{
     public void logEvent(String event){
         System.out.println("#EVENT# " + event);
     }
-
+    
     /**
      * Handles the logging of an error and it's cause.
      * 
      * @param error The error to be logged.
-     * @param cause The cause of the error.
      */
-    public void handleError(String error, Exception cause){
+    public void logError(HandeledNetworkException error){
+        // logging error to terminal
+        System.out.println(error.toString());
+
         // HANDLING ERROR //
 
-        // checking if the error was the controller disconnecting
-        if(error.equals("A connector on port : " + this.dstore.getCPort() + " has disconnected.")){
-            // logging error
-            System.out.println("*ERROR* Controller on port : " + this.dstore.getCPort() + " has disconnected.");
-
+        // Controller Disconnect
+        if(error.getException() instanceof ControllerDisconnectException){
             // closing system
             System.exit(0);
         }
-        else{
-            System.out.println("*ERROR* " + error);
-        }
 
-        // HANDLING CAUSE //
-        System.out.println("\t|-CAUSE : " + cause.getMessage());
+        // Server Start Exception
+        else if(error.getException() instanceof ServerStartException){
+            // closing the system
+            System.exit(0);
+        }
     }
 
     /////////////////

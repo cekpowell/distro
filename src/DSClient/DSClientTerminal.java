@@ -4,7 +4,13 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.Socket;
 
-import Interface.NetworkInterface;
+import Network.NetworkInterface;
+import Network.Protocol.Exception.ClientStartException;
+import Network.Protocol.Exception.HandeledNetworkException;
+import Network.Protocol.Exception.RequestHandlingException;
+import Protocol.Exception.ClientInputRequestReadException;
+import Protocol.Exception.ControllerDisconnectException;
+import Protocol.Exception.NullClientInputRequestException;
 
 /**
  * Implementation of a ClientInterface that uses the terminal as an interface
@@ -49,6 +55,7 @@ public class DSClientTerminal extends NetworkInterface{
             // Wait for input 
             while(true){
                 // FORMATTING
+                System.out.println();
                 System.out.print(">");
 
                 // reading in request
@@ -56,7 +63,7 @@ public class DSClientTerminal extends NetworkInterface{
 
                 // making sure client request is non-null
                 if(request.equals("")){
-                    this.handleError("Unable to handle input request", new Exception("Request cannot be null."));
+                    this.client.handleError(new RequestHandlingException("", new NullClientInputRequestException()));
                 }
                 else{
                     // sending request to controller
@@ -65,7 +72,7 @@ public class DSClientTerminal extends NetworkInterface{
             }
         }
         catch(Exception e){
-            this.handleError("Unable to gather user input for Client.", e);
+            this.client.handleError(new ClientInputRequestReadException(e));
         }
     }
 
@@ -96,7 +103,6 @@ public class DSClientTerminal extends NetworkInterface{
     /**
      * Handles the logging of an event.
      * 
-     * 
      * @param event The event to be logged.
      */
     public void logEvent(String event){
@@ -104,34 +110,32 @@ public class DSClientTerminal extends NetworkInterface{
     }
 
     /**
-     * Handles the logging of an error and it's cause.
+     * Handles the logging of an error.
      * 
      * @param error The error to be logged.
-     * @param cause The cause of the error.
      */
-    public void handleError(String error, Exception cause){
-        // HANDLING ERROR //
-
+    public void logError(HandeledNetworkException error){
         // logging error to terminal
-        System.out.println("*ERROR* " + error);
+        System.out.println(error.toString());
 
-        // checking if error was controller disconnected
-        if(error.equals("Lost connection to Server on port : " + this.client.getCPort())){
+        // HANDLING SPECIFIC CASES //
+
+        // Controller disconnected
+        if(error.getException() instanceof ControllerDisconnectException){
             System.exit(0);
         }
-        else if(error.equals("Unable to connect Client to Server on port : " + this.client.getCPort())){
+        // Client Start Exception
+        else if(error.getException() instanceof ClientStartException){
             System.exit(0);
         }
-
-        // HANDLING CAUSE //
-
-        System.out.println("\t|-CAUSE : " + cause.getMessage());
     }
+
 
     /////////////////
     // MAIN METHOD //
     /////////////////
 
+    
     /**
      * Main method - instantiates a new Client instance using the command line parammeters.
      * @param args Parameters for the new Client.
@@ -142,8 +146,8 @@ public class DSClientTerminal extends NetworkInterface{
             int cPort = Integer.parseInt(args[0]);
             int timeout = Integer.parseInt(args[1]);
 
-            // Creating new DStore instance
-            DSClientTerminal client = new DSClientTerminal(cPort, timeout);
+            // Creating new Client instance
+            new DSClientTerminal(cPort, timeout);
         }
         catch(Exception e){
             System.out.println("Unable to create Client.");

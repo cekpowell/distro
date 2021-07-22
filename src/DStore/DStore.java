@@ -2,10 +2,23 @@ package Dstore;
 
 import java.io.File;
 import java.net.InetAddress;
+import java.util.StringTokenizer;
 
-import Interface.ServerInterface;
 import Logger.*;
+import Protocol.Exception.*;
+import Protocol.Token.RequestTokenizer;
+import Protocol.Token.Token;
+import Protocol.Token.TokenType.ErrorDstorePortInUseToken;
+import Protocol.Token.TokenType.JoinAckToken;
 import Network.*;
+import Network.Protocol.Exception.ClientDisconnectException;
+import Network.Protocol.Exception.ConnectToServerException;
+import Network.Protocol.Exception.ConnectionTerminatedException;
+import Network.Protocol.Exception.HandeledNetworkException;
+import Network.Protocol.Exception.NetworkException;
+import Network.Protocol.Exception.ServerSetupException;
+import Network.Server.Server;
+import Network.Server.ServerThread;
 
  /**
   * Individual data store unit within the system. 
@@ -22,7 +35,7 @@ public class Dstore extends Server{
     private String folderPath;
     private File fileStore;
     private ServerThread controllerThread;
-    private ServerInterface dstoreInterface;
+    private ServerInterface networkInterface;
 
     /**
      * Class constructor.
@@ -31,34 +44,35 @@ public class Dstore extends Server{
      * @param cPort The port the Controller that the DStore will connect to is on.
      * @param timeout The timout period for the DStore.
      * @param fileFolder The folder where the DStore will store files.
+     * @param networkInterface The network interface for the Dstore.
      */
-    public Dstore(int port, int cPort, int timeout, String folderPath, ServerInterface dstoreInterface){
+    public Dstore(int port, int cPort, int timeout, String folderPath, ServerInterface networkInterface){
         // initializing member variables
-        super(ServerType.DSTORE, port, dstoreInterface);
+        super(ServerType.DSTORE, port, networkInterface);
         this.port = port;
         this.cPort = cPort;
         this.timeout = timeout;
         this.folderPath = folderPath;
-        this.dstoreInterface = dstoreInterface;
+        this.networkInterface = networkInterface;
         this.setRequestHandler(new DstoreRequestHandler(this));
     }
+
+    ///////////
+    // SETUP //
+    ///////////
     
     /**
      * Sets up the Dstore ready for use.
      * 
      * Creates the logger, connects to controller and creates file store.
+     * 
+     * @throws ServerSetupException If the Dstore could not be setup.
      */
-    public void setup() throws Exception{
+    public void setup() throws ServerSetupException{
         try{
             // creating the terminal logger
             this.getServerInterface().createLogger();
-        }
-        catch(Exception e){
-            throw new Exception("Unable to create Dstore Logger on port : " + this.getPort(), e);
-        }
 
-        // connecting to controller
-        try{
             // connecting to controller
             this.connectToController();
 
@@ -66,22 +80,47 @@ public class Dstore extends Server{
             this.setupFileStore(this.folderPath);
         }
         catch(Exception e){
-            throw new Exception("Unable to connect DStore on port : " + this.port + " to controller on port : " + this.cPort);
+            throw new ServerSetupException(ServerType.DSTORE, e);
         }
     }
 
     /** 
      * Sets up a connection between the DStore and the Controller.
+     * 
+     * @throws ConnectToServerException If the Dstore could not connect to the Controller.
      */
-    public void connectToController() throws Exception{
-        // creating communicatoin channel
-        Connection connection = new Connection(this.getServerInterface(), InetAddress.getLocalHost(), this.cPort);
-        this.controllerThread = new ServerThread(this, connection);
-        this.controllerThread.start();
+    public void connectToController() throws ConnectToServerException{
+        try{
+            // creating communicatoin channel
+            Connection connection = new Connection(this.getServerInterface(), this.cPort);
+            this.controllerThread = new ServerThread(this, connection);
 
-        // sending JOIN message to Controller
-        String message = Protocol.JOIN_TOKEN + " " + this.getPort();
-        this.controllerThread.getConnection().sendMessage(message);
+            // sending JOIN message to Controller
+            String message = Protocol.JOIN_TOKEN + " " + this.getPort();
+            this.controllerThread.getConnection().sendMessage(message);
+
+            // handling response from Controller
+
+            Token response = RequestTokenizer.getToken(this.controllerThread.getConnection().getMessageWithinTimeout(this.timeout));
+
+            if(response instanceof JoinAckToken){
+                // Join Successful
+
+                // starting the connection thread
+                this.controllerThread.start();
+
+                // TODO Log the joining as an event
+
+            }
+            else if(response instanceof ErrorDstorePortInUseToken){
+                // Join not successful
+                throw new DstorePortInUseException(this.port);
+            }
+
+        }
+        catch(Exception e){
+            throw new ConnectToServerException(ServerType.CONTROLLER, this.cPort, e);
+        }
     }
 
     /**
@@ -100,16 +139,36 @@ public class Dstore extends Server{
         }
     }
 
+    ////////////////////
+    // ERROR HANDLING //
+    ////////////////////
+
     /**
-     * Handles the disconnection of a Connector at the specified port.
+     * Handles an error that occured within the system.
      * 
-     * Only thing to do is pass the error onto the underlying interface to handle.
-     * 
-     * @param port The port of the connector.
+     * @param error The error that has occured.
      */
-    public void handleDisconnect(int port, Exception cause){
-        // logging disconnect
-        this.getServerInterface().handleError("A connector on port : " + port + " has disconnected.", cause);
+    public void handleError(NetworkException error){
+        // Connection Termination
+        if(error instanceof ConnectionTerminatedException){
+            ConnectionTerminatedException connection = (ConnectionTerminatedException) error;
+
+            // Controller disconnected
+            if(connection.getPort() == this.cPort){
+                // logging disconnect
+                this.getServerInterface().logError(new HandeledNetworkException(new ControllerDisconnectException(connection.getPort(), connection)));
+            }
+            // Client disconnected
+            else{
+                // logging disconnect
+                this.getServerInterface().logError(new HandeledNetworkException(new ClientDisconnectException(connection.getPort(), connection)));
+            }
+        }
+        // Non-important error - just need to log
+        else{
+            // logging error
+            this.getServerInterface().logError(new HandeledNetworkException(error));
+        }
     }
 
 
