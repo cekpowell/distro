@@ -85,17 +85,7 @@ public abstract class Client implements NetworkProcess{
             throw new ConnectToServerException(Server.ServerType.CONTROLLER, this.serverPort, e);
         }
     }
-
-    /**
-     * Handles the given input request from the user.
-     * 
-     * Different clients will handle requests in different ways, and so the underlying
-     * Client will need to provide implementation for the method.
-     * 
-     * @param request The request provided by the user.
-     */
-    public abstract void handleInputRequest(String request);
-
+    
     /////////////////////////
     // GETTERS AND SETTERS //
     /////////////////////////

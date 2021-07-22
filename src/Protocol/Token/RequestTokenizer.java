@@ -24,8 +24,9 @@ public class RequestTokenizer {
     public static Token getToken(String message){
         StringTokenizer sTokenizer = new StringTokenizer(message); // tokenizer splits string up based on spaces
 
+        // No tokens
         if(!(sTokenizer.hasMoreTokens())){
-            return null;
+            return new InvalidRequestToken(message);
         }
 
         String firstToken = sTokenizer.nextToken();

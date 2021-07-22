@@ -1,16 +1,18 @@
 package DSClient;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.InputStreamReader;
 import java.net.Socket;
+import java.util.ArrayList;
 
 import Network.NetworkInterface;
-import Network.Protocol.Exception.ClientStartException;
-import Network.Protocol.Exception.HandeledNetworkException;
-import Network.Protocol.Exception.RequestHandlingException;
-import Protocol.Exception.ClientInputRequestReadException;
-import Protocol.Exception.ControllerDisconnectException;
-import Protocol.Exception.NullClientInputRequestException;
+import Network.Protocol.Exception.*;
+import Protocol.Exception.*;
+import Protocol.Token.RequestTokenizer;
+import Protocol.Token.TokenType.*;
+import Protocol.Token.Token;
 
 /**
  * Implementation of a ClientInterface that uses the terminal as an interface
@@ -45,6 +47,10 @@ public class DSClientTerminal extends NetworkInterface{
         this.waitForInput();
     }
 
+    ////////////////////////
+    // GETTING USER INPUT //
+    ////////////////////////
+
     /**
      * Waits for user to input a request into the terminal.
      */
@@ -59,15 +65,15 @@ public class DSClientTerminal extends NetworkInterface{
                 System.out.print(">");
 
                 // reading in request
-                String request = reader.readLine();
+                String input = reader.readLine();
 
                 // making sure client request is non-null
-                if(request.equals("")){
+                if(input.equals("")){
                     this.client.handleError(new RequestHandlingException("", new NullClientInputRequestException()));
                 }
                 else{
                     // sending request to controller
-                    this.client.handleInputRequest(request);
+                    this.handleInput(input);
                 }
             }
         }
@@ -75,6 +81,144 @@ public class DSClientTerminal extends NetworkInterface{
             this.client.handleError(new ClientInputRequestReadException(e));
         }
     }
+
+    ////////////////////
+    // INPUT HANDLING //
+    ////////////////////
+
+    /**
+     * Handles an input that has come from the Client through the terminal.
+     * 
+     * @param input The input to be handeled.
+     */
+    public void handleInput(String input){
+        try{
+            Token requestToken = RequestTokenizer.getToken(input);
+
+            // STORE //
+            if(requestToken instanceof StoreToken){
+                StoreToken storeToken = (StoreToken) requestToken;
+                this.handleStoreInput(storeToken.filename, storeToken.filesize);
+            }
+
+            // LOAD //
+            else if(requestToken instanceof LoadToken){
+                LoadToken loadToken = (LoadToken) requestToken;
+                this.handleLoadInput(loadToken.filename);
+            }
+
+            // REMOVE //
+            else if(requestToken instanceof RemoveToken){
+                RemoveToken removeToken = (RemoveToken) requestToken;
+                this.handleRemoveInput(removeToken.filename);
+            }
+
+            // LIST //
+            else if(requestToken instanceof ListToken){
+                this.handleListInput();
+            }
+
+            // Invalid Request
+            else{
+                this.handleInvalidInput(input);
+            }
+        }
+        catch(Exception e){
+            this.client.handleError(new RequestHandlingException(input, e));
+        }
+    }
+
+    ///////////
+    // STORE //
+    ///////////
+
+    /**
+     * Handles the input of a STORE request into the terminal.
+     * 
+     * @param filename The name of the file to be stored.
+     * @param filesize The size of the file to be stored (in bytes).
+     * 
+     * @throws Exception If the request could not be handeled.
+     */
+    public void handleStoreInput(String filename, int filesize) throws Exception{
+        // loading the file
+        File file = new File(filename);
+
+        // send the file to the DSClient
+        this.client.storeFile(file, filesize);
+    }
+
+    //////////
+    // LOAD //
+    //////////
+
+    /**
+     * Handles the input of a LOAD request into the terminal.
+     * 
+     * @param filename The name of the file to be loaded.
+     * 
+     * @throws Exception If the request could not be handeled.
+     */
+    public void handleLoadInput(String filename) throws Exception{
+        // gathering the file content
+        byte[] fileContent = this.client.loadFile(filename, false);
+
+        // storing the file
+        File file = new File(filename);
+        FileOutputStream fileOutput = new FileOutputStream(file);
+        fileOutput.write(fileContent);
+        fileOutput.flush();
+        fileOutput.close();
+    }
+
+    ////////////
+    // REMOVE //
+    ////////////
+    
+    /**
+     * Handles the input of a REMOVE request into the terminal.
+     * 
+     * @param filename The name of the file to be removed.
+     * 
+     * @throws Exception If the request could not be handeled.
+     */
+    public void handleRemoveInput(String filename) throws Exception{
+        // removes the file from the system
+        this.client.removeFile(filename);
+    }
+
+    //////////
+    // LIST //
+    //////////
+
+    /**
+     * Handles the input of a LIST request into the terminal.
+     * 
+     * @throws Exception If the request could not be handeled.
+     */
+    public void handleListInput() throws Exception{
+        // gathering the list of files
+        ArrayList files = this.client.getFileList();
+
+        // nothing to do with the list ...
+    }
+
+    /////////////
+    // INVALID //
+    /////////////
+
+    /**
+     * Handles the input of an invalid request into the terminal.
+     * 
+     * @param input The input into the terminal.
+     * 
+     * @throws Exception If the request could not be handeled.
+     */
+    public void handleInvalidInput(String input) throws Exception{
+        // handling the error
+        this.client.handleError(new InvalidClientRequestException(input));
+    }
+
 
     /////////////
     // LOGGING //

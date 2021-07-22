@@ -13,10 +13,10 @@ public class MainTest {
     public static void main(String[] args) throws Exception{
 
         // Testing Random //
-        testRandom();
+        //testRandom();
 
         // Testing Tokenizer //
-        //testTokenizer();
+        testTokenizer();
 
         // Testing connections //
         //testConnection();
@@ -68,27 +68,27 @@ public class MainTest {
         }).start();
     }
 
-    public static void testConcurrency(){
-        new Thread(() -> {
-            DSClientTerminal client = new DSClientTerminal(4000, 2000);
+    // public static void testConcurrency(){
+    //     new Thread(() -> {
+    //         DSClientTerminal client = new DSClientTerminal(4000, 2000);
 
-            client.client.handleInputRequest("STORE test.txt 14");
-            try{ Thread.sleep(3000);} catch(Exception e){}
-            client.client.handleInputRequest("REMOVE test.txt");
-        }).start();
-        new Thread(() -> {
-            DSClientTerminal client = new DSClientTerminal(4000, 2000);
+    //         client.client.handleInputRequest("STORE test.txt 14");
+    //         try{ Thread.sleep(3000);} catch(Exception e){}
+    //         client.client.handleInputRequest("REMOVE test.txt");
+    //     }).start();
+    //     new Thread(() -> {
+    //         DSClientTerminal client = new DSClientTerminal(4000, 2000);
 
-            client.client.handleInputRequest("STORE test2.txt 14");
-            try{ Thread.sleep(3000);} catch(Exception e){}
-            client.client.handleInputRequest("REMOVE test2.txt");
-        }).start();
-        new Thread(() -> {
-            DSClientTerminal client = new DSClientTerminal(4000, 2000);
+    //         client.client.handleInputRequest("STORE test2.txt 14");
+    //         try{ Thread.sleep(3000);} catch(Exception e){}
+    //         client.client.handleInputRequest("REMOVE test2.txt");
+    //     }).start();
+    //     new Thread(() -> {
+    //         DSClientTerminal client = new DSClientTerminal(4000, 2000);
 
-            client.client.handleInputRequest("STORE test3.txt 14");
-            try{ Thread.sleep(3000);} catch(Exception e){}
-            client.client.handleInputRequest("REMOVE test3.txt");
-        }).start();
-    }
+    //         client.client.handleInputRequest("STORE test3.txt 14");
+    //         try{ Thread.sleep(3000);} catch(Exception e){}
+    //         client.client.handleInputRequest("REMOVE test3.txt");
+    //     }).start();
+    // }
 }
