@@ -1,5 +1,7 @@
 package Network.Protocol.Exception;
 
+import Network.Connection;
+
 /**
  * Exception to represent case where the connection between two objects is
  * terminated.
@@ -7,32 +9,29 @@ package Network.Protocol.Exception;
 public class ConnectionTerminatedException extends NetworkException{
     
     // member variables
-    private int port;
+    private Connection connection;
 
     /**
      * Class constructor.
      */
-    public ConnectionTerminatedException(int port){
-        super("The connection to connector on port : " + port + " was terminated.");
-        this.port = port;
+    public ConnectionTerminatedException(Connection connection){
+        super("The connection to connector on port : " + connection.getPort() + " was terminated.");
+        this.connection = connection;
     }
 
     /**
      * Class constructor.
-     * 
-     * @param port
-     * @param cause
      */
-    public ConnectionTerminatedException(int port, Exception cause){
-        super("The connection to connector on port : " + port + " was terminated.", cause);
-        this.port = port;
+    public ConnectionTerminatedException(Connection connection, Exception cause){
+        super("The connection to connector on port : " + connection.getPort() + " was terminated.", cause);
+        this.connection = connection;
     }
 
     /////////////////////////
     // GETTERS AND SETTERS //
     /////////////////////////
 
-    public int getPort(){
-        return this.port;
+    public Connection getConnection(){
+        return this.connection;
     }
 }

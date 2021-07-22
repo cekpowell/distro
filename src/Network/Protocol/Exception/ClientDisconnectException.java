@@ -1,7 +1,7 @@
 package Network.Protocol.Exception;
 
 /**
- * 
+ * Exception for case where the Client disconnects frorm the Server.
  */
 public class ClientDisconnectException extends NetworkException {
 

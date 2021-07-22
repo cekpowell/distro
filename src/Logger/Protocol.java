@@ -4,6 +4,8 @@ package Logger;
 public class Protocol {
 
 	// messages from Clients
+	public final static String JOIN_CLIENT_TOKEN = "JOIN_CLIENT";
+	public final static String JOIN_CLIENT_HEARTBEAT = "JOIN_CLIENT_HEARTBEAT";
 	public final static String LIST_TOKEN = "LIST"; // also from Controller and Dstores
 	public final static String STORE_TOKEN = "STORE"; // also from Dstores
 	public final static String LOAD_TOKEN = "LOAD";
@@ -25,10 +27,10 @@ public class Protocol {
 	public final static String ERROR_LOAD_TOKEN = "ERROR_LOAD";
 	
 	// messages from Dstores
+	public final static String JOIN_DSTORE_TOKEN = "JOIN_DSTORE";
 	public final static String ACK_TOKEN = "ACK";
 	public final static String STORE_ACK_TOKEN = "STORE_ACK";
 	public final static String REMOVE_ACK_TOKEN = "REMOVE_ACK";
-	public final static String JOIN_TOKEN = "JOIN";
 	public final static String REBALANCE_STORE_TOKEN = "REBALANCE_STORE";
 	public final static String REBALANCE_COMPLETE_TOKEN = "REBALANCE_COMPLETE";
 }

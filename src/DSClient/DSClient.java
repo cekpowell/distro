@@ -13,6 +13,7 @@ import Network.Client.Client;
 import Network.Protocol.Exception.ClientSetupException;
 import Network.Protocol.Exception.ConnectionTerminatedException;
 import Network.Protocol.Exception.HandeledNetworkException;
+import Network.Protocol.Exception.MessageSendException;
 import Network.Protocol.Exception.NetworkException;
 import Network.Protocol.Exception.RequestHandlingException;
 
@@ -50,10 +51,13 @@ public class DSClient extends Client{
      * @throws ClientStartException If the Client could not be setup.
      */
     public void setup() throws ClientSetupException{
-        // Nothing to do ...
-
-        // returning as nothing to do
-        return;
+        try{
+            // sending JOIN_CLIENT message to controller
+            this.getServerConnection().sendMessage(Protocol.JOIN_CLIENT_TOKEN);
+        }
+        catch(MessageSendException e){
+            throw new ClientSetupException(e);
+        }
     }
 
     ////////////////////
@@ -68,17 +72,17 @@ public class DSClient extends Client{
     public void handleError(NetworkException error){
         // Connection Termination
         if(error instanceof ConnectionTerminatedException){
-            ConnectionTerminatedException connection = (ConnectionTerminatedException) error;
+            ConnectionTerminatedException exception = (ConnectionTerminatedException) error;
 
             // Controller Disconnected
-            if(connection.getPort() == this.getServerPort()){
+            if(exception.getConnection().getPort() == this.getServerPort()){
                 // logging error
-                this.getClientInterface().logError(new HandeledNetworkException(new ControllerDisconnectException(this.getServerPort(), connection)));
+                this.getClientInterface().logError(new HandeledNetworkException(new ControllerDisconnectException(this.getServerPort(), exception)));
             }
             // Dstore disconnected
             else{
                 // logging error
-                this.getClientInterface().logError(new HandeledNetworkException(new DstoreDisconnectException(connection.getPort(), connection)));
+                this.getClientInterface().logError(new HandeledNetworkException(new DstoreDisconnectException(exception.getConnection().getPort(), exception)));
             }
         }
         // Non-important error - just need to log

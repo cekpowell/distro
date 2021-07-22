@@ -12,6 +12,9 @@ public class MainTest {
 
     public static void main(String[] args) throws Exception{
 
+        // Testing Random //
+        testRandom();
+
         // Testing Tokenizer //
         //testTokenizer();
 
@@ -19,7 +22,14 @@ public class MainTest {
         //testConnection();
 
         // Testing Concurrency
-        testConcurrency();
+        //testConcurrency();
+    }
+
+    public static void testRandom(){
+        String string = "JOIN_DSTORE 5000";
+        System.out.println(string.contains("JOIN_DSTORE"));
+
+        System.out.println(string.split(" ")[1]);
     }
 
     public static void testTokenizer() throws IOException{

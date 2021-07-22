@@ -49,7 +49,7 @@ public class HeartbeatConnection extends Thread{
         }
         catch(Exception e){
             // error getting heartbeat = need to terminate connection
-            this.client.handleError(new ConnectionTerminatedException(this.connection.getPort(), e));
+            this.client.handleError(new ConnectionTerminatedException(this.connection, e));
         }
     }
 

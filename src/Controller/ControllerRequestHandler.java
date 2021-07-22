@@ -41,10 +41,21 @@ public class ControllerRequestHandler implements RequestHandler{
      */
     public void handleRequest(Connection connection, Token request){
         try{
-            // JOIN
-            if(request instanceof JoinToken){
-                JoinToken joinToken = (JoinToken) request;
-                this.handleJoinRequest(connection, joinToken.port);
+            // JOIN_DSTORE
+            if(request instanceof JoinDstoreToken){
+                JoinDstoreToken joinToken = (JoinDstoreToken) request;
+                this.handleJoinDstoreRequest(connection, joinToken.port);
+            }
+
+            // JOIN_CLIENT
+            else if(request instanceof JoinClientToken){
+                this.handleJoinClientRequest(connection, request);
+            }
+
+            // JOIN_CLIENT_HEARTBEAT
+            else if(request instanceof JoinClientHeartbeatToken){
+                JoinClientHeartbeatToken joinToken = (JoinClientHeartbeatToken) request;
+                this.handleJoinClientHeartbeatRequest(connection, joinToken);
             }
 
             // STORE
@@ -137,23 +148,53 @@ public class ControllerRequestHandler implements RequestHandler{
         }
     }
 
-    //////////
-    // JOIN //
-    //////////
+    /////////////////
+    // JOIN_DSTORE //
+    /////////////////
 
     /**
-     * Handles a JOIN request.
+     * Handles a JOIN_DSTORE request.
      * 
      * @param connection The connection associated with the request.
      * @param dstorePort The port number of the Dstore joining the system.
      * @throws DstorePortInUseException If the port the Dstore is trying to join on is already in use.
      */
-    public void handleJoinRequest(Connection connection, int dstorePort) throws Exception{
+    public void handleJoinDstoreRequest(Connection connection, int dstorePort) throws Exception{
         // addding the Dstore to the controller
         this.controller.getIndex().addDstore(dstorePort, connection);
 
         // sending JOIN_ACK to Dstore
         connection.sendMessage(Protocol.JOIN_ACK_TOKEN);
+    }
+
+    /////////////////
+    // JOIN_CLIENT //
+    /////////////////
+
+    /**
+     * Handles a JOIN_CLIENT request.
+     * 
+     * @param connection The connection the request came from.
+     * @param request The request token.
+     */
+    public void handleJoinClientRequest(Connection connection, Token request){
+        // adding the client to the list of clients
+        this.controller.getIndex().addClient(connection);
+    }
+
+    ///////////////////////////
+    // JOIN_CLIENT_HEARTBEAT //
+    ///////////////////////////
+
+    /**
+     * Handles a JOIN_CLIENT_HEARTBEAT request.
+     * 
+     * @param connection The connection the request came from.
+     * @param joinToken The request token.
+     */
+    public void handleJoinClientHeartbeatRequest(Connection connection, JoinClientHeartbeatToken joinToken){
+        // adding the client heartbeat to the index
+        this.controller.getIndex().addClientHeartbeat(connection, joinToken.port);
     }
 
     ///////////

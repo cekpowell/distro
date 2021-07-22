@@ -59,7 +59,7 @@ public class ServerThread extends Thread {
         }
         catch(Exception e){
             // error getting request = need to terminate connection
-            this.server.handleError(new ConnectionTerminatedException(this.connection.getPort(), e));
+            this.server.handleError(new ConnectionTerminatedException(this.connection, e));
         }
     }
 

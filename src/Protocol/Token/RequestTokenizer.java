@@ -30,11 +30,6 @@ public class RequestTokenizer {
 
         String firstToken = sTokenizer.nextToken();
 
-        // JOIN_ACK //
-        if(firstToken.equals(Protocol.JOIN_ACK_TOKEN)){
-            return new JoinAckToken(message);
-        }
-
         // ACK //
         if(firstToken.equals(Protocol.ACK_TOKEN)) {
             return new AckToken(message);
@@ -100,9 +95,24 @@ public class RequestTokenizer {
             return getListToken(message, sTokenizer);
         }
 
-        // JOIN //
-        else if (firstToken.equals(Protocol.JOIN_TOKEN)){
-            return getJoinToken(message, sTokenizer);
+        // JOIN_DSTORE //
+        else if (firstToken.equals(Protocol.JOIN_DSTORE_TOKEN)){
+            return getJoinDstoreToken(message, sTokenizer);
+        }
+
+        // JOIN_ACK //
+        if(firstToken.equals(Protocol.JOIN_ACK_TOKEN)){
+            return new JoinAckToken(message);
+        }
+
+        // JOIN_CLIENT //
+        if(firstToken.equals(Protocol.JOIN_CLIENT_TOKEN)){
+            return new JoinClientToken(message);
+        }
+
+        // JOIN_CLIENT_HEARTBEAT //
+        if(firstToken.equals(Protocol.JOIN_CLIENT_HEARTBEAT)){
+            return getJoinClientHeartbeatToken(message, sTokenizer);
         }
 
         // REBALANCE //
@@ -343,16 +353,33 @@ public class RequestTokenizer {
     }
 
     /**
-     * Gathers a JOIN token from a message string.
+     * Gathers a JOIN_DSTORE token from a message string.
      * @param message
      * @param sTokenizer
      * @return
      */
-    private static Token getJoinToken(String message, StringTokenizer sTokenizer) {
+    private static Token getJoinDstoreToken(String message, StringTokenizer sTokenizer) {
         try{
             int port = Integer.parseInt(sTokenizer.nextToken());
 
-            return new JoinToken(message, port);
+            return new JoinDstoreToken(message, port);
+        }
+        catch(Exception e){
+            return new InvalidRequestToken(message);
+        }
+    }
+
+    /**
+     * Gathers a JOIN_CLIENT_HEARTBEAT token from a message string.
+     * @param message
+     * @param sTokenizer
+     * @return
+     */
+    private static Token getJoinClientHeartbeatToken(String message, StringTokenizer sTokenizer) {
+        try{
+            int port = Integer.parseInt(sTokenizer.nextToken());
+
+            return new JoinClientHeartbeatToken(message, port);
         }
         catch(Exception e){
             return new InvalidRequestToken(message);

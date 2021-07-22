@@ -1,8 +1,6 @@
 package Dstore;
 
 import java.io.File;
-import java.net.InetAddress;
-import java.util.StringTokenizer;
 
 import Logger.*;
 import Protocol.Exception.*;
@@ -11,12 +9,12 @@ import Protocol.Token.Token;
 import Protocol.Token.TokenType.ErrorDstorePortInUseToken;
 import Protocol.Token.TokenType.JoinAckToken;
 import Network.*;
-import Network.Protocol.Exception.ClientDisconnectException;
 import Network.Protocol.Exception.ConnectToServerException;
 import Network.Protocol.Exception.ConnectionTerminatedException;
 import Network.Protocol.Exception.HandeledNetworkException;
 import Network.Protocol.Exception.NetworkException;
 import Network.Protocol.Exception.ServerSetupException;
+import Network.Protocol.Exception.UnknownConnectorDisconnectException;
 import Network.Server.Server;
 import Network.Server.ServerThread;
 
@@ -96,7 +94,7 @@ public class Dstore extends Server{
             this.controllerThread = new ServerThread(this, connection);
 
             // sending JOIN message to Controller
-            String message = Protocol.JOIN_TOKEN + " " + this.getPort();
+            String message = Protocol.JOIN_DSTORE_TOKEN + " " + this.getPort();
             this.controllerThread.getConnection().sendMessage(message);
 
             // handling response from Controller
@@ -151,17 +149,24 @@ public class Dstore extends Server{
     public void handleError(NetworkException error){
         // Connection Termination
         if(error instanceof ConnectionTerminatedException){
-            ConnectionTerminatedException connection = (ConnectionTerminatedException) error;
+            ConnectionTerminatedException exception = (ConnectionTerminatedException) error;
 
-            // Controller disconnected
-            if(connection.getPort() == this.cPort){
+            // Controller Disconnected
+            if(exception.getConnection().getPort() == this.cPort){
                 // logging disconnect
-                this.getServerInterface().logError(new HandeledNetworkException(new ControllerDisconnectException(connection.getPort(), connection)));
+                this.getServerInterface().logError(new HandeledNetworkException(new ControllerDisconnectException(exception.getConnection().getPort(), exception)));
             }
-            // Client disconnected
+
+            // Client Disconnected
+            // TODO
+
+            // Dstore Disconnected
+            // TODO
+
+            // Unknown Connector Disconnected
             else{
                 // logging disconnect
-                this.getServerInterface().logError(new HandeledNetworkException(new ClientDisconnectException(connection.getPort(), connection)));
+                this.getServerInterface().logError(new HandeledNetworkException(new UnknownConnectorDisconnectException(exception.getConnection().getPort(), exception)));
             }
         }
         // Non-important error - just need to log

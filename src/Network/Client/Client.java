@@ -2,6 +2,7 @@ package Network.Client;
 
 import java.net.InetAddress;
 
+import Logger.Protocol;
 import Network.Connection;
 import Network.NetworkInterface;
 import Network.NetworkProcess;
@@ -53,11 +54,11 @@ public abstract class Client implements NetworkProcess{
      */
     public void start() throws ClientStartException{
         try{
-            // setting up the client
-            this.setup();
-
             // connecting to server
             this.connectToServer();
+
+            // setting up the client
+            this.setup();
         }
         catch(Exception e){
             throw new ClientStartException(e);
@@ -77,6 +78,7 @@ public abstract class Client implements NetworkProcess{
             // setting up heartbeat connection
             Connection heartbeatConnection = new Connection(this.networkInterface, this.serverPort);
             this.serverHeartbeat = new HeartbeatConnection(this, heartbeatConnection);
+            this.serverHeartbeat.getConnection().sendMessage(Protocol.JOIN_CLIENT_HEARTBEAT + " " + this.serverConnection.getLocalPort());
             this.serverHeartbeat.start();
         }
         catch(Exception e){

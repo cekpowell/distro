@@ -3,6 +3,7 @@ package Controller;
 import java.net.Socket;
 
 import Controller.Index.*;
+import Logger.Protocol;
 import Protocol.Exception.*;
 import Network.Protocol.Exception.*;
 import Network.Server.*;
@@ -76,23 +77,51 @@ public class Controller extends Server{
         // Connection Termination
         if(error instanceof ConnectionTerminatedException){
             // getting connection exception
-            ConnectionTerminatedException connection = (ConnectionTerminatedException) error;
+            ConnectionTerminatedException exception = (ConnectionTerminatedException) error;
 
-            // Dstore disconnecteed
+            // Dstore Disconnected
             for(DstoreIndex dstore : this.index.getDstores()){
-                if(dstore.getConnection().getPort() == connection.getPort()){
+                if(exception.getConnection().getMessagesReceived().contains(Protocol.JOIN_DSTORE_TOKEN + " " + dstore.getPort())){
                     // removing the dstore
-                    this.index.removeDstore(dstore.getConnection());
+                    this.index.removeDstore(exception.getConnection());
 
                     // logging the disconnect
-                    this.getServerInterface().logError(new HandeledNetworkException(new DstoreDisconnectException(connection.getPort(), connection)));
-                    return;
+                    this.getServerInterface().logError(new HandeledNetworkException(new DstoreDisconnectException(dstore.getPort(), exception)));
+
+                    return; // nothing else to do
                 }
             }
 
-            // Client disconnected
-            this.getServerInterface().logError(new HandeledNetworkException(new ClientDisconnectException(connection.getPort(), connection)));
+            // Client Disconnected
+            if(exception.getConnection().getMessagesReceived().contains(Protocol.JOIN_CLIENT_TOKEN)){
+                // removing the client
+                this.index.removeClient(exception.getConnection());
+
+                // logging the disconnect
+                this.getServerInterface().logError(new HandeledNetworkException(new ClientDisconnectException(exception.getConnection().getPort(), exception)));
+            }
+
+            // Client Heartbeat Disconnect
+            else if(this.index.getClientHeartbeats().containsKey(exception.getConnection())){
+                // getting the client of the heartbeat's port
+                int clientPort = this.index.getClientHeartbeats().get(exception.getConnection());
+                
+                // removing the client heartbeat
+                this.index.removeClientHeartbeat(exception.getConnection());
+
+                // logging the disconnect
+                this.getServerInterface().logError(new HandeledNetworkException(new ClientHeartbeatDisconnectException(clientPort, exception)));
+            }
+
+            // Unknown connector disconnected
+            else{
+                // nothing to handle
+
+                // logging the disconnect
+                this.getServerInterface().logError(new HandeledNetworkException(new UnknownConnectorDisconnectException(exception.getConnection().getPort(), exception)));
+            }
         }
+
         // Non-important error - just need to log
         else{
             // logging error
@@ -140,3 +169,22 @@ public class Controller extends Server{
         return this.index;
     }
 }
+
+
+// // getting connection exception
+            // ConnectionTerminatedException connection = (ConnectionTerminatedException) error;
+
+            // // Dstore disconnecteed
+            // for(DstoreIndex dstore : this.index.getDstores()){
+            //     if(dstore.getConnection().getPort() == connection.getPort()){
+            //         // removing the dstore
+            //         this.index.removeDstore(dstore.getConnection());
+
+            //         // logging the disconnect
+            //         this.getServerInterface().logError(new HandeledNetworkException(new DstoreDisconnectException(connection.getPort(), connection)));
+            //         return;
+            //     }
+            // }
+
+            // // Client disconnected
+            // this.getServerInterface().logError(new HandeledNetworkException(new ClientDisconnectException(connection.getPort(), connection)));

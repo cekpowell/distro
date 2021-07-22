@@ -26,6 +26,8 @@ public class Index {
 
     // member variables
     private Controller controller;
+    private volatile CopyOnWriteArrayList<Connection> clients;
+    private volatile ConcurrentHashMap<Connection, Integer> clientHeartbeats; // heartbeat connection -> controller-client connection end port
     private volatile CopyOnWriteArrayList<DstoreIndex> dstores;
     private volatile int minDstores;
     private volatile ConcurrentHashMap<Connection, ConcurrentHashMap<String, CopyOnWriteArrayList<Integer>>> loadRecord;
@@ -38,9 +40,52 @@ public class Index {
      */
     public Index(Controller controller){
         this.controller = controller;
+        this.clients = new CopyOnWriteArrayList<Connection>();
+        this.clientHeartbeats = new ConcurrentHashMap<Connection,Integer>();
         this.minDstores = controller.getMinDstores();
         this.dstores = new CopyOnWriteArrayList<DstoreIndex>();
         this.loadRecord = new ConcurrentHashMap<Connection, ConcurrentHashMap<String, CopyOnWriteArrayList<Integer>>>();
+    }
+
+    /////////////////////////
+    // CONFIGURING CLIENTS //
+    /////////////////////////
+
+    /**
+     * Adds the given Client into the Index.
+     * 
+     * @param connection The connection to the Client.
+     */
+    public synchronized void addClient(Connection connection){
+        this.clients.add(connection);
+    }
+
+    /**
+     * Adds the given Client Heartbeat to the Index.
+     * 
+     * @param connection The Connection for the heartbeat.
+     * @param clientPort The port of the Client connection the heartbeat is for.
+     */
+    public synchronized void addClientHeartbeat(Connection connection, int clientPort){
+        this.clientHeartbeats.put(connection, clientPort);
+    }
+
+    /**
+     * Removes the given client from the Index.
+     * 
+     * @param connection The connection to the Client.
+     */
+    public synchronized void removeClient(Connection connection){
+        this.clients.remove(connection);
+    }
+
+    /**
+     * Removes the given Client heartbeat from the Index.
+     * 
+     * @param connection The connection to the Client heartbeat.
+     */
+    public synchronized void removeClientHeartbeat(Connection connection){
+        this.clientHeartbeats.remove(connection);
     }
 
 
@@ -607,6 +652,14 @@ public class Index {
     /////////////////////////
     // GETTERS AND SETTERS //
     /////////////////////////
+
+    public CopyOnWriteArrayList<Connection> getClients(){
+        return this.clients;
+    }
+
+    public ConcurrentHashMap<Connection, Integer> getClientHeartbeats(){
+        return this.clientHeartbeats;
+    }
 
     public CopyOnWriteArrayList<DstoreIndex> getDstores(){
         return this.dstores;

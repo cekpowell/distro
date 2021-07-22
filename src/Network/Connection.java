@@ -3,6 +3,7 @@ package Network;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.util.ArrayList;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -29,6 +30,8 @@ public class Connection{
     private BufferedReader textIn;
     private OutputStream dataOut;
     private InputStream dataIn;
+    private ArrayList<String> messagesSent;
+    private ArrayList<String> messagesReceived;
 
     /**
      * Class constructor.
@@ -45,6 +48,8 @@ public class Connection{
             this.textIn = new BufferedReader (new InputStreamReader(this.socket.getInputStream()));
             this.dataOut = this.socket.getOutputStream();
             this.dataIn = this.socket.getInputStream();
+            this.messagesSent = new ArrayList<String>();
+            this.messagesReceived = new ArrayList<String>();
 
             // logging creation of connection
             //this.networkInterface.logEvent("New connection made to port : " + socket.getPort());
@@ -70,6 +75,8 @@ public class Connection{
             this.textIn = new BufferedReader (new InputStreamReader(this.socket.getInputStream()));
             this.dataOut = this.socket.getOutputStream();
             this.dataIn = this.socket.getInputStream();
+            this.messagesSent = new ArrayList<String>();
+            this.messagesReceived = new ArrayList<String>();
 
             // logging creation of connection
             //this.networkInterface.logEvent("New connection made to port : " + port);
@@ -97,7 +104,7 @@ public class Connection{
             this.socket.close();
 
             // passing the error to the network process
-            this.networkInterface.getNetworkProcess().handleError(new ConnectionTerminatedException(this.getPort(), new ConnectionClosedException(this.getPort())));
+            this.networkInterface.getNetworkProcess().handleError(new ConnectionTerminatedException(this, new ConnectionClosedException(this.getPort())));
         }
         catch(Exception e){
             this.networkInterface.getNetworkProcess().handleError(new SocketCloseException(this.getPort()));
@@ -117,6 +124,7 @@ public class Connection{
             this.textOut.flush(); 
 
             // logging message
+            this.messagesSent.add(message);
             this.networkInterface.logMessageSent(this.socket, message);
         }
         catch(Exception e){
@@ -138,6 +146,7 @@ public class Connection{
             // Message is non-null
             if(message != null){
                 // logging message
+                this.messagesReceived.add(message);
                 this.networkInterface.logMessageReceived(this.socket, message);
 
                 return message;
@@ -175,6 +184,7 @@ public class Connection{
                 this.socket.setSoTimeout(0);
 
                 // logging message
+                this.messagesReceived.add(message);
                 this.networkInterface.logMessageReceived(this.socket, message);
 
                 return message;
@@ -213,6 +223,7 @@ public class Connection{
             this.textOut.flush(); 
 
             // logging
+            this.messagesSent.add("[FILE CONTENT]");
             this.networkInterface.logMessageSent(this.socket, "[FILE CONTENT]");
         }
         catch(Exception e){
@@ -244,6 +255,7 @@ public class Connection{
                 this.socket.setSoTimeout(0);
 
                 // logging message
+                this.messagesReceived.add("[FILE CONTENT]");
                 this.networkInterface.logMessageReceived(this.socket, "[FILE CONTENT]");
 
                 // returning
@@ -291,5 +303,13 @@ public class Connection{
 
     public int getLocalPort(){
         return this.socket.getLocalPort();
+    }
+
+    public ArrayList<String> getMessagesSent(){
+        return this.messagesSent;
+    }
+
+    public ArrayList<String> getMessagesReceived(){
+        return this.messagesReceived;
     }
 }
