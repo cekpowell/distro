@@ -3,11 +3,6 @@ package Dstore;
 import java.io.File;
 
 import Logger.*;
-import Protocol.Exception.*;
-import Protocol.Token.RequestTokenizer;
-import Protocol.Token.Token;
-import Protocol.Token.TokenType.ErrorDstorePortInUseToken;
-import Protocol.Token.TokenType.JoinAckToken;
 import Network.*;
 import Network.Protocol.Exception.ConnectToServerException;
 import Network.Protocol.Exception.ConnectionTerminatedException;
@@ -17,6 +12,11 @@ import Network.Protocol.Exception.ServerSetupException;
 import Network.Protocol.Exception.UnknownConnectorDisconnectException;
 import Network.Server.Server;
 import Network.Server.ServerThread;
+import Protocol.Exception.*;
+import Protocol.Token.RequestTokenizer;
+import Protocol.Token.Token;
+import Protocol.Token.TokenType.ErrorDstorePortInUseToken;
+import Protocol.Token.TokenType.JoinAckToken;
 
  /**
   * Individual data store unit within the system. 

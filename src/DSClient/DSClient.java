@@ -5,9 +5,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 
 import Logger.*;
-import Protocol.Exception.*;
-import Protocol.Token.*;
-import Protocol.Token.TokenType.*;
 import Network.*;
 import Network.Client.Client;
 import Network.Protocol.Exception.ClientSetupException;
@@ -16,6 +13,9 @@ import Network.Protocol.Exception.HandeledNetworkException;
 import Network.Protocol.Exception.MessageSendException;
 import Network.Protocol.Exception.NetworkException;
 import Network.Protocol.Exception.RequestHandlingException;
+import Protocol.Exception.*;
+import Protocol.Token.*;
+import Protocol.Token.TokenType.*;
 
 /**
  * Abstract class to represent a DSClient within the system.

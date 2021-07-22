@@ -4,14 +4,14 @@ import java.net.Socket;
 
 import Controller.Index.*;
 import Logger.Protocol;
-import Protocol.Exception.*;
 import Network.Protocol.Exception.*;
 import Network.Server.*;
+import Protocol.Exception.*;
 
 /**
  * Data store controller. 
  * 
- * Connects to Dstores and servers requests from DSClients.
+ * Connects to Dstores and serves requests from DSClients.
  */
 public class Controller extends Server{
 

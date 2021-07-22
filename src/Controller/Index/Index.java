@@ -8,8 +8,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import Controller.Controller;
 import Controller.Index.State.OperationState;
-import Protocol.Exception.*;
 import Network.Connection;
+import Protocol.Exception.*;
 
 /**
  * Object that manages an Index model.
