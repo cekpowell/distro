@@ -27,6 +27,12 @@
 
 ---
 
+### System Protocol
+
+- Refer to `specification.pdf` for information on the network protocol used within the system.
+
+---
+
 ### Starting Processes
 
 - The **Makefile** contained in the repo can be used to start the three system components.
