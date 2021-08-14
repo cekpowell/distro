@@ -48,6 +48,16 @@ public class DstoreRequestHandler implements RequestHandler{
      */
     public void handleRequest(Connection connection, Token request){
         try{
+            // JOIN_CLIENT //
+            if(request instanceof JoinClientToken){
+                this.handleJoinClientRequest(connection);
+            }
+
+            // JOIN_DSTORE //
+            if(request instanceof JoinDstoreToken){
+                this.handleJoinDstoreRequest(connection);
+            }
+
             // STORE //
             if(request instanceof StoreToken){
                 StoreToken storeToken = (StoreToken) request;
@@ -95,6 +105,36 @@ public class DstoreRequestHandler implements RequestHandler{
                 this.dstore.handleError(ex);
             }
         }
+    }
+
+    /////////////////
+    // JOIN_CLIENT //
+    /////////////////
+
+    /**
+     * Handles a JOIN_CLIENT request.
+     * 
+     * @param connection The connection associcated with the request.
+     * @throws MessageSendException If a message couldn't be sent through the connection.
+     */
+    private void handleJoinClientRequest(Connection connection) throws Exception{
+        // adding the connection to the Dstore's list of clients.
+        this.dstore.addClient(connection);
+
+        // sending join ack back to client
+        connection.sendMessage(Protocol.JOIN_ACK_TOKEN);
+    }
+
+    /////////////////
+    // JOIN_DSTORE //
+    /////////////////
+
+    private void handleJoinDstoreRequest(Connection connection) throws Exception{
+        // adding the connection to the Dstore's list of Dstores
+        this.dstore.addDstore(connection);
+
+        // sending the join ack back to the Dstore
+        connection.sendMessage(Protocol.JOIN_ACK_TOKEN);
     }
 
     ///////////

@@ -14,7 +14,7 @@ public class Protocol {
 	public final static String REMOVE_TOKEN = "REMOVE"; // also from Controller
 	
 	// messages from Controller
-	public final static String JOIN_ACK_TOKEN = "JOIN_ACK";
+	public final static String JOIN_ACK_TOKEN = "JOIN_ACK"; // also from Dstores
 	public final static String STORE_TO_TOKEN = "STORE_TO";
 	public final static String STORE_COMPLETE_TOKEN = "STORE_COMPLETE";
 	public final static String LOAD_FROM_TOKEN = "LOAD_FROM";

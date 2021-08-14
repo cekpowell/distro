@@ -176,22 +176,40 @@ public class DSClient extends Client{
         // setting up the connection
         Connection connection = new Connection(this.getClientInterface(), dstore);
 
-        // sending initial message
-        connection.sendMessage(Protocol.STORE_TOKEN + " " + file.getName() + " " + filesize);
+        // sending client join message
+        connection.sendMessage(Protocol.JOIN_CLIENT_TOKEN);
 
         try{
             // waiting for acknowledgement
             Token response = RequestTokenizer.getToken(connection.getMessageWithinTimeout(this.getTimeout()));
 
-            // making sure acknowledgement was receieved
-            if(response instanceof AckToken){
-                // sending the file to the dstore
-                byte[] fileContent = fileInput.readNBytes(filesize);
-                connection.sendBytes(fileContent);
+            // making sure response is JOIN_ACK
+            if(response instanceof JoinAckToken){
+                // sending store message
+                connection.sendMessage(Protocol.STORE_TOKEN + " " + file.getName() + " " + filesize);
 
-                // closing streams
-                connection.close();
-                fileInput.close();
+                // waiting for acknowledgement
+                response = RequestTokenizer.getToken(connection.getMessageWithinTimeout(this.getTimeout()));
+
+                // making sure acknowledgement was receieved
+                if(response instanceof AckToken){
+                    // sending the file to the dstore
+                    byte[] fileContent = fileInput.readNBytes(filesize);
+                    connection.sendBytes(fileContent);
+
+                    // closing streams
+                    connection.close();
+                    fileInput.close();
+                }
+                // invalid response received
+                else{
+                    // closing streams
+                    connection.close();
+                    fileInput.close();
+
+                    // throwing exception
+                    throw new InvalidMessageException(response.message, connection.getPort());
+                }
             }
             // invalid response received
             else{
@@ -202,6 +220,7 @@ public class DSClient extends Client{
                 // throwing exception
                 throw new InvalidMessageException(response.message, connection.getPort());
             }
+            
         }
         catch(Exception e){
             // closing connection
@@ -306,17 +325,34 @@ public class DSClient extends Client{
         // setting up the connection
         Connection connection = new Connection(this.getClientInterface(), port);
 
-        // sending LOAD_DATA message
-        connection.sendMessage(Protocol.LOAD_DATA_TOKEN + " " + filename);
+        // sending JOIN_CLIENT message
+        connection.sendMessage(Protocol.JOIN_CLIENT_TOKEN);
 
         try{
-            // reading file data
-            byte[] fileContent = connection.getNBytesWithinTimeout(filesize, this.getTimeout());
+            // waiting for acknowledgement
+            Token response = RequestTokenizer.getToken(connection.getMessageWithinTimeout(this.getTimeout()));
 
-            // closing connection
-            connection.close();
+            // making sure response is JOIN_ACK
+            if(response instanceof JoinAckToken){
+                 // sending LOAD_DATA message
+                connection.sendMessage(Protocol.LOAD_DATA_TOKEN + " " + filename);
 
-            return fileContent;
+                // reading file data
+                byte[] fileContent = connection.getNBytesWithinTimeout(filesize, this.getTimeout());
+
+                // closing connection
+                connection.close();
+
+                return fileContent;
+            }
+            // invalid response received
+            else{
+                // closing streams
+                connection.close();
+
+                // throwing exception
+                throw new InvalidMessageException(response.message, connection.getPort());
+            }
         }
         catch(Exception e){
             // closing connection

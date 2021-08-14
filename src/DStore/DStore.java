@@ -1,9 +1,12 @@
 package Dstore;
 
 import java.io.File;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import Logger.*;
 import Network.*;
+import Network.Protocol.Exception.ClientDisconnectException;
 import Network.Protocol.Exception.ConnectToServerException;
 import Network.Protocol.Exception.ConnectionTerminatedException;
 import Network.Protocol.Exception.HandeledNetworkException;
@@ -34,6 +37,8 @@ public class Dstore extends Server{
     private File fileStore;
     private ServerThread controllerThread;
     private ServerInterface networkInterface;
+    private volatile CopyOnWriteArrayList<Connection> clients;
+    private volatile CopyOnWriteArrayList<Connection> dstores;
 
     /**
      * Class constructor.
@@ -52,6 +57,8 @@ public class Dstore extends Server{
         this.timeout = timeout;
         this.folderPath = folderPath;
         this.networkInterface = networkInterface;
+        this.clients = new CopyOnWriteArrayList<Connection>();
+        this.dstores = new CopyOnWriteArrayList<Connection>();
         this.setRequestHandler(new DstoreRequestHandler(this));
     }
 
@@ -158,10 +165,16 @@ public class Dstore extends Server{
             }
 
             // Client Disconnected
-            // TODO
+            else if(this.hasClient(exception.getConnection())){
+                // logging disconnect
+                this.getServerInterface().logError(new HandeledNetworkException(new ClientDisconnectException(exception.getConnection().getPort(), exception)));
+            }
 
             // Dstore Disconnected
-            // TODO
+            else if(this.hasDstore(exception.getConnection())){
+                // logging disconnect
+                this.getServerInterface().logError(new HandeledNetworkException(new DstoreDisconnectException(exception.getConnection().getPort(), exception)));
+            }
 
             // Unknown Connector Disconnected
             else{
@@ -203,5 +216,29 @@ public class Dstore extends Server{
 
     public ServerThread getControllerThread(){
         return this.controllerThread;
+    }
+
+    public synchronized void addClient(Connection client){
+        this.clients.add(client);
+    }
+
+    public synchronized boolean hasClient(Connection client){
+        return this.clients.contains(client);
+    }
+
+    public synchronized void removeClient(Connection client){
+        this.clients.remove(client);
+    }
+
+    public synchronized void addDstore(Connection dstore){
+        this.dstores.add(dstore);
+    }
+
+    public synchronized boolean hasDstore(Connection dstore){
+        return this.dstores.contains(dstore);
+    }
+
+    public synchronized void removeDstore(Connection dstore){
+        this.dstores.remove(dstore);
     }
 }
