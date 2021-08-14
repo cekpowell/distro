@@ -25,6 +25,8 @@
   - **Dstore** : A data store unit that is connected to the system via the controller. Dstores recieve commands from the controller and store files accordingly.
   - **Client** : A client that makes use of the system. The client sends requests to the Controller which are handeled accordingly.
 
+<img src="images/distributed_file_storage_system.png" alt="distributed_file_storage_system" style="zoom:80%;" />
+
 ---
 
 ### System Protocol
@@ -54,6 +56,8 @@ make controller cport=<CPORT> r=<R> timeout=<TIMEOUT> rperiod=<RPERIOD>
   - `TIMEOUT` : The **timeout** period for requests sent by the Controller to Clients/Dstores.
   - `RPERIOD` : The **rebalance period** - the length of time between rebalancing operations.
 
+<img src="images/make_controller.png" alt="make_controller" style="zoom:67%;" />
+
 #### Dstore
 
 - Use the following command to start a **Dstore** process:
@@ -68,6 +72,8 @@ make dstore port=<PORT> cport=<CPORT> timeout=<TIMEOUT> path=<PATH>
   - `TIMEOUT` : The **timeout** period for requests sent by the Dstore to the Controller/Clients.
   - `PATH` : The **path** (relative or absolute) for where the Dstore will store the files it recieves from clients.
 
+<img src="images/make_dstore.png" alt="make_dstore" style="zoom:67%;" />
+
 #### Client
 
 - Use the following command to start a **Client** process:
@@ -79,6 +85,8 @@ make client cport=<CPORT> timeout=<TIMEOUT>
 - Where:
   - `CPORT` : The **port the Controller** is running on.
   - `TIMEOUT` : The **timeout** period for requests sent by the Client to the Controller/Dstores.
+
+<img src="images/make_client.png" alt="make_client" style="zoom:67%;" />
 
 ---
 
@@ -104,6 +112,8 @@ STORE <filename> <filesize>
   - `filename` : The **path** to the file to be stored.
   - `filesize` : The **size** of the file in bytes.
 
+<img src="images/store.png" alt="store" style="zoom:67%;" />
+
 #### LOAD
 
 - The **LOAD** command has the following syntax:
@@ -115,6 +125,8 @@ LOAD <filename>
 - Where:
   - `filename` : The **name** of the file being loaded.
 
+<img src="images/load.png" alt="load" style="zoom:67%;" />
+
 #### LIST
 
 - The **LIST** command has the following syntax:
@@ -122,6 +134,8 @@ LOAD <filename>
 ```assembly
 LIST
 ```
+
+<img src="images/list.png" alt="list" style="zoom:67%;" />
 
 #### REMOVE
 
@@ -133,6 +147,8 @@ REMOVE <filename>
 
 - Where:
   - `filename` : The **name** of the file to be removed.
+
+<img src="images/remove.png" alt="remove" style="zoom:67%;" />
 
 ---
 
