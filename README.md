@@ -37,7 +37,7 @@
 
 - Use the following command to start a Controller process:
 
-``` bash
+``` assembly
 make controller cport=<CPORT> r=<R> timeout=<TIMEOUT> rperiod=<RPERIOD>
 ```
 
@@ -52,7 +52,7 @@ make controller cport=<CPORT> r=<R> timeout=<TIMEOUT> rperiod=<RPERIOD>
 
 - Use the following command to start a **Dstore** process:
 
-```bash
+```assembly
 make dstore port=<PORT> cport=<CPORT> timeout=<TIMEOUT> path=<PATH>
 ```
 
@@ -66,7 +66,7 @@ make dstore port=<PORT> cport=<CPORT> timeout=<TIMEOUT> path=<PATH>
 
 - Use the following command to start a **Client** process:
 
-```bash
+```assembly
 make client cport=<CPORT> timeout=<TIMEOUT>
 ```
 
