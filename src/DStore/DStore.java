@@ -101,8 +101,7 @@ public class Dstore extends Server{
             this.controllerThread = new ServerThread(this, connection);
 
             // sending JOIN message to Controller
-            String message = Protocol.JOIN_DSTORE_TOKEN + " " + this.getPort();
-            this.controllerThread.getConnection().sendMessage(message);
+            this.controllerThread.getConnection().sendMessage(Protocol.getJoinDstoreMessage(port));
 
             // handling response from Controller
 

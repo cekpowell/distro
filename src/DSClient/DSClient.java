@@ -52,7 +52,7 @@ public class DSClient extends Client{
     public void setup() throws ClientSetupException{
         try{
             // sending JOIN_CLIENT message to controller
-            this.getServerConnection().sendMessage(Protocol.JOIN_CLIENT_TOKEN);
+            this.getServerConnection().sendMessage(Protocol.getJoinClientMessage());
         }
         catch(MessageSendException e){
             throw new ClientSetupException(e);
@@ -114,7 +114,7 @@ public class DSClient extends Client{
      */
     public void storeFile(File file, int filesize) throws Exception{
         // sending the store message to the controller
-        this.getServerConnection().sendMessage(Protocol.STORE_TOKEN + " " + file.getName() + " " + filesize);
+        this.getServerConnection().sendMessage(Protocol.getStoreMessage(file.getName(), filesize));
 
         // gathering response
         Token response = RequestTokenizer.getToken(this.getServerConnection().getMessageWithinTimeout(this.getTimeout()));
@@ -177,7 +177,7 @@ public class DSClient extends Client{
         Connection connection = new Connection(this.getClientInterface(), dstore);
 
         // sending client join message
-        connection.sendMessage(Protocol.JOIN_CLIENT_TOKEN);
+        connection.sendMessage(Protocol.getJoinClientMessage());
 
         try{
             // waiting for acknowledgement
@@ -186,7 +186,7 @@ public class DSClient extends Client{
             // making sure response is JOIN_ACK
             if(response instanceof JoinAckToken){
                 // sending store message
-                connection.sendMessage(Protocol.STORE_TOKEN + " " + file.getName() + " " + filesize);
+                connection.sendMessage(Protocol.getStoreMessage(file.getName(), filesize));
 
                 // waiting for acknowledgement
                 response = RequestTokenizer.getToken(connection.getMessageWithinTimeout(this.getTimeout()));
@@ -252,16 +252,16 @@ public class DSClient extends Client{
      */
     public byte[] loadFile(String filename, boolean isReload) throws Exception{
         // gathering the protocol command
-        String command = "";
+        String message = "";
         if(!isReload){
-            command = Protocol.LOAD_TOKEN;
+            message = Protocol.getLoadMessage(filename);
         }
         else{
-            command = Protocol.RELOAD_TOKEN;
+            message = Protocol.getReloadMessage(filename);
         }
 
         // sending LOAD message to controller
-        this.getServerConnection().sendMessage(command+ " " + filename);
+        this.getServerConnection().sendMessage(message);
 
         // gathering response
         Token response = RequestTokenizer.getToken(this.getServerConnection().getMessageWithinTimeout(this.getTimeout()));
@@ -326,7 +326,7 @@ public class DSClient extends Client{
         Connection connection = new Connection(this.getClientInterface(), port);
 
         // sending JOIN_CLIENT message
-        connection.sendMessage(Protocol.JOIN_CLIENT_TOKEN);
+        connection.sendMessage(Protocol.getJoinClientMessage());
 
         try{
             // waiting for acknowledgement
@@ -335,7 +335,7 @@ public class DSClient extends Client{
             // making sure response is JOIN_ACK
             if(response instanceof JoinAckToken){
                  // sending LOAD_DATA message
-                connection.sendMessage(Protocol.LOAD_DATA_TOKEN + " " + filename);
+                connection.sendMessage(Protocol.getLoadDataMessage(filename));
 
                 // reading file data
                 byte[] fileContent = connection.getNBytesWithinTimeout(filesize, this.getTimeout());
@@ -382,7 +382,7 @@ public class DSClient extends Client{
      */
     public void removeFile(String filename) throws Exception{
         // sending remove to controller
-        this.getServerConnection().sendMessage(Protocol.REMOVE_TOKEN + " " + filename);
+        this.getServerConnection().sendMessage(Protocol.getRemoveMessage(filename));
 
         // gathering response
         Token response = RequestTokenizer.getToken(this.getServerConnection().getMessageWithinTimeout(this.getTimeout()));
@@ -420,7 +420,7 @@ public class DSClient extends Client{
      */
     public ArrayList<String> getFileList() throws Exception{
         // sending message to Controller
-        this.getServerConnection().sendMessage(Protocol.LIST_TOKEN);
+        this.getServerConnection().sendMessage(Protocol.getListMessage());
 
         // gathering response
         Token response = RequestTokenizer.getToken(this.getServerConnection().getMessageWithinTimeout(this.getTimeout()));

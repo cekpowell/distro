@@ -119,27 +119,27 @@ public class ControllerRequestHandler implements RequestHandler{
                 // Dstore port already in use
                 if(e instanceof DstorePortInUseException){
                     // sending error message to Dstore
-                    connection.sendMessage(Protocol.ERROR_DSTORE_PORT_IN_USE_TOKEN);
+                    connection.sendMessage(Protocol.getErrorDstorePortInUseMessage());
                 }
                 // Not enough Dstores
                 if(e instanceof NotEnoughDstoresException){
                     // sending error message to client
-                    connection.sendMessage(Protocol.ERROR_NOT_ENOUGH_DSTORES_TOKEN);
+                    connection.sendMessage(Protocol.getErrorNotEnoughDstoresMessage());
                 }
                 // File already exists
                 else if(e instanceof FileAlreadyExistsException){
                     // sending error message to client
-                    connection.sendMessage(Protocol.ERROR_FILE_ALREADY_EXISTS_TOKEN);
+                    connection.sendMessage(Protocol.getErrorFileAlreadyExistsMessage());
                 }
                 // File does not exist
                 else if(e instanceof FileDoesNotExistException){
                     // sending error message to client
-                    connection.sendMessage(Protocol.ERROR_FILE_DOES_NOT_EXIST_TOKEN);
+                    connection.sendMessage(Protocol.getErrorFileDoesNotExistMessage());
                 }
                 // No valid Dstores
                 else if(e instanceof NoValidDstoresException){
                     // sending error message to client
-                    connection.sendMessage(Protocol.ERROR_LOAD_TOKEN);
+                    connection.sendMessage(Protocol.getErrorLoadMessage());
                 }
             }
             catch(MessageSendException ex){
@@ -164,7 +164,7 @@ public class ControllerRequestHandler implements RequestHandler{
         this.controller.getIndex().addDstore(dstorePort, connection);
 
         // sending JOIN_ACK to Dstore
-        connection.sendMessage(Protocol.JOIN_ACK_TOKEN);
+        connection.sendMessage(Protocol.getJoinAckMessage());
     }
 
     /////////////////
@@ -216,18 +216,14 @@ public class ControllerRequestHandler implements RequestHandler{
         // starting to store the file
         ArrayList<Integer> dstores = this.controller.getIndex().startStoring(filename, filesize);
 
-        // sending the store message to the Client
-        ArrayList<String> stringDstores = new ArrayList<String>();
-        for(int dstore : dstores){
-            stringDstores.add(Integer.toString(dstore));
-        }
-        connection.sendMessage(Protocol.STORE_TO_TOKEN + " " + String.join(" ", stringDstores));
+        // sending the message to the client
+        connection.sendMessage(Protocol.getStoreToMessage(dstores));
 
         // waiting for the store to be complete
         this.controller.getIndex().waitForFileState(filename, OperationState.STORE_ACK_RECIEVED, this.controller.getTimeout());
 
         // store complete, sending STORE_COMPLETE message to Client
-        connection.sendMessage(Protocol.STORE_COMPLETE_TOKEN);
+        connection.sendMessage(Protocol.getStoreCompleteMessage());
     }
 
     /**
@@ -263,7 +259,7 @@ public class ControllerRequestHandler implements RequestHandler{
         int filesize = this.controller.getIndex().getFileSize(filename);
 
         // sending LOAD_FROM to the Client
-        connection.sendMessage(Protocol.LOAD_FROM_TOKEN + " " + dstoreToLoadFrom + " " + filesize);
+        connection.sendMessage(Protocol.getLoadFromMessage(dstoreToLoadFrom, filesize));
     }
 
 
@@ -289,14 +285,14 @@ public class ControllerRequestHandler implements RequestHandler{
         // looping through Dstores
         for(Connection dstore : dstores){
             // sending REMOVE message to the Dstore
-            dstore.sendMessage(Protocol.REMOVE_TOKEN + " " + filename);
+            dstore.sendMessage(Protocol.getRemoveMessage(filename));
         }
 
         // waiting for the REMOVE to be complete
         this.controller.getIndex().waitForFileState(filename, OperationState.REMOVE_ACK_RECIEVED, this.controller.getTimeout());
 
         // store complete, sending REMOVE_COMPLETEE message to Client
-        connection.sendMessage(Protocol.REMOVE_COMPLETE_TOKEN);
+        connection.sendMessage(Protocol.getRemoveCompleteMessage());
     }
 
     ////////////////

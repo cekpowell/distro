@@ -81,7 +81,7 @@ public class Controller extends Server{
 
             // Dstore Disconnected
             for(DstoreIndex dstore : this.index.getDstores()){
-                if(exception.getConnection().getMessagesReceived().contains(Protocol.JOIN_DSTORE_TOKEN + " " + dstore.getPort())){
+                if(exception.getConnection().getMessagesReceived().contains(Protocol.getJoinDstoreMessage(dstore.getPort()))){
                     // removing the dstore
                     this.index.removeDstore(exception.getConnection());
 
@@ -93,7 +93,7 @@ public class Controller extends Server{
             }
 
             // Client Disconnected
-            if(exception.getConnection().getMessagesReceived().contains(Protocol.JOIN_CLIENT_TOKEN)){
+            if(exception.getConnection().getMessagesReceived().contains(Protocol.getJoinClientMessage())){
                 // removing the client
                 this.index.removeClient(exception.getConnection());
 

@@ -98,7 +98,7 @@ public class DstoreRequestHandler implements RequestHandler{
                     RemoveToken token = (RemoveToken) request;
     
                     // sending error to controller
-                    connection.sendMessage(Protocol.ERROR_FILE_DOES_NOT_EXIST_TOKEN + " " + token.filename);                
+                    connection.sendMessage(Protocol.getErrorFileDoesNotExistMessage(token.filename));
                 }
             }
             catch(MessageSendException ex){
@@ -122,7 +122,7 @@ public class DstoreRequestHandler implements RequestHandler{
         this.dstore.addClient(connection);
 
         // sending join ack back to client
-        connection.sendMessage(Protocol.JOIN_ACK_TOKEN);
+        connection.sendMessage(Protocol.getJoinAckMessage());
     }
 
     /////////////////
@@ -134,7 +134,7 @@ public class DstoreRequestHandler implements RequestHandler{
         this.dstore.addDstore(connection);
 
         // sending the join ack back to the Dstore
-        connection.sendMessage(Protocol.JOIN_ACK_TOKEN);
+        connection.sendMessage(Protocol.getJoinAckMessage());
     }
 
     ///////////
@@ -152,7 +152,7 @@ public class DstoreRequestHandler implements RequestHandler{
      */
     private void handleStoreRequest(Connection connection, String filename, int filesize) throws Exception{
         // sending ACK back to client
-        connection.sendMessage(Protocol.ACK_TOKEN);
+        connection.sendMessage(Protocol.getAckMessage());
 
         // reading file data
         byte[] fileContent = connection.getNBytesWithinTimeout(filesize, this.dstore.getTimeout());
@@ -165,7 +165,7 @@ public class DstoreRequestHandler implements RequestHandler{
         fileOutput.close();
 
         // sending STORE_ACK to contoller
-        this.dstore.getControllerThread().getConnection().sendMessage(Protocol.STORE_ACK_TOKEN + " " + filename);
+        this.dstore.getControllerThread().getConnection().sendMessage(Protocol.getStoreAckMessage(filename));
     }
 
     ////////// 
@@ -228,7 +228,7 @@ public class DstoreRequestHandler implements RequestHandler{
         }
 
         // sending acknowleddgement to controller
-        connection.sendMessage(Protocol.REMOVE_ACK_TOKEN + " " + filename);
+        connection.sendMessage(Protocol.getRemoveAckMessage(filename));
     }
 
     //////////
