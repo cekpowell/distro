@@ -53,6 +53,10 @@ public class DSClient extends Client{
         try{
             // sending JOIN_CLIENT message to controller
             this.getServerConnection().sendMessage(Protocol.getJoinClientMessage());
+
+            // sending JOIN_CLIENT_HEARTBEAT message to controller
+            this.getServerHeartbeat().getConnection().sendMessage(Protocol.getJoinClientHeartbeatMessage(this.getServerConnection().getLocalPort()));
+
         }
         catch(MessageSendException e){
             throw new ClientSetupException(e);

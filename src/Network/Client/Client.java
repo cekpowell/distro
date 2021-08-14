@@ -78,7 +78,6 @@ public abstract class Client implements NetworkProcess{
             // setting up heartbeat connection
             Connection heartbeatConnection = new Connection(this.networkInterface, this.serverPort);
             this.serverHeartbeat = new HeartbeatConnection(this, heartbeatConnection);
-            this.serverHeartbeat.getConnection().sendMessage(Protocol.getJoinClientHeartbeatMessage(this.serverConnection.getLocalPort()));
             this.serverHeartbeat.start();
         }
         catch(Exception e){
@@ -100,6 +99,10 @@ public abstract class Client implements NetworkProcess{
 
     public Connection getServerConnection(){
         return this.serverConnection;
+    }
+
+    public HeartbeatConnection getServerHeartbeat(){
+        return this.serverHeartbeat;
     }
 
     public NetworkInterface getClientInterface(){
