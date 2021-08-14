@@ -25,7 +25,7 @@
   - **Dstore** : A data store unit that is connected to the system via the controller. Dstores recieve commands from the controller and store files accordingly.
   - **Client** : A client that makes use of the system. The client sends requests to the Controller which are handeled accordingly.
 
-<p align="center"><img src="images/distributed_file_storage_system.png" alt="distributed_file_storage_system" style="zoom:65%;"/></p> 
+<p align="center"><img src="images/distributed_file_storage_system.png" alt="distributed_file_storage_system" style="zoom:10%;"/></p> 
 
 ---
 
