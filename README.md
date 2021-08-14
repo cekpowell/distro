@@ -35,7 +35,7 @@
 
 ### Starting Processes
 
-- The **Makefile** contained in the repo can be used to start the three system components.
+- The **Makefile** contained in the repo can be used to start the three system components (which are pre-built).
 - The Controller must be started **first** (as Client and Dstore must be able to connect to the Controller to start.)
 - All processes will **log** messages they receive from other processes to the command line.
 
