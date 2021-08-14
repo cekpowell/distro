@@ -37,6 +37,13 @@ public class Protocol {
 		return LIST_TOKEN;
 	}
 
+	public static String getListOfFilesMessage(ArrayList<String> files){
+        // forming single string
+        String filesString = String.join(" ", files);
+        
+		return (LIST_TOKEN + space + filesString);
+	}
+
 	public static String getStoreMessage(String filename, int filesize){
 		return (STORE_TOKEN + space + filename + space + filesize);
 	}

@@ -321,15 +321,8 @@ public class ControllerRequestHandler implements RequestHandler{
      * @throws NotEnoughDstoresException If there are not enough Dstores connected to handle the request.
      */
     private void handleListRequest(Connection connection) throws Exception{
-        // gathering list of files
-        ArrayList<String> messageElements = new ArrayList<String>();
-        messageElements.add("LIST");
-        messageElements.addAll(this.controller.getIndex().getFileList());
-
-        // sending response back to client
-        String message = String.join(" ", messageElements);
-        if(messageElements.size() == 1) message += " "; // ERROR FIX : for case when there are no files, still need to add the space to make sure it is tokenized correctly on client side
-        connection.sendMessage(message);
+        // sending message to client
+        connection.sendMessage(Protocol.getListOfFilesMessage(this.controller.getIndex().getFileList()));
     }
 
     /////////////
