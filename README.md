@@ -31,7 +31,7 @@
 
 ### System Protocol
 
-- Refer to `specification.pdf` for information on the network protocol used within the system.
+- Refer to `specification.pdf` for information on the network protocol used within the system (i.e., information on how operations are handeled and what messages are sent between processes).
 
 ---
 
