@@ -83,7 +83,7 @@ make controller cport=<CPORT> r=<R> timeout=<TIMEOUT> rperiod=<RPERIOD>
   - `TIMEOUT` : The **timeout** period for requests sent by the Controller to Clients/Dstores.
   - `RPERIOD` : The **rebalance period** - the length of time between rebalancing operations.
 
-<img src="images/make_controller.png" alt="make_controller" style="zoom:67%;" />
+<img src="images/make_controller.png" alt="make_controller" style="zoom:55%;" />
 
 #### Dstore
 
@@ -99,7 +99,7 @@ make dstore port=<PORT> cport=<CPORT> timeout=<TIMEOUT> path=<PATH>
   - `TIMEOUT` : The **timeout** period for requests sent by the Dstore to the Controller/Clients.
   - `PATH` : The **path** (relative or absolute) for where the Dstore will store the files it recieves from clients.
 
-<img src="images/make_dstore.png" alt="make_dstore" style="zoom:67%;" />
+<img src="images/make_dstore.png" alt="make_dstore" style="zoom:28%;" />
 
 #### Client
 
@@ -114,7 +114,7 @@ make client cport=<CPORT> timeout=<TIMEOUT>
   - `TIMEOUT` : The **timeout** period for requests sent by the Client to the Controller/Dstores.
 - Requests are input into the Client terminal after the `>`.
 
-<img src="images/make_client.png" alt="make_client" style="zoom:67%;" />
+<img src="images/make_client.png" alt="make_client" style="zoom:55%;" />
 
 ---
 
@@ -135,7 +135,7 @@ STORE <filename> <filesize>
   - `filename` : The **path** to the file to be stored.
   - `filesize` : The **size** of the file in bytes.
 
-<img src="images/store.png" alt="store" style="zoom:67%;" />
+<img src="images/store.png" alt="store" style="zoom:55%;" />
 
 #### LOAD
 
@@ -148,7 +148,7 @@ LOAD <filename>
 - Where:
   - `filename` : The **name** of the file being loaded.
 
-<img src="images/load.png" alt="load" style="zoom:67%;" />
+<img src="images/load.png" alt="load" style="zoom:55%;" />
 
 #### LIST
 
@@ -158,7 +158,7 @@ LOAD <filename>
 LIST
 ```
 
-<img src="images/list.png" alt="list" style="zoom:67%;" />
+<img src="images/list.png" alt="list" style="zoom:55%;" />
 
 #### REMOVE
 
@@ -171,7 +171,7 @@ REMOVE <filename>
 - Where:
   - `filename` : The **name** of the file to be removed.
 
-<img src="images/remove.png" alt="remove" style="zoom:67%;" />
+<img src="images/remove.png" alt="remove" style="zoom:55%;" />
 
 ---
 
