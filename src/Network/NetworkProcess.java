@@ -21,10 +21,18 @@ public interface NetworkProcess {
      */
     public abstract void start() throws NetworkException;
 
+
+    /**
+     * Handles an event.
+     * 
+     * @param event The NetworkEvent that has occured.
+     */
+    public abstract void handleEvent(String event);
+
     /**
      * Handles an error.
      * 
-     * @param error The DSException that has occured.
+     * @param error The NetworkException that has occured.
      */
     public abstract void handleError(NetworkException error);
 }

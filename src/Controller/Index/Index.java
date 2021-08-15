@@ -57,7 +57,11 @@ public class Index {
      * @param connection The connection to the Client.
      */
     public synchronized void addClient(Connection connection){
+        // adding the client to the index
         this.clients.add(connection);
+
+        // logging
+        this.controller.handleEvent("A Client joined the system on port : " + connection.getPort());
     }
 
     /**

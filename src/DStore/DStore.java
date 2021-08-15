@@ -144,6 +144,20 @@ public class Dstore extends Server{
     }
 
     ////////////////////
+    // EVENT HANDLING //
+    ////////////////////
+
+    /**
+     * Handles an event that has occured.
+     * 
+     * @param event The event that has occured.
+     */
+    public void handleEvent(String event){
+        // TODO Need to properly handle the event
+        this.getServerInterface().logEvent(event);
+    }
+
+    ////////////////////
     // ERROR HANDLING //
     ////////////////////
 

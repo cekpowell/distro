@@ -64,6 +64,20 @@ public class DSClient extends Client{
     }
 
     ////////////////////
+    // EVENT HANDLING //
+    ////////////////////
+
+    /**
+     * Handles an event that has occured.
+     * 
+     * @param event The event that has occured.
+     */
+    public void handleEvent(String event){
+        // TODO Need to properly handle the event
+        this.getClientInterface().logEvent(event);
+    }
+
+    ////////////////////
     // ERROR HANDLING //
     ////////////////////
 
