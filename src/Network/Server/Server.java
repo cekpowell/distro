@@ -3,9 +3,7 @@ package Network.Server;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-import Network.Connection;
-import Network.NetworkProcess;
-import Network.ServerInterface;
+import Network.*;
 import Network.Protocol.Exception.NewServerConnectionException;
 import Network.Protocol.Exception.ServerSetupException;
 import Network.Protocol.Exception.ServerWaitForConnectionException;
@@ -25,7 +23,7 @@ public abstract class Server implements NetworkProcess{
     private ServerSocket serverSocket;
     private boolean active;
     private RequestHandler requestHandler;
-    private ServerInterface serverInterface;
+    private NetworkInterface networkInterface;
 
     /**
      * Class constructor
@@ -34,10 +32,10 @@ public abstract class Server implements NetworkProcess{
      * @param port The port the Server listens on.
      * @param serverInterface The network interface for the Server.
      */
-    public Server(ServerType type, int port, ServerInterface serverInterface){
+    public Server(ServerType type, int port, NetworkInterface networkInterface){
         this.type = type;
         this.port = port;
-        this.serverInterface = serverInterface;
+        this.networkInterface = networkInterface;
         this.active = true;
     }
 
@@ -84,7 +82,7 @@ public abstract class Server implements NetworkProcess{
             while (this.isActive()){
                 try{
                     Socket socket = this.serverSocket.accept();
-                    Connection connection = new Connection(this.getServerInterface(), socket);
+                    Connection connection = new Connection(this.getNetworkInterface(), socket);
 
                     // setting up the connection
                     this.setUpConnection(connection);
@@ -134,8 +132,8 @@ public abstract class Server implements NetworkProcess{
         return this.requestHandler;
     }
 
-    public ServerInterface getServerInterface(){
-        return this.serverInterface;
+    public NetworkInterface getNetworkInterface(){
+        return this.networkInterface;
     }
 
     public void setRequestHandler(RequestHandler requestHandler){

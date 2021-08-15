@@ -4,6 +4,7 @@ import java.net.Socket;
 
 import Controller.Index.*;
 import Logger.Protocol;
+import Network.NetworkInterface;
 import Network.Protocol.Exception.*;
 import Network.Server.*;
 import Protocol.Exception.*;
@@ -20,7 +21,7 @@ public class Controller extends Server{
     private int minDstores;
     private int timeout;
     private int rebalancePeriod;
-    private ControllerInterface networkInterface; 
+    private NetworkInterface networkInterface; 
     private volatile Index index;
 
     /**
@@ -32,7 +33,7 @@ public class Controller extends Server{
      * @param rebalancePeriod The rebalance period.
      * @param networkInterface The NetworkInterface associated with the controller.
      */
-    public Controller(int port, int r, int timeout, int rebalancePeriod, ControllerInterface networkInterface){
+    public Controller(int port, int r, int timeout, int rebalancePeriod, NetworkInterface networkInterface){
         // initializing new member variables
         super(ServerType.CONTROLLER, port, networkInterface);
         this.port = port;
@@ -57,7 +58,9 @@ public class Controller extends Server{
      */
     public void setup() throws ServerSetupException{
         try{
-            this.getServerInterface().createLogger();
+
+            // Nothing to setup for controller ?
+
         }
         catch(Exception e){
             throw new ServerSetupException(ServerType.CONTROLLER, e);
@@ -75,7 +78,7 @@ public class Controller extends Server{
      */
     public void handleEvent(String event){
         // TODO Need to properly handle the event
-        this.getServerInterface().logEvent(event);
+        this.getNetworkInterface().logEvent(event);
     }
 
     ////////////////////
@@ -100,7 +103,7 @@ public class Controller extends Server{
                     this.index.removeDstore(exception.getConnection());
 
                     // logging the disconnect
-                    this.getServerInterface().logError(new HandeledNetworkException(new DstoreDisconnectException(dstore.getPort(), exception)));
+                    this.getNetworkInterface().logError(new HandeledNetworkException(new DstoreDisconnectException(dstore.getPort(), exception)));
 
                     return; // nothing else to do
                 }
@@ -112,7 +115,7 @@ public class Controller extends Server{
                 this.index.removeClient(exception.getConnection());
 
                 // logging the disconnect
-                this.getServerInterface().logError(new HandeledNetworkException(new ClientDisconnectException(exception.getConnection().getPort(), exception)));
+                this.getNetworkInterface().logError(new HandeledNetworkException(new ClientDisconnectException(exception.getConnection().getPort(), exception)));
             }
 
             // Client Heartbeat Disconnect
@@ -124,7 +127,7 @@ public class Controller extends Server{
                 this.index.removeClientHeartbeat(exception.getConnection());
 
                 // logging the disconnect
-                this.getServerInterface().logError(new HandeledNetworkException(new ClientHeartbeatDisconnectException(clientPort, exception)));
+                this.getNetworkInterface().logError(new HandeledNetworkException(new ClientHeartbeatDisconnectException(clientPort, exception)));
             }
 
             // Unknown connector disconnected
@@ -132,31 +135,16 @@ public class Controller extends Server{
                 // nothing to handle
 
                 // logging the disconnect
-                this.getServerInterface().logError(new HandeledNetworkException(new UnknownConnectorDisconnectException(exception.getConnection().getPort(), exception)));
+                this.getNetworkInterface().logError(new HandeledNetworkException(new UnknownConnectorDisconnectException(exception.getConnection().getPort(), exception)));
             }
         }
 
         // Non-important error - just need to log
         else{
             // logging error
-            this.getServerInterface().logError(new HandeledNetworkException(error));
+            this.getNetworkInterface().logError(new HandeledNetworkException(error));
         } 
     }
-
-    ////////////////////
-    // DSTORE LOGGING //
-    ////////////////////
-
-    /**
-     * Logs the joining of a Dstore into the system.
-     * 
-     * @param socket The connection to the Dstore.
-     * @param port The port the Dstore listens on.
-     */
-    public void logDstoreJoined(Socket socket, int port){
-        this.networkInterface.logDstoreJoined(socket, port);
-    }
-
 
     /////////////////////////
     // GETTERS AND SETTERS //

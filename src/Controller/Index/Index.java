@@ -118,7 +118,7 @@ public class Index {
         this.dstores.add(new DstoreIndex(port, connection));
 
         // logging
-        this.controller.logDstoreJoined(connection.getSocket(), port);
+        this.controller.handleEvent("[New Dstore " + port + " " + connection.getLocalPort() + "<-" + connection.getPort() + "]");
     }
 
     /**

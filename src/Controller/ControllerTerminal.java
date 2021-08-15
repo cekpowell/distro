@@ -2,7 +2,7 @@ package Controller;
 
 import java.net.Socket;
 
-import Logger.ControllerLogger;
+import Network.NetworkInterface;
 import Network.Protocol.Exception.*;
 import Network.Server.Server.ServerType;
 import Protocol.Exception.LoggerCreationException;
@@ -14,7 +14,7 @@ import Logger.*;
  * 
  * Messages are logged onto the terminal through stdout.
  */
-public class ControllerTerminal extends ControllerInterface{
+public class ControllerTerminal extends NetworkInterface{
 
     // member variables
     Controller controller;
@@ -34,57 +34,28 @@ public class ControllerTerminal extends ControllerInterface{
         this.startNetworkProcess(this.controller); // start  it on seperate thread
     }
 
-    /**
-     * Method run when server is started.
-     * 
-     * Needed so that the logger can be set up.
-     * 
-     * Dont need the method for future implementations as won't need to set up the logger like this.
-     * 
-     * @throws LoggerCreationException If the Logger could not be created.
-     */
-    public void createLogger() throws LoggerCreationException{
-        try{
-            // initialising Logger //
-            ControllerLogger.init(Logger.LoggingType.ON_TERMINAL_ONLY);
-        }
-        catch(Exception e){
-            throw new LoggerCreationException(ServerType.CONTROLLER, e);
-        }
-    }
-
     /////////////
     // LOGGING //
     /////////////
 
     /**
-     * Handles the logging of a new Dstore joining the Controller.
-     * 
-     * @param connection The Connection to the Dstore.
-     * @param port The port the Dstore listens on.
-     */
-    public void logDstoreJoined(Socket connection, int port){
-        ControllerLogger.getInstance().dstoreJoined(connection, port);
-    }
-
-    /**
      * Handles the logging of a message being sent.
      * 
-     * @param connection The Connection between the sender and reciever.
+     * @param connection The socket between the sender and reciever.
      * @param message The message to be logged.
      */
     public void logMessageSent(Socket connection, String message){
-        ControllerLogger.getInstance().messageSent(connection, message);
+        System.out.println("[" + connection.getLocalPort() + " -> " + connection.getPort() + "] " + message);
     }
 
     /**
      * Handles the logging of a message being recieved.
      * 
-     * @param connection The Connection between the sender and reciever.
+     * @param connection The socket between the sender and reciever.
      * @param message The message to be logged.
      */
     public void logMessageReceived(Socket connection, String message){
-        ControllerLogger.getInstance().messageReceived(connection, message);
+        System.out.println("[" + connection.getLocalPort() + " <- " + connection.getPort() + "] " + message);
     }
 
     /**

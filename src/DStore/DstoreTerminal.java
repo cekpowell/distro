@@ -3,7 +3,7 @@ package Dstore;
 import java.net.Socket;
 
 import Logger.*;
-import Network.ServerInterface;
+import Network.NetworkInterface;
 import Network.Protocol.Exception.HandeledNetworkException;
 import Network.Protocol.Exception.ServerStartException;
 import Network.Server.Server.ServerType;
@@ -15,7 +15,7 @@ import Protocol.Exception.*;
  * 
  * Messages are logged onto the terminal through stdout.
  */
-public class DstoreTerminal extends ServerInterface{
+public class DstoreTerminal extends NetworkInterface{
 
     int port; // TODO only needed to create the logger - can remove when logger is removed.
     Dstore dstore;
@@ -36,25 +36,6 @@ public class DstoreTerminal extends ServerInterface{
         this.startNetworkProcess(this.dstore);
     }
 
-    /**
-     * Method run when server is started.
-     * 
-     * Needed so that the logger can be set up.
-     * 
-     * Dont need the method for future implementations as won't need to set up the logger like this.
-     * 
-     * @throws LoggerCreationException If the Logger could not be created.
-     */
-    public void createLogger() throws Exception{
-        try{
-            // initialising Logger //
-            DstoreLogger.init(Logger.LoggingType.ON_TERMINAL_ONLY, this.port);
-        }
-        catch(Exception e){
-            throw new LoggerCreationException(ServerType.DSTORE, e);
-        }
-    }
-
     /////////////
     // LOGGING //
     /////////////
@@ -66,7 +47,7 @@ public class DstoreTerminal extends ServerInterface{
      * @param message The message to be logged.
      */
     public void logMessageSent(Socket connection, String message){
-        DstoreLogger.getInstance().messageSent(connection, message);
+        System.out.println("[" + connection.getLocalPort() + " -> " + connection.getPort() + "] " + message);
     }
 
     /**
@@ -76,7 +57,7 @@ public class DstoreTerminal extends ServerInterface{
      * @param message The message to be logged.
      */
     public void logMessageReceived(Socket connection, String message){
-        DstoreLogger.getInstance().messageReceived(connection, message);
+        System.out.println("[" + connection.getLocalPort() + " <- " + connection.getPort() + "] " + message);
     }
 
     /**

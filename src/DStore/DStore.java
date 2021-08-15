@@ -36,7 +36,7 @@ public class Dstore extends Server{
     private String folderPath;
     private File fileStore;
     private ServerThread controllerThread;
-    private ServerInterface networkInterface;
+    private NetworkInterface networkInterface;
     private volatile CopyOnWriteArrayList<Connection> clients;
     private volatile CopyOnWriteArrayList<Connection> dstores;
 
@@ -49,7 +49,7 @@ public class Dstore extends Server{
      * @param fileFolder The folder where the DStore will store files.
      * @param networkInterface The network interface for the Dstore.
      */
-    public Dstore(int port, int cPort, int timeout, String folderPath, ServerInterface networkInterface){
+    public Dstore(int port, int cPort, int timeout, String folderPath, NetworkInterface networkInterface){
         // initializing member variables
         super(ServerType.DSTORE, port, networkInterface);
         this.port = port;
@@ -75,9 +75,6 @@ public class Dstore extends Server{
      */
     public void setup() throws ServerSetupException{
         try{
-            // creating the terminal logger
-            this.getServerInterface().createLogger();
-
             // connecting to controller
             this.connectToController();
 
@@ -97,7 +94,7 @@ public class Dstore extends Server{
     public void connectToController() throws ConnectToServerException{
         try{
             // creating communicatoin channel
-            Connection connection = new Connection(this.getServerInterface(), this.cPort);
+            Connection connection = new Connection(this.getNetworkInterface(), this.cPort);
             this.controllerThread = new ServerThread(this, connection);
 
             // sending JOIN message to Controller
@@ -154,7 +151,7 @@ public class Dstore extends Server{
      */
     public void handleEvent(String event){
         // TODO Need to properly handle the event
-        this.getServerInterface().logEvent(event);
+        this.getNetworkInterface().logEvent(event);
     }
 
     ////////////////////
@@ -174,31 +171,31 @@ public class Dstore extends Server{
             // Controller Disconnected
             if(exception.getConnection().getPort() == this.cPort){
                 // logging disconnect
-                this.getServerInterface().logError(new HandeledNetworkException(new ControllerDisconnectException(exception.getConnection().getPort(), exception)));
+                this.getNetworkInterface().logError(new HandeledNetworkException(new ControllerDisconnectException(exception.getConnection().getPort(), exception)));
             }
 
             // Client Disconnected
             else if(this.hasClient(exception.getConnection())){
                 // logging disconnect
-                this.getServerInterface().logError(new HandeledNetworkException(new ClientDisconnectException(exception.getConnection().getPort(), exception)));
+                this.getNetworkInterface().logError(new HandeledNetworkException(new ClientDisconnectException(exception.getConnection().getPort(), exception)));
             }
 
             // Dstore Disconnected
             else if(this.hasDstore(exception.getConnection())){
                 // logging disconnect
-                this.getServerInterface().logError(new HandeledNetworkException(new DstoreDisconnectException(exception.getConnection().getPort(), exception)));
+                this.getNetworkInterface().logError(new HandeledNetworkException(new DstoreDisconnectException(exception.getConnection().getPort(), exception)));
             }
 
             // Unknown Connector Disconnected
             else{
                 // logging disconnect
-                this.getServerInterface().logError(new HandeledNetworkException(new UnknownConnectorDisconnectException(exception.getConnection().getPort(), exception)));
+                this.getNetworkInterface().logError(new HandeledNetworkException(new UnknownConnectorDisconnectException(exception.getConnection().getPort(), exception)));
             }
         }
         // Non-important error - just need to log
         else{
             // logging error
-            this.getServerInterface().logError(new HandeledNetworkException(error));
+            this.getNetworkInterface().logError(new HandeledNetworkException(error));
         }
     }
 
