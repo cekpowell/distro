@@ -59,7 +59,7 @@
 
 ---
 
-### Starting Processes
+### Running the Application
 
 - The **Makefile** contained in the repo can be used to build/run the three system components. All components come pre-built.
 - The Controller must be started **first** (as Client and Dstore must be able to connect to the Controller to start).
