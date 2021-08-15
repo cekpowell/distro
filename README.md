@@ -1,6 +1,6 @@
-# COMP2207: Distributed Systems and Networks
+# Distributed File Storage System
 
-## Distributed File Storage System
+## COMP2207: Distributed Systems and Networks
 
 ---
 
