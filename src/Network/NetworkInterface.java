@@ -2,6 +2,7 @@ package Network;
 
 import java.net.Socket;
 
+import Network.Protocol.Event.HandeledNetworkEvent;
 import Network.Protocol.Exception.HandeledNetworkException;
 import Network.Protocol.Exception.NetworkException;
 
@@ -59,7 +60,7 @@ public abstract class NetworkInterface {
      * 
      * @param event The event to be logged.
      */
-    public abstract void logEvent(String event);
+    public abstract void logEvent(HandeledNetworkEvent event);
 
     /**
      * Handles an error.

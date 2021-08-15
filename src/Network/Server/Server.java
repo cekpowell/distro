@@ -40,16 +40,6 @@ public abstract class Server implements NetworkProcess{
     }
 
     /**
-     * Sets up the server before starting it.
-     * 
-     * Implemented by the Server instance to perform setup actions before the 
-     * Server is started.
-     * 
-     * @throws ServerSetupException If the Server could not be setup.
-     */
-    public abstract void setup() throws ServerSetupException;
-
-    /**
      * Ran to setup the server and start waiting for connections.
      * 
      * @throws ServerStartException If the Server could not be started
@@ -66,6 +56,17 @@ public abstract class Server implements NetworkProcess{
             throw new ServerStartException(this.type, this.port, e);
         }
     }
+
+    /**
+     * Sets up the server before starting it.
+     * 
+     * Implemented by the Server instance to perform setup actions before the 
+     * Server is started.
+     * 
+     * @throws ServerSetupException If the Server could not be setup.
+     */
+    public abstract void setup() throws ServerSetupException;
+
 
     /**
      * Makes the server start listening for incoming communication.

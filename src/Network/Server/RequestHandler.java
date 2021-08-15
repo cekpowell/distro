@@ -1,7 +1,7 @@
 package Network.Server;
 
+import DS.Protocol.Token.Token;
 import Network.Connection;
-import Protocol.Token.Token;
 
 /**
  * Abstract class to represent the component of a Server that handles requests.

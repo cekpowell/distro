@@ -11,7 +11,9 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 
+import Network.Protocol.Event.ClientConnectionEvent;
 import Network.Protocol.Exception.*;
+import Network.Server.Server.ServerType;
 
 /**
  * Convenience class for Socket and Logging.
@@ -34,7 +36,7 @@ public class Connection{
     private ArrayList<String> messagesReceived;
 
     /**
-     * Class constructor.
+     * Class constructor. For a connection from Server -> Client (Connection on server end).
      * 
      * @param networkInterace The interface associated with the connection.
      * @param socket The socket involved in the connection
@@ -50,9 +52,6 @@ public class Connection{
             this.dataIn = this.socket.getInputStream();
             this.messagesSent = new ArrayList<String>();
             this.messagesReceived = new ArrayList<String>();
-
-            // logging creation of connection
-            //this.networkInterface.logEvent("New connection made to port : " + socket.getPort());
         }
         catch(Exception e){
             throw new ConnectionSetupException(socket.getPort(),e);
@@ -60,13 +59,14 @@ public class Connection{
     }
 
     /**
-     * Class constructor.
+     * Class constructor. For a connection from Client -> Server (Conenction on Client end).
      * 
      * @param networkInterace The interface associated with the connection.
      * @param port The port the connection will be made to.
+     * @param serverType The type of server the client is connecting to.
      * @throws ConnectionSetupException If the Connection could not be setup.
      */
-    public Connection(NetworkInterface networkInterface, int port) throws ConnectionSetupException{
+    public Connection(NetworkInterface networkInterface, int port, ServerType serverType) throws ConnectionSetupException{
         try{
             // creating the connection
             this.networkInterface = networkInterface;
@@ -79,7 +79,7 @@ public class Connection{
             this.messagesReceived = new ArrayList<String>();
 
             // logging creation of connection
-            //this.networkInterface.logEvent("New connection made to port : " + port);
+            this.networkInterface.getNetworkProcess().handleEvent(new ClientConnectionEvent(serverType, port));
         }
         catch(Exception e){
             throw new ConnectionSetupException(port,e);

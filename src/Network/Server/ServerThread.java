@@ -1,9 +1,9 @@
 package Network.Server;
 
+import DS.Protocol.Token.RequestTokenizer;
+import DS.Protocol.Token.Token;
 import Network.Connection;
 import Network.Protocol.Exception.ConnectionTerminatedException;
-import Protocol.Token.RequestTokenizer;
-import Protocol.Token.Token;
 
 /**
  * Represents a connection between a Server and a connecting object.

@@ -1,8 +1,5 @@
 package Network.Client;
 
-import java.net.InetAddress;
-
-import Logger.Protocol;
 import Network.Connection;
 import Network.NetworkInterface;
 import Network.NetworkProcess;
@@ -10,6 +7,7 @@ import Network.Protocol.Exception.ClientSetupException;
 import Network.Protocol.Exception.ClientStartException;
 import Network.Protocol.Exception.ConnectToServerException;
 import Network.Server.Server;
+import Network.Server.Server.ServerType;
 
 /**
  * Abstract class to represent a Client within a Client-Server system.
@@ -73,12 +71,11 @@ public abstract class Client implements NetworkProcess{
     private void connectToServer() throws ConnectToServerException{
         try{
             // setting up main connection
-            this.serverConnection = new Connection(this.networkInterface, this.serverPort);
+            this.serverConnection = new Connection(this.networkInterface, this.serverPort, ServerType.CONTROLLER);
 
             // setting up heartbeat connection
-            Connection heartbeatConnection = new Connection(this.networkInterface, this.serverPort);
+            Connection heartbeatConnection = new Connection(this.networkInterface, this.serverPort, ServerType.CONTROLLER);
             this.serverHeartbeat = new HeartbeatConnection(this, heartbeatConnection);
-            this.serverHeartbeat.start();
         }
         catch(Exception e){
             throw new ConnectToServerException(Server.ServerType.CONTROLLER, this.serverPort, e);
@@ -105,7 +102,7 @@ public abstract class Client implements NetworkProcess{
         return this.serverHeartbeat;
     }
 
-    public NetworkInterface getClientInterface(){
+    public NetworkInterface getNetworkInterface(){
         return this.networkInterface;
     }
 

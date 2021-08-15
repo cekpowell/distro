@@ -1,5 +1,8 @@
 package Network.Protocol.Exception;
 
+/**
+ * Represents a NetworkException that has been handeled by a network process.
+ */
 public class HandeledNetworkException {
 
     // member variables
@@ -8,7 +11,7 @@ public class HandeledNetworkException {
     /**
      * Class Constructor.
      * 
-     * @param message The error message.
+     * @param exception The NetworkException that has been handeled.
      */
     public HandeledNetworkException(NetworkException exception){
         this.exception = exception;
