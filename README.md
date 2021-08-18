@@ -329,3 +329,97 @@ REMOVE <filename>
 - Alterenativley, instances such as the Controller reporting that a Client/Dstore has disconnected or a Client disconnecting from a Dstore mid-transfer are errornous - this behaviour should not occur during the standard workflow of the system.
 
 ---
+
+### Compilation guide
+
+- The provided `Makefile` can be used for compilation of the application.
+
+#### Compilation
+
+- Recompile the application with:
+
+  - ``` bash
+    make compile
+    ```
+
+  - The compiled `.class` files will be placed into a directory called `out`.
+
+#### Controller
+
+##### Running
+
+- Use the following commands to run a Controller process (after compiling):
+
+``` bash
+make run-controller cport=<CPORT> r=<R> timeout=<TIMEOUT> rperiod=<RPERIOD>
+```
+
+- Where:
+  - `CPORT` : The **port** that the Controller will be run on (the port it will listen for requests on).
+  - `R` : The **replication factor** - the number of Dstores across which all files will be replicated onto.
+    - The controller will not serve requests from clients unless at least `R` Dstores are currently connected.
+  - `TIMEOUT` : The **timeout** period for requests sent by the Controller to Clients/Dstores.
+  - `RPERIOD` : The **rebalance period** - the length of time between rebalancing operations.
+
+##### Building
+
+- Use the following command to **build** `Controller.jar`:
+
+  - ```bash
+    make build-controller
+    ```
+
+  - The `Controller.jar` file will be placed into `build`.
+
+#### Dstore
+
+##### Running
+
+- Use the following commands to run a Dstore process (after compiling):
+
+``` bash
+make dstore port=<PORT> cport=<CPORT> <TIMEOUT> path=<PATH>
+```
+
+- Where:
+  - `PORT` : The **port** the Dstore will listen for communication on (the port it will listen for requests on).
+  - `CPORT` : The **port the Controller** is running on.
+  - `TIMEOUT` : The **timeout** period for requests sent by the Dstore to the Controller/Clients.
+  - `PATH` : The **path** (relative or absolute) for where the Dstore will store the files it recieves from clients (new directory created if one does not exist).
+
+##### Building
+
+- Use the following command to **build** `Dstore.jar`:
+
+  - ```bash
+    make build-dstore
+    ```
+
+  - The `Dstore.jar` file will be placed into `build`.
+
+#### Client
+
+##### Running
+
+- Use the following commands to run a Dstore process (after compiling):
+
+``` bash
+make client cport=<CPORT> timeout=<TIMEOUT>
+```
+
+- - Where:
+    - `CPORT` : The **port the Controller** is running on.
+    - `TIMEOUT` : The **timeout** period for requests sent by the Client to the Controller/Dstores.
+- Requests are input into the Client terminal after the `>`.
+
+##### Building
+
+- Use the following command to **build** `Dsclient.jar`:
+
+  - ```bash
+    make build-client
+    ```
+
+  - The `DSClient.jar` file will be placed into `build`.
+
+---
