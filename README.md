@@ -330,7 +330,7 @@ REMOVE <filename>
 
 ---
 
-### Compilation guide
+### Compilation Guide
 
 - The provided `Makefile` can be used for compilation of the application.
 
