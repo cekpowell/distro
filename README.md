@@ -4,14 +4,14 @@
 
 ---
 
-### Introduction
+## Introduction
 
-#### Task Description
+### Task Description
 
 - Develop a distributed file storage system that can handle concurrent client requests using Java Sockets.
 - For simplicity reasons, the processes all occur on the same machine, running on different ports.
 
-#### Network Structure
+### Network Structure
 
 - The **Distributed File Storage System** is made-up of three components:
   - **Controller** : The server within the system - takes requests from clients and handles them accordingly.
@@ -20,7 +20,7 @@
 
 <p align="center"><img src="images/distributed_file_storage_system.png" alt="distributed_file_storage_system" style="zoom:100%;"/></p> 
 
-#### Network Workflow
+### Network Workflow
 
 
 - The system has one **Controller** and N Data Stores (**Dstore**s) that can connect and leave at any time.
@@ -39,7 +39,7 @@
 
 - Files in the system are not organised in folders and/or sub-folders and filenames do not contain spaces.
 
-##### Network Protocol
+#### Network Protocol
 
 - Refer to `specification.pdf` for a detailed description of the network protocol used within the system (i.e., information on how operations are handeled and what messages are sent between processes).
 - **Concepts not detailed in the specification but present in this system (personal additions):**
@@ -48,7 +48,7 @@
   - The Client maintains a secondary connection to the Controller called the **Client Heartbeat**. *This was done so that the Client is able to detect the Controller disconnecting/terminating*.
   - The system uses records the occurance of **Events** and **Errors** (see [Logging](#Logging)).*This was done for convenience*.
 
-#### Failure Tolerance
+### Failure Tolerance
 
 - The system uses **Rebalancing** to ensure that all files are evenly replicated over R Dstores despite new Dstores joining the system and old Dstores failing.
 - Periodically (*determined by run-time parameters*), the **Controller** will audit the connected Dstores to acquire the list of files they are storing.
@@ -63,7 +63,7 @@
 
 ---
 
-### Running the Application
+## Running the Application
 
 - Contained in `/build` are **executable** `.jar` files which can be used to run each system component.
 
@@ -72,7 +72,7 @@
 > - The Controller must be started **first** (as Client and Dstore must be able to connect to the Controller to start).
 > - If the Controller is closed, all Clients and Dstores that were connected to it will also close (as they canont function without an active Controller).
 
-#### Controller
+### Controller
 
 - When in the same directory as `Controller.jar`, use the following command to **start a Controller process**:
 
@@ -90,7 +90,7 @@
 
 <img src="images/make_controller.png" alt="make_controller" style="zoom:55%;" />
 
-#### Dstore
+### Dstore
 
 - When in the same directory as `Dstore.jar`, use the following command to **start a Dstore process**:
 
@@ -107,7 +107,7 @@
 
 <img src="images/make_dstore.png" alt="make_dstore" style="zoom:28%;" />
 
-#### Client
+### Client
 
 - When in the same directory as `DSClient.jar`, use the following command to **start a DSClient process**:
 
@@ -124,12 +124,12 @@
 
 ---
 
-### Usage
+## Usage
 
 - Commands are input via the **command line interface** on the **Client process**.
 - Any file can be referenced as a **relative** or **absolute path**, and must include the **file extension**.
 
-#### STORE
+### STORE
 
 - The **STORE** command has the following syntax:
 
@@ -143,7 +143,7 @@ STORE <filename> <filesize>
 
 <img src="images/store.png" alt="store" style="zoom:55%;" />
 
-#### LOAD
+### LOAD
 
 - The **LOAD** command has the following syntax:
 
@@ -156,7 +156,7 @@ LOAD <filename>
 
 <img src="images/load.png" alt="load" style="zoom:55%;" />
 
-#### LIST
+### LIST
 
 - The **LIST** command has the following syntax:
 
@@ -166,7 +166,7 @@ LIST
 
 <img src="images/list.png" alt="list" style="zoom:55%;" />
 
-#### REMOVE
+### REMOVE
 
 - The **REMOVE** command has the following syntax:
 
@@ -181,7 +181,7 @@ REMOVE <filename>
 
 ---
 
-### Logging
+## Logging
 
 - Various information will be **logged** in the terminal of each component (Controller, Client, Dstore) whilst the system is in operation and requests are being served.
 
@@ -219,7 +219,7 @@ REMOVE <filename>
 
 <img src="images/message log.png" alt="message log" style="zoom:70%;" />
 
-#### Events
+### Events
 
 - Controllers, Clients and Dstores will log  the occurance of **pre-defined events** within the system.
 - The structure of an **Event Log** is as follows:
@@ -258,7 +258,7 @@ REMOVE <filename>
         #EVENT# New Client connected on port : 49691.
         ```
 
-#### Errors
+### Errors
 
 - Controllers, Clients and Dstores will log the occurance of **errors** during the systems operation. 
 - Errors are output with an **error message** (detailing what error has occured) and a **cause trace** (detailing why the error has occured).
@@ -299,7 +299,7 @@ REMOVE <filename>
         |-CAUSE : The file 'testfile' does not exist.
       ```
 
-##### NOTE
+#### NOTE
 
 - One of the system errors is for a **connection disconnection**.
 
@@ -334,11 +334,11 @@ REMOVE <filename>
 
 ---
 
-### Compilation Guide
+## Compilation Guide
 
 - The provided `Makefile` can be used for compilation of the application.
 
-#### Compilation
+### Compilation
 
 - Recompile the application with:
 
@@ -348,9 +348,9 @@ REMOVE <filename>
 
   - The compiled `.class` files will be placed into a directory called `out`.
 
-#### Controller
+### Controller
 
-##### Running
+#### Running
 
 - Use the following commands to run a Controller process (after compiling):
 
@@ -365,7 +365,7 @@ make run-controller cport=<CPORT> r=<R> timeout=<TIMEOUT> rperiod=<RPERIOD>
   - `TIMEOUT` : The **timeout** period for requests sent by the Controller to Clients/Dstores.
   - `RPERIOD` : The **rebalance period** - the length of time between rebalancing operations.
 
-##### Building
+#### Building
 
 - Use the following command to **build** `Controller.jar`:
 
@@ -375,9 +375,9 @@ make run-controller cport=<CPORT> r=<R> timeout=<TIMEOUT> rperiod=<RPERIOD>
 
   - The `Controller.jar` file will be placed into `build`.
 
-#### Dstore
+### Dstore
 
-##### Running
+#### Running
 
 - Use the following commands to run a Dstore process (after compiling):
 
@@ -391,7 +391,7 @@ make dstore port=<PORT> cport=<CPORT> <TIMEOUT> path=<PATH>
   - `TIMEOUT` : The **timeout** period for requests sent by the Dstore to the Controller/Clients.
   - `PATH` : The **path** (relative or absolute) for where the Dstore will store the files it recieves from clients (new directory created if one does not exist).
 
-##### Building
+#### Building
 
 - Use the following command to **build** `Dstore.jar`:
 
@@ -401,9 +401,9 @@ make dstore port=<PORT> cport=<CPORT> <TIMEOUT> path=<PATH>
 
   - The `Dstore.jar` file will be placed into `build`.
 
-#### Client
+### Client
 
-##### Running
+#### Running
 
 - Use the following commands to run a Dstore process (after compiling):
 
@@ -416,7 +416,7 @@ make client cport=<CPORT> timeout=<TIMEOUT>
     - `TIMEOUT` : The **timeout** period for requests sent by the Client to the Controller/Dstores.
 - Requests are input into the Client terminal after the `>`.
 
-##### Building
+#### Building
 
 - Use the following command to **build** `Dsclient.jar`:
 
