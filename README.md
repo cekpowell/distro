@@ -61,23 +61,44 @@
 
 ### Running the Application
 
-- The **Makefile** contained in the repo can be used to build/run the three system components. All components come pre-built.
+- Contained in `/build` are **executable** `.jar` files which can be used to run each system component.
+
+- The **Makefile** contained in the repo can also be used to **re-build**/**run** each system component. 
 - The Controller must be started **first** (as Client and Dstore must be able to connect to the Controller to start).
 - If the Controller is closed, all Clients and Dstores that were connected to it will also close (as they canont function without an active Controller).
 
-#### Build
+#### Re-Compiling
 
-- Use the following command to compile the Java source-code (into `out`):
+- Use the following command to re-compile the Java source-code (compiled into a directory called `out`):
 
 ``` makefile
-make build
+make compile
 ```
 
 #### Controller
 
-- Use the following command to start a Controller process:
+##### With Jar File
 
-``` assembly
+- When in the same directory as `Controller.jar`, use the following command to **start a Controller process**:
+
+  - ```bash
+    java -jar Controller.jar <CPORT> <R> <TIMEOUT> <RPERIOD>
+    ```
+
+- Where:
+
+  - `CPORT` : The **port** that the Controller will be run on (the port it will listen for requests on).
+  - `R` : The **replication factor** - the number of Dstores across which all files will be replicated onto.
+    - The controller will not serve requests from clients unless at least `R` Dstores are currently connected.
+  - `TIMEOUT` : The **timeout** period for requests sent by the Controller to Clients/Dstores.
+  - `RPERIOD` : The **rebalance period** - the length of time between rebalancing operations.
+
+#### With Makefile
+
+- Use the following commands to compile and run a Controller process:
+
+``` bash
+make compile
 make controller cport=<CPORT> r=<R> timeout=<TIMEOUT> rperiod=<RPERIOD>
 ```
 
@@ -92,25 +113,59 @@ make controller cport=<CPORT> r=<R> timeout=<TIMEOUT> rperiod=<RPERIOD>
 
 #### Dstore
 
-- Use the following command to start a **Dstore** process:
+##### With Jar File
 
-```assembly
-make dstore port=<PORT> cport=<CPORT> timeout=<TIMEOUT> path=<PATH>
+- When in the same directory as `Dstore.jar`, use the following command to **start a Dstore process**:
+
+  - ```bash
+    java -jar Dstore.jar <PORT> <CPORT> <TIMEOUT> <PATH>
+    ```
+
+- Where:
+
+  - `PORT` : The **port** the Dstore will listen for communication on (the port it will listen for requests on).
+  - `CPORT` : The **port the Controller** is running on.
+  - `TIMEOUT` : The **timeout** period for requests sent by the Dstore to the Controller/Clients.
+  - `PATH` : The **path** (relative or absolute) for where the Dstore will store the files it recieves from clients (new directory created if one does not exist).
+
+##### With Makefile
+
+- Use the following commands to compile and run a Dstore process:
+
+```bash
+make compile
+make dstore port=<PORT> cport=<CPORT> <TIMEOUT> path=<PATH>
 ```
 
 - Where:
   - `PORT` : The **port** the Dstore will listen for communication on (the port it will listen for requests on).
   - `CPORT` : The **port the Controller** is running on.
   - `TIMEOUT` : The **timeout** period for requests sent by the Dstore to the Controller/Clients.
-  - `PATH` : The **path** (relative or absolute) for where the Dstore will store the files it recieves from clients.
+  - `PATH` : The **path** (relative or absolute) for where the Dstore will store the files it recieves from clients (new directory created if one does not exist).
 
 <img src="images/make_dstore.png" alt="make_dstore" style="zoom:28%;" />
 
 #### Client
 
-- Use the following command to start a **Client** process:
+##### With Jar File
 
-```assembly
+- When in the same directory as `DSClient.jar`, use the following command to **start a DSClient process**:
+
+  - ```bash
+    java -jar DSClient.jar <CPORT> <TIMEOUT>
+    ```
+
+- Where:
+
+  - `CPORT` : The **port the Controller** is running on.
+  - `TIMEOUT` : The **timeout** period for requests sent by the Client to the Controller/Dstores.
+
+##### With Makefile
+
+- Use the following commands to compile and run a DSClient process:
+
+```bash
+make compile
 make client cport=<CPORT> timeout=<TIMEOUT>
 ```
 
