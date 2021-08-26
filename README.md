@@ -46,7 +46,7 @@
   - Client's connect to Controllers and Dstores with `CLIENT_JOIN` messages, and wait for a `JOIN_ACK` to be recieved before proceeding. *This was done so that the Controller and Dstores could keep track of active Client connections*.
   - The system will log the transfer of **file content** in addition to control messages that are sent (see [Logging: Messages](#Messages)). *This was done for convenience*.
   - The Client maintains a secondary connection to the Controller called the **Client Heartbeat**. *This was done so that the Client is able to detect the Controller disconnecting/terminating*.
-  - The system uses records the occurance of **Events** and **Errors** (see [Logging](#Logging)).*This was done for convenience*.
+  - The system records the occurance of **Events** and **Errors** (see [Logging](#Logging)).*This was done for convenience*.
 
 ### Failure Tolerance
 
