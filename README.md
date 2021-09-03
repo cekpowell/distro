@@ -52,7 +52,7 @@
   - **Dstore** : A data store unit that is connected to the system via the controller. Dstores recieve commands from the controller and store files accordingly.
   - **Client** : A client that makes use of the system. The client sends requests to the Controller which are handeled accordingly.
 
-<p align="center"><img width="650" src="https://user-images.githubusercontent.com/60888912/132033098-80e9e9dc-b1a2-4bcb-8096-96801e6dc3dc.png" alt="distributed_file_storage_system"/></p> 
+<p align="center"><img width="350" src="https://user-images.githubusercontent.com/60888912/132033098-80e9e9dc-b1a2-4bcb-8096-96801e6dc3dc.png" alt="distributed_file_storage_system"/></p> 
 
 ### Network Workflow
 
@@ -122,7 +122,7 @@
   - `TIMEOUT` : The **timeout** period for requests sent by the Controller to Clients/Dstores.
   - `RPERIOD` : The **rebalance period** - the length of time between rebalancing operations.
 
-<img src="https://user-images.githubusercontent.com/60888912/132033192-19ca0018-3166-4b7d-9741-675f6c6d365d.png" alt="make_controller" style="zoom:55%;" />
+<img width="400" src="https://user-images.githubusercontent.com/60888912/132033192-19ca0018-3166-4b7d-9741-675f6c6d365d.png" alt="make_controller" style="zoom:55%;" />
 
 ### Dstore
 
@@ -139,7 +139,7 @@
   - `TIMEOUT` : The **timeout** period for requests sent by the Dstore to the Controller/Clients.
   - `PATH` : The **path** (relative or absolute) for where the Dstore will store the files it recieves from clients (new directory created if one does not exist).
 
-<img src="https://user-images.githubusercontent.com/60888912/132033273-e324232e-9d2c-4f54-93c4-8855513e174c.png" alt="make_dstore" style="zoom:28%;" />
+<img width="400" src="https://user-images.githubusercontent.com/60888912/132033273-e324232e-9d2c-4f54-93c4-8855513e174c.png" alt="make_dstore" style="zoom:28%;" />
 
 ### Client
 
@@ -154,7 +154,7 @@
   - `CPORT` : The **port the Controller** is running on.
   - `TIMEOUT` : The **timeout** period for requests sent by the Client to the Controller/Dstores.
 
-<img src="https://user-images.githubusercontent.com/60888912/132033303-085dc43f-e023-4f2c-ad3a-e121cfabc68a.png" alt="make_client" style="zoom:55%;" />
+<img width="400" src="https://user-images.githubusercontent.com/60888912/132033303-085dc43f-e023-4f2c-ad3a-e121cfabc68a.png" alt="make_client" style="zoom:55%;" />
 
 ---
 
@@ -175,7 +175,7 @@ STORE <filename> <filesize>
   - `filename` : The **path** to the file to be stored.
   - `filesize` : The **size** of the file in bytes.
 
-<img src="https://user-images.githubusercontent.com/60888912/132033350-b5974018-f2e4-4857-907b-30930b712dde.png" alt="store" style="zoom:55%;" />
+<img width="400" src="https://user-images.githubusercontent.com/60888912/132033350-b5974018-f2e4-4857-907b-30930b712dde.png" alt="store" style="zoom:55%;" />
 
 ### LOAD
 
@@ -188,7 +188,7 @@ LOAD <filename>
 - Where:
   - `filename` : The **name** of the file being loaded.
 
-<img src="https://user-images.githubusercontent.com/60888912/132033389-b55778a5-69b8-4909-8a72-a25f6df9f9ba.png" alt="load" style="zoom:55%;" />
+<img width="400" src="https://user-images.githubusercontent.com/60888912/132033389-b55778a5-69b8-4909-8a72-a25f6df9f9ba.png" alt="load" style="zoom:55%;" />
 
 ### LIST
 
@@ -198,7 +198,7 @@ LOAD <filename>
 LIST
 ```
 
-<img src="https://user-images.githubusercontent.com/60888912/132033436-3afea960-a468-431b-90b1-5af4c9577974.png" alt="list" style="zoom:55%;" />
+<img width="400" src="https://user-images.githubusercontent.com/60888912/132033436-3afea960-a468-431b-90b1-5af4c9577974.png" alt="list" style="zoom:55%;" />
 
 ### REMOVE
 
@@ -211,7 +211,7 @@ REMOVE <filename>
 - Where:
   - `filename` : The **name** of the file to be removed.
 
-<img src="https://user-images.githubusercontent.com/60888912/132033478-1118d93e-608f-4da4-9dca-0b32e95221e3.png" alt="remove" style="zoom:55%;" />
+<img width="400" src="https://user-images.githubusercontent.com/60888912/132033478-1118d93e-608f-4da4-9dca-0b32e95221e3.png" alt="remove" style="zoom:55%;" />
 
 ---
 
@@ -251,7 +251,7 @@ REMOVE <filename>
 
 - Sample output:
 
-<img src="https://user-images.githubusercontent.com/60888912/132033534-62ae196d-55c8-42a4-9380-633ed08200ca.png" alt="message log" style="zoom:70%;" />
+<img width="700" src="https://user-images.githubusercontent.com/60888912/132033534-62ae196d-55c8-42a4-9380-633ed08200ca.png" alt="message log"/>
 
 ### Events
 
@@ -357,7 +357,7 @@ REMOVE <filename>
     - While these are technically errors, this is expected behaviour provided the disconnect occured **after the operation had completed**.
     - Sample output:
 
-  <img src="https://user-images.githubusercontent.com/60888912/132033598-a2143867-8630-48ec-8d66-1b3a9a6f5c8e.png" alt="store_sample_output" style="zoom:67%;" />
+<img width="600" src="https://user-images.githubusercontent.com/60888912/132033598-a2143867-8630-48ec-8d66-1b3a9a6f5c8e.png" alt="store_sample_output" />
 
   - **Second:**
     - When reblanacig is being carried out, Dstores will connect to other Dstores, share files, and disconnect from eachother.
