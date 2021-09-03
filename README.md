@@ -52,7 +52,7 @@
   - **Dstore** : A data store unit that is connected to the system via the controller. Dstores recieve commands from the controller and store files accordingly.
   - **Client** : A client that makes use of the system. The client sends requests to the Controller which are handeled accordingly.
 
-<p align="center"><img width="200" src="https://user-images.githubusercontent.com/60888912/132033098-80e9e9dc-b1a2-4bcb-8096-96801e6dc3dc.png" alt="distributed_file_storage_system"/></p> 
+<p align="center"><img width="650" src="https://user-images.githubusercontent.com/60888912/132033098-80e9e9dc-b1a2-4bcb-8096-96801e6dc3dc.png" alt="distributed_file_storage_system"/></p> 
 
 ### Network Workflow
 
