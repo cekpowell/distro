@@ -7,36 +7,36 @@
 ## Contents
 
 - [Introduction](#introduction)
-  * ** [Task Description](#task-description) **
-  * ** [Network Structure](#network-structure) **
-  * ** [Network Workflow](#network-workflow) **
-    + ** [Network Protocol](#network-protocol) **
-  * ** [Failure Tolerance](#failure-tolerance) **
-- ** [Running the Application](#running-the-application) **
-  * ** [Controller](#controller) **
-  * ** [Dstore](#dstore) **
-  * ** [Client](#client) **
-- ** [Usage](#usage) **
-  * ** [STORE](#store) **
-  * ** [LOAD](#load) **
-  * ** [LIST](#list) **
-  * ** [REMOVE](#remove) **
-- ** [Logging](#logging) **
-    + ** [Messages](#messages) **
-  * ** [Events](#events) **
-  * ** [Errors](#errors) **
-    + ** [NOTE](#note) **
-- ** [Compilation Guide](#compilation-guide) **
-  * ** [Compilation](#compilation) **
-  * ** [Controller](#controller-1) **
-    + ** [Running](#running) **
-    + ** [Building](#building) **
-  * ** [Dstore](#dstore-1) **
-    + ** [Running](#running-1) **
-    + ** [Building](#building-1) **
-  * ** [Client](#client-1) **
-    + ** [Running](#running-2) **
-    + ** [Building](#building-2) **
+  * **[Task Description](#task-description)**
+  * **[Network Structure](#network-structure)**
+  * **[Network Workflow](#network-workflow)**
+    + **[Network Protocol](#network-protocol)**
+  * **[Failure Tolerance](#failure-tolerance)**
+- **[Running the Application](#running-the-application)**
+  * **[Controller](#controller)**
+  * **[Dstore](#dstore)**
+  * **[Client](#client)**
+- **[Usage](#usage)**
+  * **[STORE](#store)**
+  * **[LOAD](#load)**
+  * **[LIST](#list)**
+  * **[REMOVE](#remove)**
+- **[Logging](#logging)**
+    + **[Messages](#messages)**
+  * **[Events](#events)**
+  * **[Errors](#errors)**
+    + **[NOTE](#note)**
+- **[Compilation Guide](#compilation-guide)**
+  * **[Compilation](#compilation)**
+  * **[Controller](#controller-1)**
+    + **[Running](#running)**
+    + **[Building](#building)**
+  * **[Dstore](#dstore-1)**
+    + **[Running](#running-1)**
+    + **[Building](#building-1)**
+  * **[Client](#client-1)**
+    + **[Running](#running-2)**
+    + **[Building](#building-2)**
 
 ---
 
