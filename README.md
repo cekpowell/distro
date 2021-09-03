@@ -6,7 +6,7 @@
 
 ## Contents
 
-- [Introduction](#introduction)
+- **[Introduction](#introduction)**
   * **[Task Description](#task-description)**
   * **[Network Structure](#network-structure)**
   * **[Network Workflow](#network-workflow)**
