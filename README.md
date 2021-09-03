@@ -4,6 +4,8 @@
 
 ---
 
+## Contents
+
 - [Introduction](#introduction)
   * [Task Description](#task-description)
   * [Network Structure](#network-structure)
