@@ -87,14 +87,15 @@
 ### Failure Tolerance
 
 - The system uses **Rebalancing** to ensure that all files are evenly replicated over R Dstores despite new Dstores joining the system and old Dstores failing.
-- Periodically (*determined by run-time parameters*), the **Controller** will audit the connected Dstores to acquire the list of files they are storing.
+- Periodically, the **Controller** will audit the connected Dstores to acquire the list of files they are storing.
+    - Dstores are audited every **rebalance period** (run-time parameter) of time, and whenever new Dstores join the system, or current Dstores leave/fail.
 - From these lists, the Controller will calculate if, and how fiiles need to be redistributed across the Dstores such that every file is replicated R times, and that files are evenly spread.
 - In the case where rebalancing is required, the Controller will send control messages to the Dstores informing them of the files they must remove/where they should send files to such that the system becomes balanced.
 - After a rebalance has completed, it is true that all files will be replicated across the Dstores R times, and that all files are evenly spread across Dstores.
 - Rebalancing means that:
   - The system can handle new Dstores joining and active Dstores failing, as the Controller will alter the system to ensure all known files are evenly stored across R Dstores.
   - The system can handle the Controller failing. If the Controller fails but is re-started, the next rebalance operation will bring the system back to the state it was in before the Controller failed.
-  - Dstores are able to join with files already in their store. As the Controller audits Dstores periodically, when a Dstore joins with files in it's store, the Controller will become aware of these files in the next rebalance operation (and will re-distribute them if required).
+  - Dstores are able to join with files already in their store. As the Controller audits the system whenever new Dstores join, when a Dstore joins with files in it's store, the Controller will become aware of these files during this initial audit (and will re-distribute them if required).
 - Detailed information on the Rebalancing process is provided in `specification.pdf`.
 
 ---
