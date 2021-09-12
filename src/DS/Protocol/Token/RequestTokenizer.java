@@ -1,6 +1,7 @@
 package DS.Protocol.Token;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.StringTokenizer;
 
 import DS.Protocol.Protocol;
@@ -31,8 +32,28 @@ public class RequestTokenizer {
 
         String firstToken = sTokenizer.nextToken();
 
+        // JOIN_DSTORE //
+        if (firstToken.equals(Protocol.JOIN_DSTORE_TOKEN)){
+            return getJoinDstoreToken(message, sTokenizer);
+        }
+
+        // JOIN_CLIENT //
+        else if(firstToken.equals(Protocol.JOIN_CLIENT_TOKEN)){
+            return new JoinClientToken(message);
+        }
+
+        // JOIN_CLIENT_HEARTBEAT //
+        else if(firstToken.equals(Protocol.JOIN_CLIENT_HEARTBEAT)){
+            return getJoinClientHeartbeatToken(message, sTokenizer);
+        }
+
+        // JOIN_ACK //
+        else if(firstToken.equals(Protocol.JOIN_ACK_TOKEN)){
+            return new JoinAckToken(message);
+        }
+
         // ACK //
-        if(firstToken.equals(Protocol.ACK_TOKEN)) {
+        else if(firstToken.equals(Protocol.ACK_TOKEN)) {
             return new AckToken(message);
         }
 
@@ -96,26 +117,6 @@ public class RequestTokenizer {
             return getListToken(message, sTokenizer);
         }
 
-        // JOIN_DSTORE //
-        else if (firstToken.equals(Protocol.JOIN_DSTORE_TOKEN)){
-            return getJoinDstoreToken(message, sTokenizer);
-        }
-
-        // JOIN_ACK //
-        if(firstToken.equals(Protocol.JOIN_ACK_TOKEN)){
-            return new JoinAckToken(message);
-        }
-
-        // JOIN_CLIENT //
-        if(firstToken.equals(Protocol.JOIN_CLIENT_TOKEN)){
-            return new JoinClientToken(message);
-        }
-
-        // JOIN_CLIENT_HEARTBEAT //
-        if(firstToken.equals(Protocol.JOIN_CLIENT_HEARTBEAT)){
-            return getJoinClientHeartbeatToken(message, sTokenizer);
-        }
-
         // REBALANCE //
         else if (firstToken.equals(Protocol.REBALANCE_TOKEN)){
             return getRebalanceToken(message, sTokenizer);
@@ -163,7 +164,44 @@ public class RequestTokenizer {
     }
 
     /**
+     * Gathers a JOIN_DSTORE token from a message string.
+     * 
+     * @param message
+     * @param sTokenizer
+     * @return
+     */
+    private static Token getJoinDstoreToken(String message, StringTokenizer sTokenizer) {
+        try{
+            int port = Integer.parseInt(sTokenizer.nextToken());
+
+            return new JoinDstoreToken(message, port);
+        }
+        catch(Exception e){
+            return new InvalidRequestToken(message);
+        }
+    }
+
+    /**
+     * Gathers a JOIN_CLIENT_HEARTBEAT token from a message string.
+     * 
+     * @param message
+     * @param sTokenizer
+     * @return
+     */
+    private static Token getJoinClientHeartbeatToken(String message, StringTokenizer sTokenizer) {
+        try{
+            int port = Integer.parseInt(sTokenizer.nextToken());
+
+            return new JoinClientHeartbeatToken(message, port);
+        }
+        catch(Exception e){
+            return new InvalidRequestToken(message);
+        }
+    }
+
+    /**
      * Gathers a STORE token from a message string.
+     * 
      * @param message
      * @param sTokenizer
      * @return
@@ -181,6 +219,7 @@ public class RequestTokenizer {
 
     /**
      * Gathers a STORE_TO token from a message string.
+     * 
      * @param message
      * @param sTokenizer
      * @return
@@ -203,6 +242,7 @@ public class RequestTokenizer {
 
     /**
      * Gathers a STORE_ACK token from a message string.
+     * 
      * @param message
      * @param sTokenizer
      * @return
@@ -220,6 +260,7 @@ public class RequestTokenizer {
 
     /**
      * Gathers a LOAD token from a message string.
+     * 
      * @param message
      * @param sTokenizer
      * @return
@@ -237,6 +278,7 @@ public class RequestTokenizer {
 
     /**
      * Gathers a LOAD_FROM token from a message string.
+     * 
      * @param message
      * @param sTokenizer
      * @return
@@ -256,6 +298,7 @@ public class RequestTokenizer {
 
     /**
      * Gathers a LOAD_DATA token from a message string.
+     * 
      * @param message
      * @param sTokenizer
      * @return
@@ -273,6 +316,7 @@ public class RequestTokenizer {
 
     /**
      * Gathers a RELOAD token from a message string.
+     * 
      * @param message
      * @param sTokenizer
      * @return
@@ -290,6 +334,7 @@ public class RequestTokenizer {
 
     /**
      * Gathers a REMOVE token from a message string.
+     * 
      * @param message
      * @param sTokenizer
      * @return
@@ -307,6 +352,7 @@ public class RequestTokenizer {
 
     /**
      * Gathers a REMOVE_ACK token from a message string.
+     * 
      * @param message
      * @param sTokenizer
      * @return
@@ -323,7 +369,26 @@ public class RequestTokenizer {
     }
 
     /**
+     * Gathers an ERROR_FILE_DOES_NOT_EXIST token from a message string.
+     * 
+     * @param message
+     * @param sTokenizer
+     * @return
+     */
+    private static Token getErrorFileDoesNotExistToken(String message, StringTokenizer sTokenizer) {
+        if(sTokenizer.hasMoreTokens()){
+            String filename = sTokenizer.nextToken();
+
+            return new ErrorFileDoesNotExistFilenameToken(message, filename);
+        }
+        else{
+            return new ErrorFileDoesNotExistToken(message);
+        }
+    }
+
+    /**
      * Gathers a LIST token from a message string.
+     * 
      * @param message
      * @param sTokenizer
      * @return
@@ -331,18 +396,20 @@ public class RequestTokenizer {
     private static Token getListToken(String message, StringTokenizer sTokenizer) {
         try{
             if(sTokenizer.hasMoreTokens()){
-                ArrayList<String> filenames = new ArrayList<String>();
+                HashMap<String,Integer> files = new HashMap<String,Integer>();
                 while(sTokenizer.hasMoreTokens()){
                     String filename = sTokenizer.nextToken();
-    
-                    filenames.add(filename);
+
+                    int filesize = Integer.parseInt(sTokenizer.nextToken());
+
+                    files.put(filename, filesize);
                 }
     
-                return new ListFilesToken(message, filenames);
+                return new ListFilesToken(message, files);
             }
             else if(message.length() == 5){ // ERROR FIX : Case where there are no files but is still a LIST filenames token - just LIST followed by space and therefore has 5 characters
-                ArrayList<String> filenames = new ArrayList<String>();
-                return new ListFilesToken(message, filenames);
+                HashMap<String,Integer> files = new HashMap<String,Integer>();
+                return new ListFilesToken(message, files);
             }
             else{
                 return new ListToken(message);
@@ -354,41 +421,8 @@ public class RequestTokenizer {
     }
 
     /**
-     * Gathers a JOIN_DSTORE token from a message string.
-     * @param message
-     * @param sTokenizer
-     * @return
-     */
-    private static Token getJoinDstoreToken(String message, StringTokenizer sTokenizer) {
-        try{
-            int port = Integer.parseInt(sTokenizer.nextToken());
-
-            return new JoinDstoreToken(message, port);
-        }
-        catch(Exception e){
-            return new InvalidRequestToken(message);
-        }
-    }
-
-    /**
-     * Gathers a JOIN_CLIENT_HEARTBEAT token from a message string.
-     * @param message
-     * @param sTokenizer
-     * @return
-     */
-    private static Token getJoinClientHeartbeatToken(String message, StringTokenizer sTokenizer) {
-        try{
-            int port = Integer.parseInt(sTokenizer.nextToken());
-
-            return new JoinClientHeartbeatToken(message, port);
-        }
-        catch(Exception e){
-            return new InvalidRequestToken(message);
-        }
-    }
-
-    /**
      * Gathers a REBALANC token from a message string.
+     * 
      * @param message
      * @param sTokenizer
      * @return
@@ -405,6 +439,8 @@ public class RequestTokenizer {
             for(int i = 0; i < numberOfFilesToSend; i++){
                 String filename = sTokenizer.nextToken();
 
+                int filesize = Integer.parseInt(sTokenizer.nextToken());
+
                 int numberOfDStores = Integer.parseInt(sTokenizer.nextToken());
 
                 ArrayList<Integer> ports = new ArrayList<Integer>();
@@ -415,7 +451,7 @@ public class RequestTokenizer {
                     ports.add(port);
                 }
 
-                FileToSend fileToSend = new FileToSend(filename, ports);
+                FileToSend fileToSend = new FileToSend(filename, filesize, ports);
                 filesToSend.add(fileToSend);
             }
 
@@ -440,6 +476,7 @@ public class RequestTokenizer {
 
     /**
      * Gathers a REBALANCE_STORE token from a message string.
+     * 
      * @param message
      * @param sTokenizer
      * @return
@@ -447,28 +484,11 @@ public class RequestTokenizer {
     private static Token getRebalanceStoreToken(String message, StringTokenizer sTokenizer) {
         try{
             String filename = sTokenizer.nextToken();
-            Double filesize = Double.parseDouble(sTokenizer.nextToken());
+            int filesize = Integer.parseInt(sTokenizer.nextToken());
             return new RebalanceStoreToken(message, filename, filesize);
         }
         catch(Exception e){
             return new InvalidRequestToken(message);
-        }
-    }
-
-    /**
-     * Gathers an ERROR_FILE_DOES_NOT_EXIST token from a message string.
-     * @param message
-     * @param sTokenizer
-     * @return
-     */
-    private static Token getErrorFileDoesNotExistToken(String message, StringTokenizer sTokenizer) {
-        if(sTokenizer.hasMoreTokens()){
-            String filename = sTokenizer.nextToken();
-
-            return new ErrorFileDoesNotExistFilenameToken(message, filename);
-        }
-        else{
-            return new ErrorFileDoesNotExistToken(message);
         }
     }
 }

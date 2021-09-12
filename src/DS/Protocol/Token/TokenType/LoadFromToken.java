@@ -8,6 +8,7 @@ import DS.Protocol.Token.Token;
  * Syntax: 
  */
 public class LoadFromToken extends Token{
+    
     public int port;
     public int filesize;
 

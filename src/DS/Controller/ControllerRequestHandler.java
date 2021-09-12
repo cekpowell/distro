@@ -1,24 +1,27 @@
 package DS.Controller;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import DS.Controller.Index.State.OperationState;
 import DS.Protocol.Protocol;
-import DS.Protocol.Event.ListCompleteEvent;
-import DS.Protocol.Event.LoadCompleteEvent;
-import DS.Protocol.Event.RemoveCompleteEvent;
-import DS.Protocol.Event.StoreCompleteEvent;
+import DS.Protocol.Event.Operation.ListCompleteEvent;
+import DS.Protocol.Event.Operation.LoadCompleteEvent;
+import DS.Protocol.Event.Operation.RemoveCompleteEvent;
+import DS.Protocol.Event.Operation.StoreCompleteEvent;
 import DS.Protocol.Exception.*;
 import DS.Protocol.Token.*;
 import DS.Protocol.Token.TokenType.*;
 import Network.*;
+import Network.Client.Client.ClientType;
+import Network.Protocol.Event.ServerConnectionEvent;
 import Network.Protocol.Exception.*;
 import Network.Server.RequestHandler;
 
 /**
  * Handles requests sent to a Controller by a DSClient.
  */
-public class ControllerRequestHandler implements RequestHandler{
+public class ControllerRequestHandler extends RequestHandler{
 
     // member variables
     private Controller controller;
@@ -29,7 +32,8 @@ public class ControllerRequestHandler implements RequestHandler{
      * @param controller The Controller associated with the request handler.
      */
     public ControllerRequestHandler(Controller controller){
-        // initialising member variables
+        // initializing
+        super(controller);
         this.controller = controller;
     }
 
@@ -43,7 +47,8 @@ public class ControllerRequestHandler implements RequestHandler{
      * @param connection The connection associated with the request.
      * @param request Tokenized request to be handled.
      */
-    public void handleRequest(Connection connection, Token request){
+    public void handleRequestAux(Connection connection, Token request){
+        // handling request
         try{
             // JOIN_DSTORE
             if(request instanceof JoinDstoreToken){
@@ -98,14 +103,25 @@ public class ControllerRequestHandler implements RequestHandler{
                 this.handleRemoveAckRequest(connection, removeAckToken.filename);
             }
 
+            // ERROR_FILE_DOES_NOT_EXIST
+            else if(request instanceof ErrorFileDoesNotExistFilenameToken){
+                // nothing to do ...
+            }
+
             // LIST
             else if(request instanceof ListToken){
                 this.handleListRequest(connection);
             }
 
-            // ERROR_FILE_DOES_NOT_EXIST
-            else if(request instanceof ErrorFileDoesNotExistFilenameToken){
-                // nothing to do...
+            // LIST OF FILES (rebalancing)
+            else if(request instanceof ListFilesToken){
+                ListFilesToken listFilesToken = (ListFilesToken) request;
+                this.handleListFilesRequest(connection, listFilesToken.files);
+            }
+
+            // REBALANCE COMPLETE
+            else if(request instanceof RebalanceCompleteToken){
+                this.handleRebalanceCompleteRequest(connection);
             }
 
             // Invalid Request
@@ -164,11 +180,17 @@ public class ControllerRequestHandler implements RequestHandler{
      * @throws DstorePortInUseException If the port the Dstore is trying to join on is already in use.
      */
     public void handleJoinDstoreRequest(Connection connection, int dstorePort) throws Exception{
-        // addding the Dstore to the controller
+        // addding the Dstore to the index
         this.controller.getIndex().addDstore(dstorePort, connection);
+
+        // adding the dstore to the server
+        this.controller.getServerConnections().add(connection);
 
         // sending JOIN_ACK to Dstore
         connection.sendMessage(Protocol.getJoinAckMessage());
+
+        // rebalancing system
+        this.controller.getRebalancer().rebalance();
     }
 
     /////////////////
@@ -182,8 +204,11 @@ public class ControllerRequestHandler implements RequestHandler{
      * @param request The request token.
      */
     public void handleJoinClientRequest(Connection connection, Token request) throws Exception{
-        // adding the client to the list of clients
-        this.controller.getIndex().addClient(connection);
+        // adding the client to the server
+        this.controller.getClientConnections().add(connection);
+
+        // logging
+        this.controller.handleEvent(new ServerConnectionEvent(ClientType.CLIENT, connection.getPort()));
 
         // sending JOIN_ACK to Client
         connection.sendMessage(Protocol.getJoinAckMessage());
@@ -200,8 +225,8 @@ public class ControllerRequestHandler implements RequestHandler{
      * @param joinToken The request token.
      */
     public void handleJoinClientHeartbeatRequest(Connection connection, JoinClientHeartbeatToken joinToken) throws Exception{
-        // adding the client heartbeat to the index
-        this.controller.getIndex().addClientHeartbeat(connection, joinToken.port);
+        // adding the client to the server
+        this.controller.getClientHeartbeatConnections().put(connection, joinToken.port);
 
         // sending JOIN_ACK to Client
         connection.sendMessage(Protocol.getJoinAckMessage());
@@ -347,6 +372,30 @@ public class ControllerRequestHandler implements RequestHandler{
         this.controller.handleEvent(new ListCompleteEvent());
     }
 
+    ///////////////////
+    // LIST OF FILES //
+    ///////////////////
+
+    /**
+     * Handles the reception of a list of files from a Dstore (rebalancing).
+     * 
+     * @param connection The connection associated with the message.
+     * @param files The list of files provided in the message.
+     */
+    private void handleListFilesRequest(Connection connection, HashMap<String, Integer> files){
+        this.controller.getIndex().rebalanceListRecieved(connection, files);
+    }
+
+    /**
+     * Handles the reception of a REBALANCE_COMPLETE message from a DSTORE.
+     * 
+     * @param connection The connection the message was received from.
+     * @param files The list of files receieved in the message.
+     */
+    private void handleRebalanceCompleteRequest(Connection connection){
+        this.controller.getIndex().rebalanceCompleteReceived(connection);
+    }
+
     /////////////
     // INVALID //
     /////////////
@@ -365,52 +414,3 @@ public class ControllerRequestHandler implements RequestHandler{
         throw new InvalidMessageException(request.message, connection.getPort());
     }
 }
-
-/**
- * /**
-     * Handles a LIST request.
-     * 
-     * ### CURRENT LOGIC DONE FOR TESTING ###
-     * 
-     * CURRENTLY DOING WHAT IT DOESNT NEED TO DO - SENDS LIST COMMAND TO ALL INDIVIDUAL DSTORES.
-     * NEEDS TO JUST USE THE INDEX IN THE CONTROLLER.
-     * 
-     * ALSO - it sends the LIST request to the Dstore's listen port, and does not use the existing 
-     * connection that the Controller has with the Dstore - this may lead to some errors later down the line
-     *
-    private void handleListRequest(Connection connection){
-        try{
-            ArrayList<String> messageElements = new ArrayList<String>();
-            messageElements.add("LIST");
-    
-            // looping through list of Dstores
-            for(DstoreIndex dstore : this.controller.getIndex().getDstores()){
-
-                // setting up socket
-                Connection dstoreConnection = new Connection(this.controller.getServerInterface(), InetAddress.getLocalHost(), dstore.getPort());
-    
-                // sending request to dstore
-                String request = Protocol.LIST_TOKEN;
-                dstoreConnection.sendMessage(request);
-    
-                // gathering response
-                Token response = RequestTokenizer.getToken(dstoreConnection.getMessage());
-    
-                if(response instanceof ListFilesToken){
-                    // adding response to message elements
-                    ListFilesToken listFilesToken = (ListFilesToken) response;
-                    messageElements.addAll(listFilesToken.filenames);
-                }
-            }
-    
-            // sending response back to client
-            String message = String.join(" ", messageElements);
-            if(messageElements.size() == 1) message += " "; // ERROR FIX : for case when there are no files, still need to add the space to make sure it is tokenized correctly on client side
-            connection.sendMessage(message);
-        }
-        catch(Exception e){
-            //TODO need to test for different types of exception to know where the error occuredd - e.g., SocketTimeoutException, NullPointerException, etc...
-            this.controller.getServerInterface().handleError("Unable to handle LIST request for Client on port : " + connection.getPort());
-        }
-    }
- */

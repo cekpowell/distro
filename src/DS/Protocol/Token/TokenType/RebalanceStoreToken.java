@@ -8,10 +8,11 @@ import DS.Protocol.Token.Token;
  * Syntax: 
  */
 public class RebalanceStoreToken extends Token{
+    
     public String filename;
-    public double filesize;
+    public int filesize;
 
-    public RebalanceStoreToken(String message, String filename, double filesize){
+    public RebalanceStoreToken(String message, String filename, int filesize){
         this.message = message;
         this.filename = filename;
         this.filesize = filesize;

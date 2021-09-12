@@ -8,11 +8,25 @@ import java.util.ArrayList;
  * Syntax: 
  */
 public class FileToSend{
+    
     public String filename;
-    ArrayList<Integer> dStores;
+    public int filesize;
+    public ArrayList<Integer> dStores;
 
-    public FileToSend(String filename, ArrayList<Integer> dStores){
+    public FileToSend(String filename, int filesize, ArrayList<Integer> dStores){
         this.filename = filename;
+        this.filesize = filesize;
         this.dStores = dStores;
+    }
+
+    public String toString(){
+        String dstoresToSendTo = "";
+        for(int dstore : this.dStores){
+            dstoresToSendTo += dstore + " ";
+        }
+
+        return ("Filename : " + filename + "\n" 
+               + "Filesize : " + filesize + "\n"
+               + "Dstores to send to : " + dstoresToSendTo);
     }
 }

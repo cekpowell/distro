@@ -1,14 +1,17 @@
 package DS.Protocol;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+
+import DS.Protocol.Token.TokenType.FileToSend;
 
 /**
  * Contains all of the messages that can be sent throughout the system and methods to generate them.
  */
 public class Protocol {
 
-	// static varibales
-	private final static String space = " ";
+	// constants
+	private final static String SPACE = " ";
 
 	/////////////////////
 	// CLIENT MESSAGES //
@@ -29,42 +32,51 @@ public class Protocol {
 	// getter methods //
 
 	public static String getJoinClientMessage(){
-		return JOIN_CLIENT_TOKEN;
+		return Protocol.JOIN_CLIENT_TOKEN;
 	}
 
 	public static String getJoinClientHeartbeatMessage(int clientPort){
-		return (JOIN_CLIENT_HEARTBEAT + space + clientPort);
+		return (Protocol.JOIN_CLIENT_HEARTBEAT + Protocol.SPACE + clientPort);
 	}
 
 	public static String getListMessage(){
-		return LIST_TOKEN;
+		return Protocol.LIST_TOKEN;
 	}
 
-	public static String getListOfFilesMessage(ArrayList<String> files){
+	public static String getListOfFilesMessage(HashMap<String, Integer> files){
+        if(files.size() == 0){
+            return Protocol.LIST_TOKEN + Protocol.SPACE;
+        }
+
+        String filesString = "";
+
         // forming single string
-        String filesString = String.join(" ", files);
+        for(String file : files.keySet()){
+            filesString += Protocol.SPACE;
+            filesString += file + Protocol.SPACE + files.get(file);
+        }
         
-		return (LIST_TOKEN + space + filesString);
+		return (Protocol.LIST_TOKEN + filesString);
 	}
 
 	public static String getStoreMessage(String filename, int filesize){
-		return (STORE_TOKEN + space + filename + space + filesize);
+		return (Protocol.STORE_TOKEN + Protocol.SPACE + filename + Protocol.SPACE + filesize);
 	}
 
 	public static String getLoadMessage(String filename){
-		return (LOAD_TOKEN + space + filename);
+		return (Protocol.LOAD_TOKEN + Protocol.SPACE + filename);
 	}
 
 	public static String getLoadDataMessage(String filename){
-		return (LOAD_DATA_TOKEN + space + filename);
+		return (Protocol.LOAD_DATA_TOKEN + Protocol.SPACE + filename);
 	}
 
 	public static String getReloadMessage(String filename){
-		return (RELOAD_TOKEN + space + filename);
+		return (Protocol.RELOAD_TOKEN + Protocol.SPACE + filename);
 	}
 
 	public static String getRemoveMessage(String filename){
-		return (REMOVE_TOKEN + space + filename);
+		return (Protocol.REMOVE_TOKEN + Protocol.SPACE + filename);
 	}
 
 	/////////////////////////
@@ -88,7 +100,7 @@ public class Protocol {
 	// getter methods //
 
 	public static String getJoinAckMessage(){
-		return JOIN_ACK_TOKEN;
+		return Protocol.JOIN_ACK_TOKEN;
 	}
 
 	public static String getStoreToMessage(ArrayList<Integer> dstores){
@@ -99,48 +111,77 @@ public class Protocol {
 		}
 
 		// returning the message
-		return (Protocol.STORE_TO_TOKEN + space + String.join(space, stringDstores));
+		return (Protocol.STORE_TO_TOKEN + Protocol.SPACE + String.join(Protocol.SPACE, stringDstores));
 	}
 
 	public static String getStoreCompleteMessage(){
-		return STORE_COMPLETE_TOKEN;
+		return Protocol.STORE_COMPLETE_TOKEN;
 	}
 
 	public static String getLoadFromMessage(int port, int filesize){
-		return (LOAD_FROM_TOKEN + space + port + space + filesize);
+		return (Protocol.LOAD_FROM_TOKEN + Protocol.SPACE + port + Protocol.SPACE + filesize);
 	}
 
 	public static String getRemoveCompleteMessage(){
-		return REMOVE_COMPLETE_TOKEN;
+		return Protocol.REMOVE_COMPLETE_TOKEN;
 	}
 
-	public static String getRebalanceMessage(){
-		// TODO
-		return null;
+	public static String getRebalanceMessage(ArrayList<FileToSend> filesToSend, ArrayList<String> filesToRemove){
+        // files to send message
+        String filesToSendMessage = "";
+        if(filesToSend.size() == 0){
+            filesToSendMessage += filesToSend.size() + Protocol.SPACE;
+        }
+        else{
+            filesToSendMessage += filesToSend.size() + Protocol.SPACE;
+            for(FileToSend fileToSend : filesToSend){
+                filesToSendMessage += fileToSend.filename + Protocol.SPACE + fileToSend.filesize + Protocol.SPACE;
+
+                filesToSendMessage += fileToSend.dStores.size() + Protocol.SPACE;
+
+                for(int dstore : fileToSend.dStores){
+                    filesToSendMessage += dstore;
+                    filesToSendMessage += Protocol.SPACE;
+                }
+            }
+        }
+
+        // files to remove message
+        String filesToRemoveMessage = "";
+        if(filesToRemove.size() == 0){
+            filesToRemoveMessage += filesToRemove.size();
+        }
+        else{
+            filesToRemoveMessage += filesToRemove.size() + Protocol.SPACE;
+            filesToRemoveMessage += String.join(Protocol.SPACE, filesToRemove);
+        }
+
+		// final message
+        return (Protocol.REBALANCE_TOKEN + Protocol.SPACE + filesToSendMessage + filesToRemoveMessage);
 	}
 
 	public static String getErrorDstorePortInUseMessage(){
-		return ERROR_DSTORE_PORT_IN_USE_TOKEN;
+		return Protocol.ERROR_DSTORE_PORT_IN_USE_TOKEN;
 	}
 	
 	public static String getErrorFileDoesNotExistMessage(){
-		return ERROR_FILE_DOES_NOT_EXIST_TOKEN;
+		return Protocol.ERROR_FILE_DOES_NOT_EXIST_TOKEN;
 	}
 
 	public static String getErrorFileDoesNotExistMessage(String filename){
-		return (ERROR_FILE_DOES_NOT_EXIST_TOKEN + space + filename);
+		return (Protocol.ERROR_FILE_DOES_NOT_EXIST_TOKEN + Protocol.SPACE + filename);
 	}
 
 	public static String getErrorFileAlreadyExistsMessage(){
-		return ERROR_FILE_ALREADY_EXISTS_TOKEN;
+		return Protocol.ERROR_FILE_ALREADY_EXISTS_TOKEN;
 	}
 
 	public static String getErrorNotEnoughDstoresMessage(){
-		return ERROR_NOT_ENOUGH_DSTORES_TOKEN;
+		return Protocol.ERROR_NOT_ENOUGH_DSTORES_TOKEN;
 	}
 
 	public static String getErrorLoadMessage(){
-		return ERROR_LOAD_TOKEN;
+		return Protocol.ERROR_LOAD_TOKEN;
 	}
 
 	/////////////////////
@@ -159,28 +200,39 @@ public class Protocol {
 	// getter methods //
 
 	public static String getJoinDstoreMessage(int port){
-		return (JOIN_DSTORE_TOKEN + space + port);
+		return (Protocol.JOIN_DSTORE_TOKEN + Protocol.SPACE + port);
 	}
 
 	public static String getAckMessage(){
-		return ACK_TOKEN;
+		return Protocol.ACK_TOKEN;
 	}
 
 	public static String getStoreAckMessage(String filename){
-		return (STORE_ACK_TOKEN + space + filename);
+		return (Protocol.STORE_ACK_TOKEN + Protocol.SPACE + filename);
 	}
 
 	public static String getRemoveAckMessage(String filename){
-		return (REMOVE_ACK_TOKEN + space + filename);
+		return (Protocol.REMOVE_ACK_TOKEN + Protocol.SPACE + filename);
 	}
 
-	public static String getRebalanceStoreMessage(){
-		// TODO
-		return null;
+	public static String getRebalanceStoreMessage(String filename, int filesize){
+		
+		return (Protocol.REBALANCE_STORE_TOKEN + Protocol.SPACE + filename + Protocol.SPACE + filesize);
 	}
 
-	public static String getRebalanceCompleteMessage(){
-		// TODO
-		return null;
+	public static String getRebalanceCompleteMessage(HashMap<String, Integer> files){
+        if(files.size() == 0){
+            return (Protocol.REBALANCE_COMPLETE_TOKEN + Protocol.SPACE);
+        }
+        else{
+            String filesString = "";
+
+            // forming single string
+            for(String file : files.keySet()){
+                filesString += Protocol.SPACE + file + Protocol.SPACE + files.get(file);
+            }
+            
+            return (Protocol.REBALANCE_COMPLETE_TOKEN + filesString);
+        }
 	}
 }

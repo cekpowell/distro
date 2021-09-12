@@ -16,7 +16,6 @@ import Network.Protocol.Exception.ServerStartException;
  */
 public class DstoreTerminal extends NetworkInterface{
 
-    int port; // TODO only needed to create the logger - can remove when logger is removed.
     Dstore dstore;
 
     /**
@@ -28,7 +27,6 @@ public class DstoreTerminal extends NetworkInterface{
      * @param folderPath The folder where the DStore will store files.
      */
     public DstoreTerminal(int port, int cPort, int timeout, String folderPath){
-        this.port = port;
         this.dstore = new Dstore(port, cPort, timeout, folderPath, this);
 
         // starting the Dstore

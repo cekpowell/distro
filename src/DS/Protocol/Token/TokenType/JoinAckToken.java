@@ -8,6 +8,7 @@ import DS.Protocol.Token.Token;
  * Syntax: 
  */
 public class JoinAckToken extends Token{
+    
     public JoinAckToken(String message){
         this.message = message;
     }

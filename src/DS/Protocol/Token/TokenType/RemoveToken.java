@@ -8,6 +8,7 @@ import DS.Protocol.Token.Token;
  * Syntax: 
  */
 public class RemoveToken extends Token{
+    
     public String filename;
 
     public RemoveToken(String message, String filename){

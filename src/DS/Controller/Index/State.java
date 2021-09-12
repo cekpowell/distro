@@ -40,8 +40,10 @@ public class State{
      */
     public enum RebalanceState{
         //states
-        REBALANCE_IN_PROGRESS("Rebalance In Progress"),
-        REBALANCE_ACK_RECIEVED("Rebalance Acknowledgement Recieved"),
+        REBALANCE_LIST_IN_PROGRESS("Rebalance List In Progess"),
+        REBALANCE_LIST_RECIEVED("Rebalance List Recieved"),
+        REBALANCE_MOVE_IN_PROGRESS("Rebalance Move In Progress"),
+        REBALANCE_COMPLETE_RECIEVED("Rebalance Complete Recieved"),
         IDLE("Idle");
 
         private String state;

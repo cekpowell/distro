@@ -8,6 +8,7 @@ import DS.Protocol.Token.Token;
  * Syntax: 
  */
 public class StoreToken extends Token{
+    
     public String filename;
     public int filesize;
 

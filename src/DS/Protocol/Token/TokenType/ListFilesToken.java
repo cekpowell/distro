@@ -1,6 +1,6 @@
 package DS.Protocol.Token.TokenType;
 
-import java.util.ArrayList;
+import java.util.HashMap;
 
 import DS.Protocol.Token.Token;
 
@@ -10,10 +10,11 @@ import DS.Protocol.Token.Token;
  * Syntax: 
  */
 public class ListFilesToken extends Token{
-    public ArrayList<String> filenames;
+    
+    public HashMap<String, Integer> files;
 
-    public ListFilesToken(String message, ArrayList<String> filenames){
+    public ListFilesToken(String message, HashMap<String, Integer> files){
         this.message = message;
-        this.filenames = filenames;
+        this.files = files;
     }
 }

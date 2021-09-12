@@ -10,6 +10,7 @@ import DS.Protocol.Token.Token;
  * Syntax: 
  */
 public class StoreToToken extends Token{
+    
     public ArrayList<Integer> ports;
 
     public StoreToToken(String message, ArrayList<Integer> ports){

@@ -2,11 +2,9 @@ package DS.Controller;
 
 import java.net.Socket;
 
-import DS.Protocol.Exception.LoggerCreationException;
 import Network.NetworkInterface;
 import Network.Protocol.Event.HandeledNetworkEvent;
 import Network.Protocol.Exception.*;
-import Network.Server.Server.ServerType;
 
 /**
  * Implementation of ServerInterface that provides an interface for a 

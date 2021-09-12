@@ -1,5 +1,6 @@
 package Network.Server;
 
+import DS.Protocol.Exception.RequestHandlerDisabledException;
 import DS.Protocol.Token.RequestTokenizer;
 import DS.Protocol.Token.Token;
 import Network.Connection;
@@ -53,8 +54,21 @@ public class ServerThread extends Thread {
                 // tokenizing request
                 Token requestToken = RequestTokenizer.getToken(request);
 
-                // handling request
-                this.server.getRequestHandler().handleRequest(this.connection, requestToken);
+                // handling request (need loop as the request handler could be disabled)
+                while(true){
+                    try{
+                        // trying to handle
+                        this.server.getRequestHandler().handleRequest(this.connection, requestToken);
+
+                        // breaking out of loop if successful
+                        break;
+                    }
+                    catch(RequestHandlerDisabledException e){
+                        // request handler not enabled - wait and try again
+                        Thread.onSpinWait();
+                    }
+                }
+                
             }
         }
         catch(Exception e){

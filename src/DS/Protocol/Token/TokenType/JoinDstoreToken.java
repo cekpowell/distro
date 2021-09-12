@@ -8,6 +8,7 @@ import DS.Protocol.Token.Token;
  * Syntax: 
  */
 public class JoinDstoreToken extends Token {
+    
     public int port;
 
     public JoinDstoreToken(String message, int port) {

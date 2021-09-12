@@ -2,16 +2,19 @@ package DS.Controller.Index;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import DS.Controller.Controller;
 import DS.Controller.Index.State.OperationState;
+import DS.Controller.Index.State.RebalanceState;
 import DS.Protocol.Exception.*;
 import Network.Connection;
 import Network.Client.Client.ClientType;
 import Network.Protocol.Event.ServerConnectionEvent;
+import Network.Protocol.Exception.NetworkException;
 
 /**
  * Object that manages an Index model.
@@ -28,8 +31,6 @@ public class Index {
 
     // member variables
     private Controller controller;
-    private volatile CopyOnWriteArrayList<Connection> clients;
-    private volatile ConcurrentHashMap<Connection, Integer> clientHeartbeats; // heartbeat connection -> controller-client connection end port
     private volatile CopyOnWriteArrayList<DstoreIndex> dstores;
     private volatile int minDstores;
     private volatile ConcurrentHashMap<Connection, ConcurrentHashMap<String, CopyOnWriteArrayList<Integer>>> loadRecord;
@@ -42,56 +43,9 @@ public class Index {
      */
     public Index(Controller controller){
         this.controller = controller;
-        this.clients = new CopyOnWriteArrayList<Connection>();
-        this.clientHeartbeats = new ConcurrentHashMap<Connection,Integer>();
         this.minDstores = controller.getMinDstores();
         this.dstores = new CopyOnWriteArrayList<DstoreIndex>();
         this.loadRecord = new ConcurrentHashMap<Connection, ConcurrentHashMap<String, CopyOnWriteArrayList<Integer>>>();
-    }
-
-    /////////////////////////
-    // CONFIGURING CLIENTS //
-    /////////////////////////
-
-    /**
-     * Adds the given Client into the Index.
-     * 
-     * @param connection The connection to the Client.
-     */
-    public synchronized void addClient(Connection connection){
-        // adding the client to the index
-        this.clients.add(connection);
-
-        // logging
-        this.controller.handleEvent(new ServerConnectionEvent(ClientType.CLIENT, connection.getPort()));
-    }
-
-    /**
-     * Adds the given Client Heartbeat to the Index.
-     * 
-     * @param connection The Connection for the heartbeat.
-     * @param clientPort The port of the Client connection the heartbeat is for.
-     */
-    public synchronized void addClientHeartbeat(Connection connection, int clientPort){
-        this.clientHeartbeats.put(connection, clientPort);
-    }
-
-    /**
-     * Removes the given client from the Index.
-     * 
-     * @param connection The connection to the Client.
-     */
-    public synchronized void removeClient(Connection connection){
-        this.clients.remove(connection);
-    }
-
-    /**
-     * Removes the given Client heartbeat from the Index.
-     * 
-     * @param connection The connection to the Client heartbeat.
-     */
-    public synchronized void removeClientHeartbeat(Connection connection){
-        this.clientHeartbeats.remove(connection);
     }
 
 
@@ -116,11 +70,23 @@ public class Index {
             throw new DstorePortInUseException(port);
         }
 
+        // CHECKS COMPLETE //
+
         // adding the dstore to the list of dstores
         this.dstores.add(new DstoreIndex(port, connection));
 
         // logging
         this.controller.handleEvent(new ServerConnectionEvent(ClientType.DSTORE, port));
+
+        // rebalancing 
+        try{
+            // carrying out rebalance
+            //this.controller.getRebalancer().rebalance();
+        }
+        catch(Exception e){
+            // handling failure
+            this.controller.handleError(new RebalanceFailureException(e));
+        }
     }
 
     /**
@@ -144,7 +110,7 @@ public class Index {
      * @return ArrayList of all files stored in the system.
      * @throws NotEnoughDstoresException In the case where there are not enough Dstores connected.
      */
-    public ArrayList<String> getFileList() throws Exception{
+    public HashMap<String, Integer> getFileList() throws Exception{
         // ERROR CHECKING //
 
         // not enough dstores
@@ -152,16 +118,18 @@ public class Index {
             throw new NotEnoughDstoresException();
         }
 
-        // getting list of all files
-        ArrayList<String> allFiles = new ArrayList<String>();
+        // CHECKS COMPLETE //
+
+        // getting map of file names and sizes
+        HashMap<String, Integer> files = new HashMap<String, Integer>();
         for(DstoreIndex dstore : this.dstores){
-            for(DstoreFile file: dstore.getFiles()){
-                allFiles.add(file.getFilename());
+            for(DstoreFile file : dstore.getFiles()){
+                files.put(file.getFilename(), file.getFilesize());
             }
         }
 
-        // removing duplicates and returning
-        return new ArrayList<String>(new HashSet<String>(allFiles));
+        // returning map
+        return files;
     }
 
 
@@ -195,7 +163,7 @@ public class Index {
         // ADDING FILE //
 
         // getting the list of dstores that the file needs to be stored on.
-        ArrayList<Integer> dstoresToStoreOn = this.getDstoresToStoreOn();
+        ArrayList<Integer> dstoresToStoreOn = this.getDstoresToStoreOn(this.controller.getMinDstores());
 
         // adding dstores the file is stored on to the the index 
         for(Integer port : dstoresToStoreOn){
@@ -392,9 +360,9 @@ public class Index {
         this.getIndexFromConnection(dstore).updateFileState(filename, OperationState.REMOVE_ACK_RECIEVED);
     }
 
-    //////////////////////////////////////
-    // WAITING FOR OPERATION COMPLETION //
-    //////////////////////////////////////
+    //////////////////////////
+    // OPERATION COMPLETION //
+    //////////////////////////
 
     /**
      * Waits for the state of the given file across all Dstores to match the provided expected state. Will
@@ -403,10 +371,9 @@ public class Index {
      * @param filename The name of the file being tracked.
      * @param expectedState The expected state of the file.
      * @param timeout The timeout for the tracking.
-     * @return True if the operation completed, false if not.
      * @throws OperationTimeoutException When the state of the file does not match the expected state within the timeout.
      */
-    public boolean waitForFileState(String filename, OperationState expectedState, int timeout) throws Exception{
+    public void waitForFileState(String filename, OperationState expectedState, int timeout) throws Exception{
 
         // Waiting for File to have State //
         
@@ -421,16 +388,13 @@ public class Index {
                 this.handleOperationTimeout(filename, expectedState);
 
                 // throwing exception
-                throw new OperationTimeoutException();
+                throw new NetworkTimeoutException(filename, expectedState);
             }
         }
 
-        // Operation Complete //
+        // Operation Complete Within Timeout //
 
         this.handleOperationComplete(filename, expectedState);
-
-        // returning true
-        return true;
     }
 
     /**
@@ -478,7 +442,7 @@ public class Index {
         }
 
         // REMOVE
-        if(expectedState == OperationState.REMOVE_ACK_RECIEVED){
+        else if(expectedState == OperationState.REMOVE_ACK_RECIEVED){
             // removing the file from the index
             for(DstoreIndex dstore : this.dstores){
                 dstore.removeFile(filename);
@@ -493,37 +457,151 @@ public class Index {
 
 
     /**
-     * Starts the process of rebalancing by updating the rebalance index to
-     * REBALANCE_IN_PROGRESS.
-     */
-    public void startRebalancing(){
-        // TODO
-    }
-
-    /**
-     * Waits for all REBALANCE_COMPLETE messages to be recieved for a given file within the 
-     * given timeout.
+     * Starts a system rebalance.
      * 
-     * If not all REBALANCE_COMPLETE messages are recieved, the Dstores that did not send them
-     * are considered to have disconnected and so are removed from the system. A TimeoutException is
-     *  also thrown in this case.
+     * Disables the Controller request handler, waits for the system to become
+     * IDLE and updates the index to REBALANCE_LIST_IN_PROGRESS.
      * 
-     * @param timeout The timeout to wait for the REBALANCE_COMPELTE messages to be recieved.
-     * @throws OperationTimeoutException Thrown if not all REBALANCE_COMPLETE messages were recieved within
+     * @throws NotEnoughDstoresException If there are not enough Dstores connected
+     * to the system to carry out the rebalance operation.
+     * @throws RebalanceAlreadyInProgressException If there is already a rebalance 
+     * operation in progess.
+     * @throws NetworkTimeoutException If the system does not become idle within
      * the timeout.
      */
-    public boolean waitForRebalanceComplete(int timeout) throws OperationTimeoutException{
-        // TODO
-        return false;
+    public synchronized void startRebalanceList() throws NetworkException{
+        // ERROR CHECKING //
+
+        // not enough dstores
+        if(!this.hasEnoughDstores()){
+            throw new NotEnoughDstoresException();
+        }
+
+        // rebalance already in progress
+        if(this.rebalanceInProgress()){
+            throw new RebalanceAlreadyInProgressException();
+        }
+
+        // CHECKS COMPLETE //
+
+        // disabling controller request handler
+        this.controller.getRequestHandler().disable();
+
+        // waiting for system to be idle
+        this.controller.getIndex().waitForSystemOperationState(OperationState.IDLE, this.controller.getTimeout());
+
+        // updating state of all Dstores in the index
+        for(DstoreIndex dstore : this.dstores){
+            dstore.setRebalanceState(RebalanceState.REBALANCE_LIST_IN_PROGRESS);
+        }
+    }
+
+    /**
+     * Updates the index after a file LIST was recieved from a Dstore during a system
+     * rebalance.
+     * 
+     * @param dstore The Connection to the Dstore that the LIST was recieved from.
+     * @param files A list of filenames mapped to their filesize (the files
+     * stored on this Dstore).
+     */
+    public synchronized void rebalanceListRecieved(Connection dstore, HashMap<String, Integer> files){
+        // updating the dstore index state
+        this.getIndexFromConnection(dstore).setRebalanceState(RebalanceState.REBALANCE_LIST_RECIEVED);
+
+        // updating the DstoreIndex for this Dstore
+        this.getIndexFromConnection(dstore).setFiles(files);
+    }
+
+    /**
+     * Starts the move stage of a system rebalance. Updates the Index
+     * to REBALANCE_MOVE_IN_PROGRESS.
+     */
+    public synchronized void startRebalanceMove(){
+        // updating index
+        for(DstoreIndex dstore : this.dstores){
+            dstore.setRebalanceState(RebalanceState.REBALANCE_MOVE_IN_PROGRESS);
+        }
+    }
+
+    /**
+     * Updates the index after a REBALANCE_COMPLETE message was receieved from a Dstore.
+     * 
+     * @param dstore The Dstore Conectio that the message was receieved from.
+     */
+    public synchronized void rebalanceCompleteReceived(Connection dstore){
+        // updating the dstore index state
+        this.getIndexFromConnection(dstore).setRebalanceState(RebalanceState.REBALANCE_COMPLETE_RECIEVED);
+    }
+
+    /**
+     * Waits for all Dstores in the system to have the provided Rebalance State.
+     * 
+     * @param rebalanceState The expected Rebalance State.
+     * @param timeout The timeout to wait for system to have the expected rebalance state.
+     * @throws NetworkTimeoutException Thrown if the expected rebalance state is not reached 
+     * within the timeout.
+     */
+    public void waitForRebalanceState(RebalanceState rebalanceState, int timeout) throws NetworkTimeoutException{
+        
+        long timeoutStamp = System.currentTimeMillis() + timeout;
+
+        // waiting until rebalance state is list received
+        while(!this.systemHasRebalanceState(rebalanceState)){
+            if(System.currentTimeMillis() < timeoutStamp){
+                Thread.onSpinWait();
+            }
+            else{
+                // timeout occured
+                this.handleRebalanceTimeout(rebalanceState);
+
+                // throwing exception
+                throw new NetworkTimeoutException(rebalanceState);
+            }
+        }
+
+        // Rebalance Stage Completed Within Timeout //
+
+        this.handleRebalanceComplete();
+    }
+
+    /**
+     * Handles the completion of a System rebalance.
+     */
+    private synchronized void handleRebalanceComplete(){
+        // enabling controller request handler
+        this.controller.getRequestHandler().enable();
+
+        // resetting the state of the index
+        for(DstoreIndex dstore : this.dstores){
+            dstore.setRebalanceState(RebalanceState.IDLE);
+        }
+    }
+
+    /**
+     * Handles the case where a stage of a system Rebalance did not
+     * complete within the timeout.
+     * 
+     * @param expectedRebalancetate The rebalance state that was not reached
+     * within the timeout.
+     */
+    private void handleRebalanceTimeout(RebalanceState expectedRebalancetate){
+        // enabling controller request handler
+        this.controller.getRequestHandler().enable();
+
+        // resetting the state of the index
+        for(DstoreIndex dstore : this.dstores){
+            dstore.setRebalanceState(RebalanceState.IDLE);
+        }
     }
 
 
-    //////////////////////
-    // HELPER FUNCTIONS //
-    //////////////////////
+    ////////////////////
+    // HELPER METHODS //
+    ////////////////////
+
 
     /**
-     * Determines if the index has enough Dstores connectedd to it.
+     * Determines if the index has enough Dstores connected to it.
      * 
      * @return True if there are enough Dstores, false otherwise.
      */
@@ -554,6 +632,26 @@ public class Index {
 
         // file not found.
         return false;
+    }
+
+    /**
+     * Determines if the given file has the given state across all of the Dstores that
+     * it is stored on.
+     * 
+     * @param filename The file being checked.
+     * @param state The state of the file.
+     * @return True if the state of the file is the provided state, false if not.
+     */
+    public synchronized boolean fileHasState(String filename, OperationState state){
+        for(DstoreIndex dstore : this.getDstoresStoredOn(filename)){
+            for(DstoreFile file : dstore.getFiles()){
+                if(file.getFilename().equals(filename) && file.getState() != state){
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -598,16 +696,17 @@ public class Index {
      * Gets a list of Dstores that a file can be stored on. Returns only Dstores
      * that will remain balanced after storing the file.
      * 
+     * @param numberOfDstores The number of Dstoes to store on.
      * @return The list of Dstore ports that the new file can be stored on.
      */
-    private synchronized ArrayList<Integer> getDstoresToStoreOn(){
+    public synchronized ArrayList<Integer> getDstoresToStoreOn(int numberOfDstores){
         // sorting the dstores based on the number of files they contain
         Collections.sort(this.dstores);
 
         ArrayList<Integer> ports = new ArrayList<Integer>();
 
         // picking the first r dstores to store on
-        for(int i =0; i < this.minDstores; i++){
+        for(int i =0; i < numberOfDstores; i++){
             ports.add(this.dstores.get(i).getPort());
         }
 
@@ -621,7 +720,7 @@ public class Index {
      * @param filename The name of the file being searched.
      * @return The list of DstoreIndexes that store the file.
      */
-    private synchronized ArrayList<DstoreIndex> getDstoresStoredOn(String filename){
+    public synchronized ArrayList<DstoreIndex> getDstoresStoredOn(String filename){
         ArrayList<DstoreIndex> indexes = new ArrayList<DstoreIndex>();
         
         // looping through all dstores and seeing if they contain the file
@@ -636,17 +735,85 @@ public class Index {
     }
 
     /**
-     * Determines if the given file has the given state across all of the Dstores that
-     * it is stored on.
+     * Gathers the file distribution for the system. The file distribution
+     * is a mapping of Dstores to the files that are stored on them. 
      * 
-     * @param filename The file being checked.
-     * @param state The state of the file.
-     * @return True if the state of the file is the provided state, false if not.
+     * Note that this method does not take into account the state of the files
+     * stored on the Dstores.
+     * 
+     * @return A mapping of Dstores to the files stored on them.
      */
-    public synchronized boolean fileHasState(String filename, OperationState state){
-        for(DstoreIndex dstore : this.getDstoresStoredOn(filename)){
+    public HashMap<Integer, HashMap<String, Integer>> getFileDistribution(){
+        // creating object to hold the file distribution
+        HashMap<Integer, HashMap<String,Integer>> fileDistribution = new HashMap<Integer, HashMap<String,Integer>>();
+        
+        // iterating through dstores and each dstores files to the object
+        for(DstoreIndex dstore : this.dstores){
+            HashMap<String, Integer> files = new HashMap<String, Integer>();
+
             for(DstoreFile file : dstore.getFiles()){
-                if(file.getFilename().equals(filename) && file.getState() != state){
+                files.put(file.getFilename(), file.getFilesize());
+            }
+
+            fileDistribution.put(dstore.getPort(), files);
+        }
+
+        // returning the file distribution
+        return fileDistribution;
+    }
+
+    /**
+     * Sets the provided file distribution into the index.
+     * 
+     * @param fileDistribution The file distribution being set into the index.
+     */
+    public void setFileDistribution(HashMap<Integer, HashMap<String, Integer>> fileDistribution){
+        // iterating through file distribution
+        for(Integer dstore : fileDistribution.keySet()){
+            // setting the file list into the index
+            this.getIndexFromPort(dstore).setFiles(fileDistribution.get(dstore));
+        }
+    }
+
+    /**
+     * Waits for the system to have the expected operation state. 
+     * The system has a particular state when all files acrosss all 
+     * dstores have the same state.
+     * 
+     * @param timeout The length of time that will be waited for the system to 
+     * have the expected state.
+     * @throws NetworkTimeout If the system does not reach the expected state 
+     * within the timeout.
+     */
+    public synchronized void waitForSystemOperationState(OperationState expectedState, int timeout) throws NetworkTimeoutException{
+        
+        long timeoutStamp = System.currentTimeMillis() + timeout;
+
+        // looping while system is not idle
+        while(!this.systemHasOperationState(expectedState)){
+            if(System.currentTimeMillis() < timeoutStamp){
+                // no timeout yet - need to wait
+                Thread.onSpinWait();
+            }
+            else{
+                // throwing exception
+                throw new NetworkTimeoutException(OperationState.IDLE);
+            }
+        }
+
+        // System Is Idle Within Timeout //
+    }
+
+    /**
+     * Determines if the system has a particular operation state.
+     * 
+     * @param expectedState The expected state of the system.
+     * @return True if the system is idle, false if not.
+     */
+    private synchronized boolean systemHasOperationState(OperationState expectedState){
+        for(DstoreIndex dstore : this.dstores){
+            for(DstoreFile file : dstore.getFiles()){
+                if(file.getState() != expectedState){
                     return false;
                 }
             }
@@ -655,17 +822,42 @@ public class Index {
         return true;
     }
 
+    /**
+     * Determines if the rebalance state of the system is the same as the given state.
+     * The rebalance state of the system is the rebalance state across all Dstores in the system.
+     * 
+     * @param expectedState The RebalanceState expected of the system.
+     * @return True if the system has the expected state, false if not.
+     */
+    private synchronized boolean systemHasRebalanceState(RebalanceState expectedState){
+        for(DstoreIndex dstore : this.dstores){
+            if(dstore.getRebalanceState() != expectedState){
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Determines if the system is currently being rebalanced by looking
+     * at the rebalance state of each Dstore.
+     * 
+     * @return True if the system is currently being rebalanced, false otherwise.
+     */
+    private synchronized boolean rebalanceInProgress(){
+        for(DstoreIndex dstore : this.dstores){
+            if(dstore.getRebalanceState() != RebalanceState.IDLE){
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     /////////////////////////
     // GETTERS AND SETTERS //
     /////////////////////////
-
-    public CopyOnWriteArrayList<Connection> getClients(){
-        return this.clients;
-    }
-
-    public ConcurrentHashMap<Connection, Integer> getClientHeartbeats(){
-        return this.clientHeartbeats;
-    }
 
     public CopyOnWriteArrayList<DstoreIndex> getDstores(){
         return this.dstores;
@@ -691,7 +883,7 @@ public class Index {
      * 
      * @return ArrayList of all files stored in the system.
      */
-    private ArrayList<String> getFiles(){
+    public ArrayList<String> getFiles(){
         // getting list of all files
         ArrayList<String> allFiles = new ArrayList<String>();
         for(DstoreIndex dstore : this.dstores){

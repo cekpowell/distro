@@ -10,6 +10,7 @@ import DS.Protocol.Token.Token;
  * Syntax: 
  */
 public class RebalanceToken extends Token{
+    
     public ArrayList<FileToSend> filesToSend;
     public ArrayList<String> filesToRemove;
 

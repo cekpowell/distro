@@ -1,6 +1,7 @@
 package DS.Dstore;
 
 import java.io.File;
+import java.util.HashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import DS.Protocol.Protocol;
@@ -38,8 +39,6 @@ public class Dstore extends Server{
     private File fileStore;
     private ServerThread controllerThread;
     private NetworkInterface networkInterface;
-    private volatile CopyOnWriteArrayList<Connection> clients;
-    private volatile CopyOnWriteArrayList<Connection> dstores;
 
     /**
      * Class constructor.
@@ -58,8 +57,6 @@ public class Dstore extends Server{
         this.timeout = timeout;
         this.folderPath = folderPath;
         this.networkInterface = networkInterface;
-        this.clients = new CopyOnWriteArrayList<Connection>();
-        this.dstores = new CopyOnWriteArrayList<Connection>();
         this.setRequestHandler(new DstoreRequestHandler(this));
     }
 
@@ -176,13 +173,13 @@ public class Dstore extends Server{
             }
 
             // Client Disconnected
-            else if(this.hasClient(exception.getConnection())){
+            else if(this.getClientConnections().contains(exception.getConnection())){
                 // logging disconnect
                 this.getNetworkInterface().logError(new HandeledNetworkException(new ClientDisconnectException(exception.getConnection().getPort(), exception)));
             }
 
             // Dstore Disconnected
-            else if(this.hasDstore(exception.getConnection())){
+            else if(this.getServerConnections().contains(exception.getConnection())){
                 // logging disconnect
                 this.getNetworkInterface().logError(new HandeledNetworkException(new DstoreDisconnectException(exception.getConnection().getPort(), exception)));
             }
@@ -198,6 +195,30 @@ public class Dstore extends Server{
             // logging error
             this.getNetworkInterface().logError(new HandeledNetworkException(error));
         }
+    }
+
+    ////////////////////
+    // HELPER METHODS //
+    ////////////////////
+
+    /**
+     * Returns a list of files stored in the Dstore as a mapping of
+     * filenames to filesizes.
+     * 
+     * @return A mapping of filenames to filesizes.
+     */
+    public HashMap<String, Integer> getFiles(){
+        // gathering list of files
+        File[] fileList = this.getFileStore().listFiles();
+
+        // creating hashmap of files
+        HashMap<String, Integer> files = new HashMap<String, Integer>();
+        for(File file : fileList){
+            files.put(file.getName(), (int) file.length());
+        }
+
+        // returning map of files
+        return files;
     }
 
 
@@ -227,29 +248,5 @@ public class Dstore extends Server{
 
     public ServerThread getControllerThread(){
         return this.controllerThread;
-    }
-
-    public synchronized void addClient(Connection client){
-        this.clients.add(client);
-    }
-
-    public synchronized boolean hasClient(Connection client){
-        return this.clients.contains(client);
-    }
-
-    public synchronized void removeClient(Connection client){
-        this.clients.remove(client);
-    }
-
-    public synchronized void addDstore(Connection dstore){
-        this.dstores.add(dstore);
-    }
-
-    public synchronized boolean hasDstore(Connection dstore){
-        return this.dstores.contains(dstore);
-    }
-
-    public synchronized void removeDstore(Connection dstore){
-        this.dstores.remove(dstore);
     }
 }

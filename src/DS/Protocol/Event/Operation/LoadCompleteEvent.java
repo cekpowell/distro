@@ -1,4 +1,4 @@
-package DS.Protocol.Event;
+package DS.Protocol.Event.Operation;
 
 import Network.Protocol.Event.NetworkEvent;
 

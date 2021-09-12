@@ -2,6 +2,8 @@ package Network.Server;
 
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import Network.*;
 import Network.Protocol.Exception.NewServerConnectionException;
@@ -21,9 +23,12 @@ public abstract class Server implements NetworkProcess{
     private ServerType type;
     private int port;
     private ServerSocket serverSocket;
-    private boolean active;
     private RequestHandler requestHandler;
     private NetworkInterface networkInterface;
+    private volatile CopyOnWriteArrayList<Connection> clientConnections;
+    private volatile ConcurrentHashMap<Connection, Integer> clientHeartbeatConnections;
+    private volatile CopyOnWriteArrayList<Connection> serverConnections;
+    private boolean active;
 
     /**
      * Class constructor
@@ -36,6 +41,9 @@ public abstract class Server implements NetworkProcess{
         this.type = type;
         this.port = port;
         this.networkInterface = networkInterface;
+        this.clientConnections = new CopyOnWriteArrayList<Connection>();
+        this.clientHeartbeatConnections = new ConcurrentHashMap<Connection, Integer>() ;
+        this.serverConnections = new CopyOnWriteArrayList<Connection>();
         this.active = true;
     }
 
@@ -124,10 +132,6 @@ public abstract class Server implements NetworkProcess{
     public ServerType getType(){
         return this.type;
     }
-
-    public boolean isActive(){
-        return this.active;
-    }
     
     public RequestHandler getRequestHandler(){
         return this.requestHandler;
@@ -135,6 +139,22 @@ public abstract class Server implements NetworkProcess{
 
     public NetworkInterface getNetworkInterface(){
         return this.networkInterface;
+    }
+
+    public CopyOnWriteArrayList<Connection> getClientConnections(){
+        return this.clientConnections;
+    }
+
+    public ConcurrentHashMap<Connection, Integer> getClientHeartbeatConnections(){
+        return this.clientHeartbeatConnections;
+    }
+
+    public CopyOnWriteArrayList<Connection> getServerConnections(){
+        return this.serverConnections;
+    }
+
+    public boolean isActive(){
+        return this.active;
     }
 
     public void setRequestHandler(RequestHandler requestHandler){

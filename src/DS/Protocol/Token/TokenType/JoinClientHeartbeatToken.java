@@ -8,8 +8,7 @@ import DS.Protocol.Token.Token;
  * Syntax: 
  */
 public class JoinClientHeartbeatToken extends Token {
-
-    // member variables
+    
     public int port;
 
     public JoinClientHeartbeatToken(String message, int port) {

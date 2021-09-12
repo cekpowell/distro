@@ -2,13 +2,13 @@ package DS.DSClient;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.util.ArrayList;
+import java.util.HashMap;
 
 import DS.Protocol.Protocol;
-import DS.Protocol.Event.ListCompleteEvent;
-import DS.Protocol.Event.LoadCompleteEvent;
-import DS.Protocol.Event.RemoveCompleteEvent;
-import DS.Protocol.Event.StoreCompleteEvent;
+import DS.Protocol.Event.Operation.ListCompleteEvent;
+import DS.Protocol.Event.Operation.LoadCompleteEvent;
+import DS.Protocol.Event.Operation.RemoveCompleteEvent;
+import DS.Protocol.Event.Operation.StoreCompleteEvent;
 import DS.Protocol.Exception.*;
 import DS.Protocol.Token.*;
 import DS.Protocol.Token.TokenType.*;
@@ -127,13 +127,19 @@ public class DSClient extends Client{
         if(error instanceof ConnectionTerminatedException){
             ConnectionTerminatedException exception = (ConnectionTerminatedException) error;
 
-            // Controller Disconnected
+            // Controller Disconnected //
+
             if(exception.getConnection().getPort() == this.getServerPort()){
                 // logging error
                 this.getNetworkInterface().logError(new HandeledNetworkException(new ControllerDisconnectException(this.getServerPort(), exception)));
             }
-            // Dstore disconnected
-            else{
+
+            // Dstore disconnected //
+
+            else if(this.getSecondaryServerConnections().contains(exception.getConnection())){
+                // removiing connection from client
+                this.getSecondaryServerConnections().remove(exception.getConnection());
+
                 // logging error
                 this.getNetworkInterface().logError(new HandeledNetworkException(new DstoreDisconnectException(exception.getConnection().getPort(), exception)));
             }
@@ -230,6 +236,9 @@ public class DSClient extends Client{
 
         // setting up the connection
         Connection connection = new Connection(this.getNetworkInterface(), dstore, ServerType.DSTORE);
+
+        // adding connection to client
+        this.getSecondaryServerConnections().add(connection);
 
         // sending client join message
         connection.sendMessage(Protocol.getJoinClientMessage());
@@ -381,6 +390,9 @@ public class DSClient extends Client{
     private byte[] loadFileFromDstore(int port, String filename, int filesize) throws Exception{
         // setting up the connection
         Connection connection = new Connection(this.getNetworkInterface(), port, ServerType.DSTORE);
+        
+        // adding connection to client
+        this.getSecondaryServerConnections().add(connection);
 
         // sending JOIN_CLIENT message
         connection.sendMessage(Protocol.getJoinClientMessage());
@@ -476,7 +488,7 @@ public class DSClient extends Client{
      * @throws MessageSendException If a message couldn't be sent through the connection.
      * @throws MessageReceievedException If a message could not be receieved through the connection.
      */
-    public ArrayList<String> getFileList() throws Exception{
+    public HashMap<String, Integer> getFileList() throws Exception{
         // sending message to Controller
         this.getServerConnection().sendMessage(Protocol.getListMessage());
 
@@ -492,7 +504,7 @@ public class DSClient extends Client{
             this.handleEvent(new ListCompleteEvent());
 
             // returning the list of files
-            return listFilesToken.filenames;
+            return listFilesToken.files;
         }
 
         // ERROR_NOT_ENOUGH_DSTORES

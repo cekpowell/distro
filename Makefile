@@ -11,6 +11,8 @@ CLASSPATH=${ODIR}
 # RULES #
 #########
 
+test:
+	java -cp ${CLASSPATH} Test
 
 ## Compiling (compiles into /out) ##
 compile: 

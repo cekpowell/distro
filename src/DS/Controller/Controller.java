@@ -1,7 +1,7 @@
 package DS.Controller;
 
 import DS.Controller.Index.*;
-import DS.Protocol.Protocol;
+import DS.Controller.Rebalancer.Rebalancer;
 import DS.Protocol.Exception.*;
 import Network.NetworkInterface;
 import Network.Protocol.Event.HandeledNetworkEvent;
@@ -23,6 +23,7 @@ public class Controller extends Server{
     private int rebalancePeriod;
     private NetworkInterface networkInterface; 
     private volatile Index index;
+    private volatile Rebalancer rebalancer;
 
     /**
      * Class constructor.
@@ -42,6 +43,7 @@ public class Controller extends Server{
         this.rebalancePeriod = rebalancePeriod;
         this.networkInterface = networkInterface;
         this.index = new Index(this);
+        this.rebalancer = new Rebalancer(this);
         this.setRequestHandler(new ControllerRequestHandler(this));
     }
 
@@ -58,9 +60,8 @@ public class Controller extends Server{
      */
     public void setup() throws ServerSetupException{
         try{
-
-            // Nothing to setup for controller ?
-
+            // starting rebalance thread
+            this.rebalancer.start();
         }
         catch(Exception e){
             throw new ServerSetupException(ServerType.CONTROLLER, e);
@@ -99,41 +100,56 @@ public class Controller extends Server{
             // getting connection exception
             ConnectionTerminatedException exception = (ConnectionTerminatedException) error;
 
-            // Dstore Disconnected
+            // Dstore Disconnected //
+
             for(DstoreIndex dstore : this.index.getDstores()){
-                if(exception.getConnection().getMessagesReceived().contains(Protocol.getJoinDstoreMessage(dstore.getPort()))){
-                    // removing the dstore
+                if(dstore.getConnection() == exception.getConnection()){
+                    // removing the dstore from the index
                     this.index.removeDstore(exception.getConnection());
+
+                    // removing the dstore from the server
+                    this.getServerConnections().remove(exception.getConnection());
 
                     // logging the disconnect
                     this.getNetworkInterface().logError(new HandeledNetworkException(new DstoreDisconnectException(dstore.getPort(), exception)));
+
+                    // rebalancing
+                    try{
+                        this.getRebalancer().rebalance();
+                    }
+                    catch(NetworkException e){
+                        this.handleError(new RebalanceFailureException(e));
+                    }
 
                     return; // nothing else to do
                 }
             }
 
-            // Client Disconnected
-            if(exception.getConnection().getMessagesReceived().contains(Protocol.getJoinClientMessage())){
-                // removing the client
-                this.index.removeClient(exception.getConnection());
+            // Client Disconnected //
+
+            if(this.getClientConnections().contains(exception.getConnection())){
+                // removing the client from the server
+                this.getClientConnections().remove(exception.getConnection());
 
                 // logging the disconnect
                 this.getNetworkInterface().logError(new HandeledNetworkException(new ClientDisconnectException(exception.getConnection().getPort(), exception)));
             }
 
-            // Client Heartbeat Disconnect
-            else if(this.index.getClientHeartbeats().containsKey(exception.getConnection())){
+            // Client Heartbeat Disconnect //
+
+            else if(this.getClientHeartbeatConnections().containsKey(exception.getConnection())){
                 // getting the client of the heartbeat's port
-                int clientPort = this.index.getClientHeartbeats().get(exception.getConnection());
-                
-                // removing the client heartbeat
-                this.index.removeClientHeartbeat(exception.getConnection());
+                int clientPort = this.getClientHeartbeatConnections().get(exception.getConnection());
+
+                // removing the client heartbeat from the server
+                this.getClientHeartbeatConnections().remove(exception.getConnection());
 
                 // logging the disconnect
                 this.getNetworkInterface().logError(new HandeledNetworkException(new ClientHeartbeatDisconnectException(clientPort, exception)));
             }
 
-            // Unknown connector disconnected
+            // Unknown connector disconnected //
+
             else{
                 // nothing to handle
 
@@ -173,23 +189,8 @@ public class Controller extends Server{
     public Index getIndex(){
         return this.index;
     }
+
+    public Rebalancer getRebalancer(){
+        return this.rebalancer;
+    }
 }
-
-
-// // getting connection exception
-            // ConnectionTerminatedException connection = (ConnectionTerminatedException) error;
-
-            // // Dstore disconnecteed
-            // for(DstoreIndex dstore : this.index.getDstores()){
-            //     if(dstore.getConnection().getPort() == connection.getPort()){
-            //         // removing the dstore
-            //         this.index.removeDstore(dstore.getConnection());
-
-            //         // logging the disconnect
-            //         this.getServerInterface().logError(new HandeledNetworkException(new DstoreDisconnectException(connection.getPort(), connection)));
-            //         return;
-            //     }
-            // }
-
-            // // Client disconnected
-            // this.getServerInterface().logError(new HandeledNetworkException(new ClientDisconnectException(connection.getPort(), connection)));

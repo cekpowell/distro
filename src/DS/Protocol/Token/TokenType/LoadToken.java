@@ -8,6 +8,7 @@ import DS.Protocol.Token.Token;
  * Syntax: 
  */
 public class LoadToken extends Token{
+    
     public String filename;
 
     public LoadToken(String message, String filename){

@@ -1,16 +1,25 @@
 package DS.Dstore;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import DS.Protocol.Protocol;
-import DS.Protocol.Event.*;
+import DS.Protocol.Event.Operation.ListCompleteEvent;
+import DS.Protocol.Event.Operation.LoadCompleteEvent;
+import DS.Protocol.Event.Operation.RemoveCompleteEvent;
+import DS.Protocol.Event.Operation.StoreCompleteEvent;
+import DS.Protocol.Event.Rebalance.RebalanceCompleteEvent;
+import DS.Protocol.Event.Rebalance.RebalanceStoreCompleteEvent;
 import DS.Protocol.Exception.*;
 import DS.Protocol.Token.*;
 import DS.Protocol.Token.TokenType.*;
 import Network.*;
+import Network.Client.Client.ClientType;
+import Network.Protocol.Event.ServerConnectionEvent;
 import Network.Protocol.Exception.MessageSendException;
 import Network.Protocol.Exception.RequestHandlingException;
 import Network.Server.RequestHandler;
+import Network.Server.Server.ServerType;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -22,7 +31,7 @@ import java.nio.file.Paths;
 /**
  * Handles requests sent to a Dstore by a DSClient and Controller.
  */
-public class DstoreRequestHandler implements RequestHandler{
+public class DstoreRequestHandler extends RequestHandler{
     
     // member variables
     private Dstore dstore;
@@ -33,7 +42,8 @@ public class DstoreRequestHandler implements RequestHandler{
      * @param dstore The Dstore associated with the request handler.
      */
     public DstoreRequestHandler(Dstore dstore){
-        // initializing member variables
+        // initializing
+        super(dstore);
         this.dstore = dstore;
     }
 
@@ -47,7 +57,8 @@ public class DstoreRequestHandler implements RequestHandler{
      * @param connection The connection associated with the request.
      * @param request Tokenized request to be handled.
      */
-    public void handleRequest(Connection connection, Token request){
+    public void handleRequestAux(Connection connection, Token request){
+        // handling request
         try{
             // JOIN_CLIENT //
             if(request instanceof JoinClientToken){
@@ -80,6 +91,18 @@ public class DstoreRequestHandler implements RequestHandler{
             // LIST //
             else if(request instanceof ListToken){
                 this.handleListRequest(connection);
+            }
+
+            // REBALANCE //
+            else if(request instanceof RebalanceToken){
+                RebalanceToken rebalanceToken = (RebalanceToken) request;
+                this.handleRebalanceRequest(connection, rebalanceToken.filesToSend, rebalanceToken.filesToRemove);
+            }
+
+            // REBALANCE_STORE //
+            else if(request instanceof RebalanceStoreToken){
+                RebalanceStoreToken rebalanceStoreToken = (RebalanceStoreToken) request;
+                this.handleRebalanceStoreRequest(connection, rebalanceStoreToken.filename, rebalanceStoreToken.filesize);
             }
 
             // Invalid //
@@ -119,8 +142,11 @@ public class DstoreRequestHandler implements RequestHandler{
      * @throws MessageSendException If a message couldn't be sent through the connection.
      */
     private void handleJoinClientRequest(Connection connection) throws Exception{
-        // adding the connection to the Dstore's list of clients.
-        this.dstore.addClient(connection);
+        // adding the connection to the server
+        this.dstore.getClientConnections().add(connection);
+
+        // logging
+        this.dstore.handleEvent(new ServerConnectionEvent(ClientType.CLIENT, connection.getPort()));
 
         // sending join ack back to client
         connection.sendMessage(Protocol.getJoinAckMessage());
@@ -131,8 +157,11 @@ public class DstoreRequestHandler implements RequestHandler{
     /////////////////
 
     private void handleJoinDstoreRequest(Connection connection) throws Exception{
-        // adding the connection to the Dstore's list of Dstores
-        this.dstore.addDstore(connection);
+        // adding the connection to the server
+        this.dstore.getServerConnections().add(connection);
+
+        // logging
+        this.dstore.handleEvent(new ServerConnectionEvent(ClientType.DSTORE, connection.getPort()));
 
         // sending the join ack back to the Dstore
         connection.sendMessage(Protocol.getJoinAckMessage());
@@ -252,25 +281,185 @@ public class DstoreRequestHandler implements RequestHandler{
      * @throws MessageSendException If a message couldn't be sent through the connection.
      */
     private void handleListRequest(Connection connection) throws Exception{
-        // gathering list of files
-        File[] fileList = this.dstore.getFileStore().listFiles();
-
-        // creating message elements
-        ArrayList<String> messageElements = new ArrayList<String>();
-        messageElements.add("LIST");
-
-        for(File file : fileList){
-            messageElements.add(file.getName());
-        }
+        // creating hashmap of files
+        HashMap<String, Integer> files = this.dstore.getFiles();
 
         // creating message
-        String message = String.join(" ", messageElements);
+        String message = Protocol.getListOfFilesMessage(files);
 
         // sending the list of files back to the connector
         connection.sendMessage(message);
 
         // logging
         this.dstore.handleEvent(new ListCompleteEvent());
+    }
+
+    ///////////////
+    // REBALANCE //
+    ///////////////
+
+    /**
+     * Handles a REBALANCE request.
+     * 
+     * @param connection The connection associated with the request.
+     * @param filesToSend The files that must be sent to other Dstores.
+     * @param filesToRemove The files to be removed from the Dstore.
+     * @throws MessageSendException If a message could not be sent through a connection.
+     * @throws MessageRecievedException If a message could not be receieved from a connection.
+     * @throws FileDoesNotExistException If a file referenced in the request does not exist.
+     * @throws InvalidMessageException If an invalid message is receieved from a Dstore whilst
+     * sending files.
+     */
+    private void handleRebalanceRequest(Connection connection, ArrayList<FileToSend> filesToSend, ArrayList<String> filesToRemove) throws Exception{
+        // FILES TO SEND //
+
+        // iterate over files
+        for(FileToSend fileToSend : filesToSend){
+            // forming REBALANCE_STORE message
+            String message = Protocol.getRebalanceStoreMessage(fileToSend.filename, fileToSend.filesize);
+
+            // loading file to be sent
+            File file = new File(this.dstore.getFolderPath() + File.separatorChar + fileToSend.filename);
+
+            // file exists - sending file to dstore's that need it
+            if(file.exists()){
+                // gathering file
+                FileInputStream fileInput = new FileInputStream(file);
+
+                // iterating over Dstores to send to
+                for(int dstore : fileToSend.dStores){
+                    // setting up the connection
+                    Connection dstoreConnection = new Connection(this.dstore.getNetworkInterface(), dstore, ServerType.DSTORE);
+
+                    // adding connection to server
+                    this.dstore.getServerConnections().add(dstoreConnection);
+
+                    // sending dstore join message
+                    dstoreConnection.sendMessage(Protocol.getJoinDstoreMessage(this.dstore.getPort()));
+
+                    try{
+                        // wait for acknowledgement
+                        Token response = RequestTokenizer.getToken(dstoreConnection.getMessageWithinTimeout(this.dstore.getTimeout()));
+
+                        // making sure response is JOIN_ACK
+                        if(response instanceof JoinAckToken){
+                            // sending rebalance message
+                            dstoreConnection.sendMessage(message);
+
+                            try{
+                                // waiting for acknowledgement
+                                response = RequestTokenizer.getToken(dstoreConnection.getMessageWithinTimeout(this.dstore.getTimeout()));
+                    
+                                // making sure acknowledgement was receieved
+                                if(response instanceof AckToken){
+                                    // sending file to client
+                                    byte[] fileContent = fileInput.readAllBytes();
+                                    dstoreConnection.sendBytes(fileContent);
+                                    fileInput.close();
+                
+                                    // closing streams
+                                    dstoreConnection.close();
+                                    fileInput.close();
+                                }
+                                // invalid response received
+                                else{
+                                    // closing streams
+                                    dstoreConnection.close();
+                                    fileInput.close();
+                
+                                    // throwing exception
+                                    throw new InvalidMessageException(response.message, dstoreConnection.getPort());
+                                }
+                            }
+                            catch(Exception e){
+                                // closing streams
+                                dstoreConnection.close();
+                                fileInput.close();
+                    
+                                // throwing exception
+                                throw e;
+                            }
+                        }
+                        else{
+                            // closing streams
+                            dstoreConnection.close();
+                            fileInput.close();
+        
+                            // throwing exception
+                            throw new InvalidMessageException(response.message, dstoreConnection.getPort());
+                        }
+                    }
+                    catch(Exception e){
+                        // closing streams
+                        dstoreConnection.close();
+                        fileInput.close();
+            
+                        // throwing exception
+                        throw e;
+                    }
+                }
+            }
+            // file does not exist - throwing exception
+            else{
+                // throwing exception
+                throw new FileDoesNotExistException(fileToSend.filename);
+            }
+        }
+
+        // FILES TO REMOVE //
+
+        for(String fileToRemove : filesToRemove){
+            // creating file object
+            File file = new File(this.dstore.getFolderPath() + File.separatorChar + fileToRemove);
+
+            // deleting file
+            try{
+                Files.delete(Paths.get(file.getAbsolutePath()));
+            }
+            catch(Exception e){
+                throw new FileDoesNotExistException(fileToRemove);
+            }
+        }
+
+        // REBALANCE COMPLETE //
+
+        // creating hashmap of files
+        HashMap<String, Integer> files = this.dstore.getFiles();
+
+        // sending message to controller
+        connection.sendMessage(Protocol.getRebalanceCompleteMessage(files));
+
+        // logging
+        this.dstore.handleEvent(new RebalanceCompleteEvent());
+    }
+
+    /////////////////////
+    // REBALANCE STORE //
+    /////////////////////
+
+    /**
+     * Handles a REBALANCE_STORE request.
+     * 
+     * @param connection The connection associated with the request.
+     * @param filename The name of the file being sent.
+     * @param filesize The size of the file being sent.
+     */
+    private void handleRebalanceStoreRequest(Connection connection, String filename, int filesize) throws Exception{
+        // sending ACK back to dstore
+        connection.sendMessage(Protocol.getAckMessage());
+
+        // reading file data
+        byte[] fileContent = connection.getNBytesWithinTimeout(filesize, this.dstore.getTimeout());
+
+        // storing file data
+        File file = new File(this.dstore.getFolderPath() + File.separatorChar + filename);
+        FileOutputStream fileOutput = new FileOutputStream(file);
+        fileOutput.write(fileContent);
+        fileOutput.flush();
+        fileOutput.close();
+
+        // logging
+        this.dstore.handleEvent(new RebalanceStoreCompleteEvent(filename, filesize));
     }
 
     /////////////

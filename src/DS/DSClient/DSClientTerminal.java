@@ -6,6 +6,7 @@ import java.io.FileOutputStream;
 import java.io.InputStreamReader;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import DS.Protocol.Exception.*;
 import DS.Protocol.Token.RequestTokenizer;
@@ -199,7 +200,7 @@ public class DSClientTerminal extends NetworkInterface{
      */
     public void handleListInput() throws Exception{
         // gathering the list of files
-        ArrayList files = this.client.getFileList();
+        HashMap<String, Integer> files = this.client.getFileList();
 
         // nothing to do with the list ...
     }

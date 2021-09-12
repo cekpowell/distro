@@ -1,5 +1,7 @@
 package Network.Client;
 
+import java.util.ArrayList;
+
 import Network.Connection;
 import Network.NetworkInterface;
 import Network.NetworkProcess;
@@ -20,9 +22,10 @@ public abstract class Client implements NetworkProcess{
     // member variables
     private int serverPort;
     private int timeout;
+    private NetworkInterface networkInterface;
     private Connection serverConnection;
     private HeartbeatConnection serverHeartbeat;
-    private NetworkInterface networkInterface;
+    private ArrayList<Connection> secondaryServerConnections;
 
     /**
      * Class Constructor.
@@ -36,6 +39,7 @@ public abstract class Client implements NetworkProcess{
         this.serverPort = serverPort;
         this.timeout = timeout;
         this.networkInterface = networkInterface;
+        this.secondaryServerConnections = new ArrayList<Connection>();
     }
 
     /**
@@ -94,6 +98,10 @@ public abstract class Client implements NetworkProcess{
         return this.timeout;
     }
 
+    public NetworkInterface getNetworkInterface(){
+        return this.networkInterface;
+    }
+
     public Connection getServerConnection(){
         return this.serverConnection;
     }
@@ -102,8 +110,8 @@ public abstract class Client implements NetworkProcess{
         return this.serverHeartbeat;
     }
 
-    public NetworkInterface getNetworkInterface(){
-        return this.networkInterface;
+    public ArrayList<Connection> getSecondaryServerConnections(){
+        return this.secondaryServerConnections;
     }
 
     /////////////////
