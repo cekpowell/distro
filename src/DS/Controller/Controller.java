@@ -56,7 +56,7 @@ public class Controller extends Server{
      * 
      * Creates the logger.
      *
-     * @throws ServerSertupException If the Controller could not be setup.
+     * @throws ServerSetupException If the Controller could not be setup.
      */
     public void setup() throws ServerSetupException{
         try{
