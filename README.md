@@ -1,4 +1,4 @@
-# Distributed File Storage System
+# Distro: Distributed File Storage System
 
 ## COMP2207: Distributed Systems and Networks
 
